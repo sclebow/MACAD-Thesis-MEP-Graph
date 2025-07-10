@@ -5,46 +5,87 @@ This repository contains the code and resources for the MACAD Thesis Project on 
 ## Installation and Setup
 
 ### Prerequisites
-- [Anaconda](https://www.anaconda.com/products/distribution) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed on your system
+- Python 3.8 or higher
+- Git (for cloning the repository)
 
-### Environment Setup
-1. Clone this repository:
+### Setup Instructions
+
+#### Option 1: Automated Setup (Recommended)
+
+**On Windows:**
+```cmd
+setup.bat
+```
+
+**On macOS/Linux or Windows with Git Bash:**
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+#### Option 2: Manual Setup
+
+1. **Clone the repository**
    ```bash
    git clone https://github.com/your-username/MACAD-Thesis-MEP-Graph.git
    cd MACAD-Thesis-MEP-Graph
    ```
 
-2. Create and activate the conda environment:
+2. **Create and activate a virtual environment**
+   
+   **On Windows (PowerShell):**
+   ```powershell
+   python -m venv venv
+   .\venv\Scripts\Activate.ps1
+   ```
+   
+   **On Windows (Command Prompt):**
+   ```cmd
+   python -m venv venv
+   venv\Scripts\activate.bat
+   ```
+   
+   **On macOS/Linux:**
    ```bash
-   conda env create -f environment.yml
-   conda activate macad-mep-graph
+   python3 -m venv venv
+   source venv/bin/activate
    ```
 
-3. Verify the installation by running the graph viewer:
+3. **Install required dependencies**
    ```bash
-   python graph_viewer.py
+   pip install --upgrade pip
+   pip install -r requirements.txt
    ```
 
-### Alternative Installation
-If you prefer to install packages manually:
+4. **Verify the installation**
+   ```bash
+   python -c "import panel; print('Panel version:', panel.__version__)"
+   python -c "import networkx; print('NetworkX version:', networkx.__version__)"
+   ```
+
+5. **Run the graph viewer application**
+   ```bash
+   panel serve graph_viewer.py --show
+   ```
+
+### Deactivating the Virtual Environment
+
+When you're done working on the project, deactivate the virtual environment:
 ```bash
-conda create -n macad-mep-graph python=3.12
-conda activate macad-mep-graph
-conda install -c conda-forge -c pyviz panel networkx bokeh matplotlib pandas numpy scipy lxml plotly
-pip install panel[recommended]
+deactivate
 ```
 
-### Updating the Environment
-To update the environment with new dependencies:
-```bash
-conda env update -f environment.yml
-```
+### Troubleshooting
 
-### Deactivating the Environment
-When you're done working:
-```bash
-conda deactivate
-```
+- **Permission issues on Windows**: If you encounter execution policy errors when activating the virtual environment, run PowerShell as Administrator and execute:
+  ```powershell
+  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+  ```
+
+- **Package installation issues**: Make sure you have the latest pip version:
+  ```bash
+  pip install --upgrade pip
+  ```
 
 ## Prototype Concept
 The prototype will consist of a web-based tool that allows users to visualize and analyze a user's MEP system as a knowledge graph. This will enable users to explore the relationships between different components of the MEP system and gain insights into its performance and behavior for proactive maintenance and operations decisions.
