@@ -3,17 +3,18 @@ REM Setup script for MACAD-Thesis-MEP-Graph project (Windows)
 
 echo Setting up MACAD-Thesis-MEP-Graph project...
 
-REM Check if Python is installed
-python --version >nul 2>&1
+REM Check if Python 3.12 is installed
+py -3.12 --version >nul 2>&1
 if errorlevel 1 (
-    echo Error: Python is not installed or not in PATH
+    echo Error: Python 3.12 is not installed or not available
+    echo Please install Python 3.12 from https://www.python.org/downloads/
     pause
     exit /b 1
 )
 
-REM Create virtual environment
-echo Creating virtual environment...
-python -m venv venv
+REM Create virtual environment with Python 3.12
+echo Creating virtual environment with Python 3.12...
+py -3.12 -m venv venv
 
 REM Activate virtual environment
 echo Activating virtual environment...

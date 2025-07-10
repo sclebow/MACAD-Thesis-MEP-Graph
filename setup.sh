@@ -3,15 +3,33 @@
 
 echo "Setting up MACAD-Thesis-MEP-Graph project..."
 
-# Check if Python is installed
-if ! command -v python &> /dev/null; then
-    echo "Error: Python is not installed or not in PATH"
-    exit 1
+# Check if Python 3.12 is installed
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    # Windows - use py launcher
+    if ! py -3.12 --version &> /dev/null; then
+        echo "Error: Python 3.12 is not installed or not available"
+        echo "Please install Python 3.12 from https://www.python.org/downloads/"
+        exit 1
+    fi
+    PYTHON_CMD="py -3.12"
+else
+    # macOS/Linux - check for python3.12
+    if command -v python3.12 &> /dev/null; then
+        PYTHON_CMD="python3.12"
+    elif command -v python3 &> /dev/null && python3 --version | grep -q "3\.12"; then
+        PYTHON_CMD="python3"
+    elif command -v python &> /dev/null && python --version | grep -q "3\.12"; then
+        PYTHON_CMD="python"
+    else
+        echo "Error: Python 3.12 is not installed or not available"
+        echo "Please install Python 3.12 from https://www.python.org/downloads/"
+        exit 1
+    fi
 fi
 
-# Create virtual environment
-echo "Creating virtual environment..."
-python -m venv venv
+# Create virtual environment with Python 3.12
+echo "Creating virtual environment with Python 3.12..."
+$PYTHON_CMD -m venv venv
 
 # Activate virtual environment based on OS
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then

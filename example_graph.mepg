@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns
+         http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  
+  <!-- Node attribute definitions -->
+  <key id="type" for="node" attr.name="type" attr.type="string"/>
+  <key id="x" for="node" attr.name="x" attr.type="double"/>
+  <key id="y" for="node" attr.name="y" attr.type="double"/>
+  <key id="z" for="node" attr.name="z" attr.type="double"/>
+  <key id="distribution_upstream_voltage" for="node" attr.name="distribution_upstream_voltage" attr.type="double"/>
+  <key id="distribution_upstream_current_rating" for="node" attr.name="distribution_upstream_current_rating" attr.type="double"/>
+  <key id="distribution_upstream_phase_number" for="node" attr.name="distribution_upstream_phase_number" attr.type="int"/>
+  <key id="distribution_upstream_frequency" for="node" attr.name="distribution_upstream_frequency" attr.type="double"/>
+  <key id="distribution_downstream_voltage" for="node" attr.name="distribution_downstream_voltage" attr.type="double"/>
+  <key id="distribution_downstream_current_rating" for="node" attr.name="distribution_downstream_current_rating" attr.type="double"/>
+  <key id="distribution_downstream_phase_number" for="node" attr.name="distribution_downstream_phase_number" attr.type="int"/>
+  <key id="distribution_downstream_frequency" for="node" attr.name="distribution_downstream_frequency" attr.type="double"/>
+  <key id="AIC_rating" for="node" attr.name="AIC_rating" attr.type="double"/>
+  
+  <!-- Edge attribute definitions -->
+  <key id="connection_type" for="edge" attr.name="type" attr.type="string"/>
+  <key id="voltage" for="edge" attr.name="voltage" attr.type="double"/>
+  <key id="current_rating" for="edge" attr.name="current_rating" attr.type="double"/>
+  <key id="phase_number" for="edge" attr.name="phase_number" attr.type="int"/>
+  <key id="frequency" for="edge" attr.name="frequency" attr.type="double"/>
+  <key id="apparent_current" for="edge" attr.name="apparent_current" attr.type="double"/>
+  <key id="voltage_drop" for="edge" attr.name="voltage_drop" attr.type="double"/>
+  <key id="load_classification" for="edge" attr.name="load_classification" attr.type="string"/>
+  
+  <!-- Graph definition -->
+  <graph id="High_School_Electrical_System" edgedefault="directed">
+    
+    <!-- Utility Transformer -->
+    <node id="transformer_001">
+      <data key="type">Transformer</data>
+      <data key="x">0.0</data>
+      <data key="y">0.0</data>
+      <data key="z">0.0</data>
+      <data key="distribution_upstream_voltage">13800.0</data>
+      <data key="distribution_upstream_current_rating">126.0</data>
+      <data key="distribution_upstream_phase_number">3</data>
+      <data key="distribution_upstream_frequency">60.0</data>
+      <data key="distribution_downstream_voltage">480.0</data>
+      <data key="distribution_downstream_current_rating">3000.0</data>
+      <data key="distribution_downstream_phase_number">3</data>
+      <data key="distribution_downstream_frequency">60.0</data>
+      <data key="AIC_rating">65.0</data>
+    </node>
+    
+    <!-- Main Switchboard -->
+    <node id="switchboard_001">
+      <data key="type">Switchboard</data>
+      <data key="x">10.0</data>
+      <data key="y">5.0</data>
+      <data key="z">0.0</data>
+      <data key="distribution_upstream_voltage">480.0</data>
+      <data key="distribution_upstream_current_rating">3000.0</data>
+      <data key="distribution_upstream_phase_number">3</data>
+      <data key="distribution_upstream_frequency">60.0</data>
+      <data key="distribution_downstream_voltage">480.0</data>
+      <data key="distribution_downstream_current_rating">2500.0</data>
+      <data key="distribution_downstream_phase_number">3</data>
+      <data key="distribution_downstream_frequency">60.0</data>
+      <data key="AIC_rating">65.0</data>
+    </node>
+    
+    <!-- Classroom Wing Panelboard -->
+    <node id="panelboard_001">
+      <data key="type">Panelboard</data>
+      <data key="x">50.0</data>
+      <data key="y">20.0</data>
+      <data key="z">0.0</data>
+      <data key="distribution_upstream_voltage">480.0</data>
+      <data key="distribution_upstream_current_rating">400.0</data>
+      <data key="distribution_upstream_phase_number">3</data>
+      <data key="distribution_upstream_frequency">60.0</data>
+      <data key="distribution_downstream_voltage">120.0</data>
+      <data key="distribution_downstream_current_rating">225.0</data>
+      <data key="distribution_downstream_phase_number">1</data>
+      <data key="distribution_downstream_frequency">60.0</data>
+      <data key="AIC_rating">22.0</data>
+    </node>
+    
+    <!-- Gymnasium Panelboard -->
+    <node id="panelboard_002">
+      <data key="type">Panelboard</data>
+      <data key="x">25.0</data>
+      <data key="y">80.0</data>
+      <data key="z">0.0</data>
+      <data key="distribution_upstream_voltage">480.0</data>
+      <data key="distribution_upstream_current_rating">600.0</data>
+      <data key="distribution_upstream_phase_number">3</data>
+      <data key="distribution_upstream_frequency">60.0</data>
+      <data key="distribution_downstream_voltage">277.0</data>
+      <data key="distribution_downstream_current_rating">400.0</data>
+      <data key="distribution_downstream_phase_number">1</data>
+      <data key="distribution_downstream_frequency">60.0</data>
+      <data key="AIC_rating">22.0</data>
+    </node>
+    
+    <!-- Kitchen Transformer -->
+    <node id="transformer_002">
+      <data key="type">Transformer</data>
+      <data key="x">15.0</data>
+      <data key="y">45.0</data>
+      <data key="z">0.0</data>
+      <data key="distribution_upstream_voltage">480.0</data>
+      <data key="distribution_upstream_current_rating">300.0</data>
+      <data key="distribution_upstream_phase_number">3</data>
+      <data key="distribution_upstream_frequency">60.0</data>
+      <data key="distribution_downstream_voltage">208.0</data>
+      <data key="distribution_downstream_current_rating">694.0</data>
+      <data key="distribution_downstream_phase_number">3</data>
+      <data key="distribution_downstream_frequency">60.0</data>
+      <data key="AIC_rating">25.0</data>
+    </node>
+    
+    <!-- Kitchen Panelboard -->
+    <node id="panelboard_003">
+      <data key="type">Panelboard</data>
+      <data key="x">16.0</data>
+      <data key="y">46.0</data>
+      <data key="z">0.0</data>
+      <data key="distribution_upstream_voltage">208.0</data>
+      <data key="distribution_upstream_current_rating">694.0</data>
+      <data key="distribution_upstream_phase_number">3</data>
+      <data key="distribution_upstream_frequency">60.0</data>
+      <data key="distribution_downstream_voltage">120.0</data>
+      <data key="distribution_downstream_current_rating">400.0</data>
+      <data key="distribution_downstream_phase_number">1</data>
+      <data key="distribution_downstream_frequency">60.0</data>
+      <data key="AIC_rating">25.0</data>
+    </node>
+    
+    <!-- Connections (Edges) -->
+    
+    <!-- Utility Transformer to Main Switchboard -->
+    <edge id="connection_001" source="transformer_001" target="switchboard_001">
+      <data key="connection_type">Power</data>
+      <data key="voltage">480.0</data>
+      <data key="current_rating">3000.0</data>
+      <data key="phase_number">3</data>
+      <data key="frequency">60.0</data>
+      <data key="apparent_current">2800.0</data>
+      <data key="voltage_drop">2.5</data>
+      <data key="load_classification">Main Distribution</data>
+    </edge>
+    
+    <!-- Switchboard to Classroom Wing Panelboard -->
+    <edge id="connection_002" source="switchboard_001" target="panelboard_001">
+      <data key="connection_type">Power</data>
+      <data key="voltage">480.0</data>
+      <data key="current_rating">400.0</data>
+      <data key="phase_number">3</data>
+      <data key="frequency">60.0</data>
+      <data key="apparent_current">350.0</data>
+      <data key="voltage_drop">8.5</data>
+      <data key="load_classification">Lighting</data>
+    </edge>
+    
+    <!-- Switchboard to Gymnasium Panelboard -->
+    <edge id="connection_003" source="switchboard_001" target="panelboard_002">
+      <data key="connection_type">Power</data>
+      <data key="voltage">480.0</data>
+      <data key="current_rating">600.0</data>
+      <data key="phase_number">3</data>
+      <data key="frequency">60.0</data>
+      <data key="apparent_current">580.0</data>
+      <data key="voltage_drop">6.2</data>
+      <data key="load_classification">HVAC</data>
+    </edge>
+    
+    <!-- Switchboard to Kitchen Transformer -->
+    <edge id="connection_004" source="switchboard_001" target="transformer_002">
+      <data key="connection_type">Power</data>
+      <data key="voltage">480.0</data>
+      <data key="current_rating">300.0</data>
+      <data key="phase_number">3</data>
+      <data key="frequency">60.0</data>
+      <data key="apparent_current">280.0</data>
+      <data key="voltage_drop">3.8</data>
+      <data key="load_classification">Kitchen Equipment</data>
+    </edge>
+    
+    <!-- Kitchen Transformer to Kitchen Panelboard -->
+    <edge id="connection_005" source="transformer_002" target="panelboard_003">
+      <data key="connection_type">Power</data>
+      <data key="voltage">208.0</data>
+      <data key="current_rating">694.0</data>
+      <data key="phase_number">3</data>
+      <data key="frequency">60.0</data>
+      <data key="apparent_current">650.0</data>
+      <data key="voltage_drop">2.1</data>
+      <data key="load_classification">Kitchen Equipment</data>
+    </edge>
+    
+  </graph>
+</graphml>

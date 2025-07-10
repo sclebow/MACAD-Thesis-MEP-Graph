@@ -5,12 +5,14 @@ This repository contains the code and resources for the MACAD Thesis Project on 
 ## Installation and Setup
 
 ### Prerequisites
-- Python 3.8 or higher
+- Python 3.12 (required for compatibility)
 - Git (for cloning the repository)
 
 ### Setup Instructions
 
 #### Option 1: Automated Setup (Recommended)
+
+The automated setup scripts will ensure Python 3.12 is used for the virtual environment.
 
 **On Windows:**
 ```cmd
@@ -31,23 +33,23 @@ chmod +x setup.sh
    cd MACAD-Thesis-MEP-Graph
    ```
 
-2. **Create and activate a virtual environment**
+2. **Create and activate a virtual environment with Python 3.12**
    
    **On Windows (PowerShell):**
    ```powershell
-   python -m venv venv
+   py -3.12 -m venv venv
    .\venv\Scripts\Activate.ps1
    ```
    
    **On Windows (Command Prompt):**
    ```cmd
-   python -m venv venv
+   py -3.12 -m venv venv
    venv\Scripts\activate.bat
    ```
    
    **On macOS/Linux:**
    ```bash
-   python3 -m venv venv
+   python3.12 -m venv venv
    source venv/bin/activate
    ```
 
@@ -76,6 +78,11 @@ deactivate
 ```
 
 ### Troubleshooting
+
+- **Python 3.12 not found**: If you get an error that Python 3.12 is not installed:
+  - **Windows**: Download and install Python 3.12 from [python.org](https://www.python.org/downloads/). Make sure to check "Add Python to PATH" during installation.
+  - **macOS**: Install using Homebrew: `brew install python@3.12` or download from [python.org](https://www.python.org/downloads/)
+  - **Linux**: Install using your package manager (e.g., `sudo apt install python3.12` on Ubuntu)
 
 - **Permission issues on Windows**: If you encounter execution policy errors when activating the virtual environment, run PowerShell as Administrator and execute:
   ```powershell
