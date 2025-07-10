@@ -2,6 +2,50 @@
 
 This repository contains the code and resources for the MACAD Thesis Project on MEP (Mechanical, Electrical, and Plumbing) Graphs. The project focuses on the development of a graph-based approach to analyze MEP systems as knowledge graphs.
 
+## Installation and Setup
+
+### Prerequisites
+- [Anaconda](https://www.anaconda.com/products/distribution) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed on your system
+
+### Environment Setup
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/your-username/MACAD-Thesis-MEP-Graph.git
+   cd MACAD-Thesis-MEP-Graph
+   ```
+
+2. Create and activate the conda environment:
+   ```bash
+   conda env create -f environment.yml
+   conda activate macad-mep-graph
+   ```
+
+3. Verify the installation by running the graph viewer:
+   ```bash
+   python graph_viewer.py
+   ```
+
+### Alternative Installation
+If you prefer to install packages manually:
+```bash
+conda create -n macad-mep-graph python=3.12
+conda activate macad-mep-graph
+conda install -c conda-forge -c pyviz panel networkx bokeh matplotlib pandas numpy scipy lxml plotly
+pip install panel[recommended]
+```
+
+### Updating the Environment
+To update the environment with new dependencies:
+```bash
+conda env update -f environment.yml
+```
+
+### Deactivating the Environment
+When you're done working:
+```bash
+conda deactivate
+```
+
 ## Prototype Concept
 The prototype will consist of a web-based tool that allows users to visualize and analyze a user's MEP system as a knowledge graph. This will enable users to explore the relationships between different components of the MEP system and gain insights into its performance and behavior for proactive maintenance and operations decisions.
 
