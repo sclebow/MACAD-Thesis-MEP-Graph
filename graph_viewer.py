@@ -10,16 +10,6 @@ import os
 
 pn.extension('plotly')
 
-# File upload widget
-file_input = pn.widgets.FileInput(accept='.mepg')
-
-# Placeholder for the plot
-plot_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
-
-# 3D graph visualization function
-# This function takes a NetworkX graph and visualizes it using Plotly.
-three_d_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
-
 def visualize_graph_two_d(graph):
     pos = nx.spring_layout(graph)
     edge_x = []
@@ -200,8 +190,6 @@ def file_input_callback(event):
             plot_pane.object = None
             pn.state.notifications.error(f"Failed to load graph: {e}")
 
-file_input.param.watch(file_input_callback, 'value')
-
 def autoload_example_graph():
     example_path = 'example_graph.mepg'
     if os.path.exists(example_path):
@@ -217,17 +205,44 @@ def autoload_example_graph():
             three_d_pane.object = None
             print(f"Failed to autoload example graph: {e}")
 
-# Autoload example graph if present
-autoload_example_graph()
 
 app = pn.Column(
-    "# GraphML Viewer",
-    "Upload a GraphML file to visualize the graph.",
-    file_input,
-    plot_pane,
-    three_d_pane,
     sizing_mode='stretch_width'
 )
 
-print("Starting GraphML Viewer...")
+app.append(pn.pane.Markdown("""
+# MEP System Graph Viewer
+This application allows you to visualize and interact with MEP system graphs.
+"""))
+
+# File upload widget
+file_input = pn.widgets.FileInput(accept='.mepg')
+file_input.param.watch(file_input_callback, 'value')
+app.append(pn.Column(
+    "### Load MEP Graph File",
+    file_input,
+))
+
+# Placeholder for the plot
+two_d_column = pn.Column()
+two_d_column.append("### 2D Graph Visualization")
+plot_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
+two_d_column.append(plot_pane)
+
+# 3D graph visualization function
+# This function takes a NetworkX graph and visualizes it using Plotly.
+three_d_column = pn.Column()
+three_d_column.append("### 3D Graph Visualization")
+three_d_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
+three_d_column.append(three_d_pane)
+
+# Autoload example graph if present
+autoload_example_graph()
+
+# Create a row to show both plots side by side
+plots_row = pn.Row(two_d_column, three_d_column, sizing_mode='stretch_width')
+
+app.append(plots_row)
+
+print("Starting MEP System Graph Viewer...")
 app.servable()
