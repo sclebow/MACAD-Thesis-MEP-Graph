@@ -24,16 +24,40 @@ def visualize_graph_two_d(graph):
     pos = nx.spring_layout(graph)
     edge_x = []
     edge_y = []
+    edge_text = []
+    edge_marker_x = []
+    edge_marker_y = []
+    edge_marker_text = []
     for edge in graph.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
         edge_x += [x0, x1, None]
         edge_y += [y0, y1, None]
+        # Create hover text for edges with all edge attributes
+        hover_text = f"{edge[0]} - {edge[1]}"
+        edge_attrs = graph.edges[edge]
+        if edge_attrs:
+            hover_text += "<br>" + "<br>".join([f"{k}: {v}" for k, v in edge_attrs.items()])
+        # Repeat hover_text for both endpoints, None for separator
+        edge_text += [hover_text, hover_text, None]
+        # Add invisible marker at edge midpoint for better hover
+        edge_marker_x.append((x0 + x1) / 2)
+        edge_marker_y.append((y0 + y1) / 2)
+        edge_marker_text.append(hover_text)
     edge_trace = go.Scatter(
         x=edge_x, y=edge_y,
-        line=dict(width=1, color='#888'),
-        hoverinfo='none',
-        mode='lines'
+        line=dict(width=3, color='#888'),  # Thicker line
+        hoverinfo='text',
+        mode='lines',
+        hovertext=edge_text
+    )
+    edge_marker_trace = go.Scatter(
+        x=edge_marker_x, y=edge_marker_y,
+        mode='markers',
+        marker=dict(size=10, color='rgba(0,0,0,0)'),  # Invisible
+        hoverinfo='text',
+        hovertext=edge_marker_text,
+        showlegend=False
     )
 
     node_x = []
@@ -62,7 +86,7 @@ def visualize_graph_two_d(graph):
         hovertext=node_text  # Show all attributes on hover
     )
 
-    fig = go.Figure(data=[edge_trace, node_trace],
+    fig = go.Figure(data=[edge_trace, edge_marker_trace, node_trace],
                     layout=go.Layout(
                         showlegend=False,
                         hovermode='closest',
@@ -87,11 +111,9 @@ def visualize_graph_three_d(graph):
     node_text = []
     for node, attrs in graph.nodes(data=True):
         # Get the 'x', 'y', 'z' attributes from the node
-        print(attrs)
         x = attrs.get('x', 0)
         y = attrs.get('y', 0)
         z = attrs.get('z', 0)
-
         node_x.append(x)
         node_y.append(y)
         node_z.append(z)
@@ -102,6 +124,10 @@ def visualize_graph_three_d(graph):
     edge_x = []
     edge_y = []
     edge_z = []
+    edge_marker_x = []
+    edge_marker_y = []
+    edge_marker_z = []
+    edge_marker_text = []
     for edge in graph.edges():
         x0 = graph.nodes[edge[0]].get('x', 0)
         y0 = graph.nodes[edge[0]].get('y', 0)
@@ -112,13 +138,29 @@ def visualize_graph_three_d(graph):
         edge_x += [x0, x1, None]
         edge_y += [y0, y1, None]
         edge_z += [z0, z1, None]
+        # Add invisible marker at edge midpoint for better hover
+        edge_marker_x.append((x0 + x1) / 2)
+        edge_marker_y.append((y0 + y1) / 2)
+        edge_marker_z.append((z0 + z1) / 2)
+        hover_text = f"{edge[0]} - {edge[1]}"
+        edge_attrs = graph.edges[edge]
+        if edge_attrs:
+            hover_text += "<br>" + "<br>".join([f"{k}: {v}" for k, v in edge_attrs.items()])
+        edge_marker_text.append(hover_text)
     edge_trace = go.Scatter3d(
         x=edge_x, y=edge_y, z=edge_z,
-        line=dict(width=1, color='#888'),
+        line=dict(width=2, color='#888'),
         hoverinfo='none',
         mode='lines'
     )
-
+    edge_marker_trace = go.Scatter3d(
+        x=edge_marker_x, y=edge_marker_y, z=edge_marker_z,
+        mode='markers',
+        marker=dict(size=6, color='rgba(0,0,0,0)'),  # Invisible
+        hoverinfo='text',
+        hovertext=edge_marker_text,
+        showlegend=False
+    )
     node_trace = go.Scatter3d(
         x=node_x, y=node_y, z=node_z,
         mode='markers+text',
@@ -133,8 +175,7 @@ def visualize_graph_three_d(graph):
         ),
         hovertext=node_text  # Show all attributes on hover
     )
-
-    fig = go.Figure(data=[edge_trace, node_trace],
+    fig = go.Figure(data=[edge_trace, edge_marker_trace, node_trace],
                     layout=go.Layout(
                         showlegend=False,
                         hovermode='closest',
