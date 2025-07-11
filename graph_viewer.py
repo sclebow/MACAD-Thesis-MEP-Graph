@@ -3,3 +3,103 @@
 
 import panel as pn
 from panel import widgets
+import io
+import networkx as nx
+import plotly.graph_objects as go
+
+pn.extension('plotly')
+
+# File upload widget
+file_input = pn.widgets.FileInput(accept='.mepg')
+
+# Placeholder for the plot
+plot_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
+
+def visualize_graph(graph):
+    pos = nx.spring_layout(graph)
+    edge_x = []
+    edge_y = []
+    for edge in graph.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x += [x0, x1, None]
+        edge_y += [y0, y1, None]
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y,
+        line=dict(width=1, color='#888'),
+        hoverinfo='none',
+        mode='lines'
+    )
+
+    node_x = []
+    node_y = []
+    node_text = []
+    for node in graph.nodes():
+        x, y = pos[node]
+        node_x.append(x)
+        node_y.append(y)
+        node_text.append(str(node))
+    node_trace = go.Scatter(
+        x=node_x, y=node_y,
+        mode='markers+text',
+        text=node_text,
+        textposition="top center",
+        hoverinfo='text',
+        marker=dict(
+            showscale=False,
+            color='blue',
+            size=15,
+            line_width=2
+        )
+    )
+
+    fig = go.Figure(data=[edge_trace, node_trace],
+                    layout=go.Layout(
+                        showlegend=False,
+                        hovermode='closest',
+                        margin=dict(b=20,l=5,r=5,t=40),
+                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+                    ))
+    
+    # Add hover text for nodes showing all attributes
+    node_hover_text = []
+    for node, attrs in graph.nodes(data=True):
+        hover = f"{node}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items()])
+        node_hover_text.append(hover)
+    node_trace.text = node_hover_text
+    fig.update_traces(marker=dict(size=10), selector=dict(mode='markers'))
+
+    # Add hover text for edges showing all attributes
+    edge_hover_text = []
+    for u, v, attrs in graph.edges(data=True):
+        hover = f"{u} - {v}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items()])
+        edge_hover_text.append(hover)
+    edge_trace.text = edge_hover_text
+    fig.update_traces(mode='lines+text', selector=dict(type='scatter', text=edge_trace.text))
+    
+    return fig
+
+def file_input_callback(event):
+    if file_input.value is not None:
+        try:
+            file_bytes = io.BytesIO(file_input.value)
+            G = nx.read_graphml(file_bytes)
+            fig = visualize_graph(G)
+            plot_pane.object = fig
+        except Exception as e:
+            plot_pane.object = None
+            pn.state.notifications.error(f"Failed to load graph: {e}")
+
+file_input.param.watch(file_input_callback, 'value')
+
+app = pn.Column(
+    "# GraphML Viewer",
+    "Upload a GraphML file to visualize the graph.",
+    file_input,
+    plot_pane,
+    sizing_mode='stretch_width'
+)
+
+print("Starting GraphML Viewer...")
+app.servable()
