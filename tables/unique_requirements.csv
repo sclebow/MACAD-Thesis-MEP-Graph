@@ -1,0 +1,487 @@
+Attribute Name,Description,Unit Type,Unit Description,Example Value 1,Example Value 2,Required for
+Color rendering index,Color rendering index of the component,Float,CRI,80,90,+ACI-Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Lighting beacons
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Area floodlights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Apron elevated lights
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Infrared lamps
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Emergency luminaires+ACI-
+Color temperature,Color temperature of the component,Integer,Kelvin (K),3000,4000,+ACI-Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Lighting beacons
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Area floodlights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Apron elevated lights
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Infrared lamps
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Emergency luminaires+ACI-
+Connector types,Types of connectors used by the component,String,Connector types,Plug,Terminal,+ACI-Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Surface and concealed wiring enclosures
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Service outlet poles
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points+ACI-
+Contractor,Name of the contractor responsible for the installation,String,Contractor name,ABC Electrical,Contractor Name,+ACI-Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage cables
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Low+AC0-voltage switches
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Power busbar trunking
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Busbar trunking tap+AC0-off units+ACI-
+Cross+AC0-section,Cross+AC0-section of the component,String,Cross+AC0-section type,Round,Square,+ACI-Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Power busbar trunking
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage cables
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Low+AC0-voltage switches+ACI-
+End 1,Type of connection at the first end,String,Connector type,Plug,Terminal,+ACI-Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage cables
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Low+AC0-voltage switches
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Power busbar trunking+ACI-
+End 2,Type of connection at the second end,String,Connector type,Plug,Terminal,+ACI-Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage cables
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Low+AC0-voltage switches
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Power busbar trunking+ACI-
+Function,Function of the component,String,Function,Lighting,Power Distribution,+ACI-Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable trays
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable protection products
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable brackets
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable brackets
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable ladders
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable ladders+ACI-
+Identifier,Unique identifier for the component,String,Component identifier,Component 1,Panelboard+AF8-001,+ACI-Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage dry+AC0-type power transformers
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage liquid+AC0-immersed power transformers
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Power conditioning equipment
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Energy meters
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Batteries
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Uninterruptible power supply (UPS) units
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Lighting beacons
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Columns and column accessories
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Area floodlights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Apron elevated lights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Light switches
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Infrared lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Occupancy detectors
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Standard socket outlets
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Low+AC0-voltage cables
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Connection cables
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Surface and concealed wiring enclosures
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Service outlet poles
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards+ACI-
++ACI-Installation method (mounting plate, DIN rail)+ACI-,Installation method used for the component,String,Installation method,Mounting Plate,DIN Rail,Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Electrical protective devices
+Live/Dead,Indicates whether the component is live or dead,String,Status,Live,Dead,+ACI-Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage cables
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Low+AC0-voltage switches+ACI-
+Load capacity,Load capacity of the component,Float,Kilograms (kg),1000,2000,+ACI-Power Supply +AC0- Cable arrangement +AC0- Concrete manhole systems +AC0- Concrete manhole base units
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Leg supports
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Structural bearings+ACI-
+Luminous flux,Luminous flux of the component,Integer,Lumens (lm),1000,2000,+ACI-Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Lighting beacons
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Area floodlights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Apron elevated lights
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Infrared lamps
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Emergency luminaires+ACI-
+Manufacturer,Manufacturer of the component,String,Manufacturer name,Siemens,Schneider Electric,+ACI-Power Supply +AC0- Power transmission +AC0- Sanitary appliance systems +AC0- Electric boilers
+Power Supply +AC0- Power transmission +AC0- Fossil fuel power generation systems +AC0- Generator sets
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Photovoltaic modules
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Inverters
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Distribution boards
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage dry+AC0-type power transformers
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage liquid+AC0-immersed power transformers
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Power conditioning equipment
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Energy meters
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Batteries
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Uninterruptible power supply (UPS) units
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Lighting beacons
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Area floodlights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Apron elevated lights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Light switches
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Infrared lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Occupancy detectors
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Standard socket outlets
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Low+AC0-voltage cables
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Windsocks
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Power busbar trunking
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Busbar trunking tap+AC0-off units
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Surface and concealed wiring enclosures
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Service outlet poles
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points+ACI-
+Masked: yes/no,Indicates whether the component is masked,String,Yes/No,Yes,No,+ACI-Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes+ACI-
+Material,Material of the component,String,Material type,Steel,Aluminum,+ACI-Power Supply +AC0- Grounding and lightning protection +AC0- Lightning protection systems +AC0- Earth rods
+Power Supply +AC0- Grounding and lightning protection +AC0- Lightning protection systems +AC0- Lightning protection and earthing components
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Power busbar trunking
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable trays
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable protection products
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Columns and column accessories
+Power Supply +AC0- Cable arrangement +AC0- Concrete manhole systems +AC0- Concrete manhole base units
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable brackets
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable brackets
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable ladders
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable ladders
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Leg supports
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Structural bearings+ACI-
+Mounting height,Mounting height of the component,Float,Meters (m),2.5,3,+ACI-Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Lighting beacons
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Area floodlights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Apron elevated lights
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Infrared lamps
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Emergency luminaires+ACI-
+Mounting method,Method used to mount the component,String,Mounting method,Floor Mounted,Wall Mounted,+ACI-Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points+ACI-
+Nominal current,Nominal current of the component,Float,Amperes (A),10,15,+ACI-Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Power busbar trunking
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Power conditioning equipment
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Energy meters
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Batteries
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Light switches
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Standard socket outlets
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Low+AC0-voltage cables
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Power busbar trunking
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Busbar trunking tap+AC0-off units
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes+ACI-
+Nominal performance,Nominal performance of the component,String,Performance rating,10 kW,15 A,+ACI-Power Supply +AC0- Power transmission +AC0- Sanitary appliance systems +AC0- Electric boilers
+Power Supply +AC0- Power transmission +AC0- Fossil fuel power generation systems +AC0- Generator sets
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Photovoltaic modules
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Inverters
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage dry+AC0-type power transformers
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage liquid+AC0-immersed power transformers
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Uninterruptible power supply (UPS) units+ACI-
+Number of arms,Number of arms or branches in the component,Integer,Count,1,2,Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points
+Number of cards,Number of cards in the control or indicator panel,Integer,Count,1,2,+ACI-Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Control and indicator panels+ACI-
+Operating company/department,Name of the company or department responsible for the component,String,Company/Department name,Facilities Management,Electrical Department,+ACI-Power Supply +AC0- Power transmission +AC0- Sanitary appliance systems +AC0- Electric boilers
+Power Supply +AC0- Power transmission +AC0- Fossil fuel power generation systems +AC0- Generator sets
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Photovoltaic modules
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Inverters
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Distribution boards
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage dry+AC0-type power transformers
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage liquid+AC0-immersed power transformers
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage cables
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Uninterruptible power supply (UPS) units
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Low+AC0-voltage switches
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points+ACI-
+Outdoor/Indoor,Indicates whether the component is suitable for outdoor or indoor use,Boolean,True/False,TRUE,FALSE,+ACI-Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points+ACI-
+Owner,Name of the owner of the component,String,Owner name,Building Management,Owner Name,+ACI-Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage cables
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Low+AC0-voltage switches
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points+ACI-
+Performance,Performance characteristics of the component,String,Performance description,High Efficiency,Low Power Consumption,+ACI-Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Lighting beacons
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Area floodlights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Apron elevated lights
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Infrared lamps
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points+ACI-
+Physical Height,Height of the component,Float,mm,500,500,+ACI-Power Supply +AC0- Grounding and lightning protection +AC0- Lightning protection systems +AC0- Earth rods
+Power Supply +AC0- Grounding and lightning protection +AC0- Lightning protection systems +AC0- Lightning protection and earthing components
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable trays
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable protection products
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Power conditioning equipment
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Batteries
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Columns and column accessories
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Cable arrangement +AC0- Concrete manhole systems +AC0- Concrete manhole base units
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable brackets
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable brackets
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable ladders
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable ladders
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Surface and concealed wiring enclosures
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Service outlet poles
+Power Supply +AC0- Power transmission +AC0- Sanitary appliance systems +AC0- Electric boilers
+Power Supply +AC0- Power transmission +AC0- Fossil fuel power generation systems +AC0- Generator sets
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Photovoltaic modules
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Inverters
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage dry+AC0-type power transformers
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage liquid+AC0-immersed power transformers
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Uninterruptible power supply (UPS) units
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points+ACI-
+Physical Length,Length of the Component,Float,mm,10000,2000,+ACI-Power Supply +AC0- Grounding and lightning protection +AC0- Lightning protection systems +AC0- Earth rods
+Power Supply +AC0- Grounding and lightning protection +AC0- Lightning protection systems +AC0- Lightning protection and earthing components
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable trays
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable protection products
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Power conditioning equipment
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Batteries
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Columns and column accessories
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Cable arrangement +AC0- Concrete manhole systems +AC0- Concrete manhole base units
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable brackets
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable brackets
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable ladders
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable ladders
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Surface and concealed wiring enclosures
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Service outlet poles
+Power Supply +AC0- Power transmission +AC0- Sanitary appliance systems +AC0- Electric boilers
+Power Supply +AC0- Power transmission +AC0- Fossil fuel power generation systems +AC0- Generator sets
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Photovoltaic modules
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Inverters
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage dry+AC0-type power transformers
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage liquid+AC0-immersed power transformers
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Uninterruptible power supply (UPS) units
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points+ACI-
+Physical Width,Width of the component,Float,mm,1000,500,+ACI-Power Supply +AC0- Grounding and lightning protection +AC0- Lightning protection systems +AC0- Earth rods
+Power Supply +AC0- Grounding and lightning protection +AC0- Lightning protection systems +AC0- Lightning protection and earthing components
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable trays
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable protection products
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Power conditioning equipment
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Batteries
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Columns and column accessories
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Cable arrangement +AC0- Concrete manhole systems +AC0- Concrete manhole base units
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable brackets
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable brackets
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable ladders
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable ladders
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Surface and concealed wiring enclosures
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Service outlet poles
+Power Supply +AC0- Power transmission +AC0- Sanitary appliance systems +AC0- Electric boilers
+Power Supply +AC0- Power transmission +AC0- Fossil fuel power generation systems +AC0- Generator sets
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Photovoltaic modules
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Inverters
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage dry+AC0-type power transformers
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage liquid+AC0-immersed power transformers
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Uninterruptible power supply (UPS) units
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points+ACI-
+Short+AC0-circuit strength,Short+AC0-circuit strength of the component,Float,Kiloamperes (kA),10,22,+ACI-Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Distribution boards
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage dry+AC0-type power transformers
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage liquid+AC0-immersed power transformers
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Uninterruptible power supply (UPS) units
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Busbar trunking tap+AC0-off units
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes+ACI-
+Socket,Type of socket used by the component,String,Socket type,E27,GU10,+ACI-Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Lighting beacons
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Area floodlights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Apron elevated lights
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Infrared lamps
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Emergency luminaires+ACI-
+Type,Type of the component,String,Component type,Transformer,Panelboard,+ACI-Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Photovoltaic modules
+Power Supply +AC0- Grounding and lightning protection +AC0- Lightning protection systems +AC0- Lightning protection and earthing components
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage dry+AC0-type power transformers
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage liquid+AC0-immersed power transformers
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable trays
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable protection products
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Uninterruptible power supply (UPS) units
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Cable arrangement +AC0- Concrete manhole systems +AC0- Concrete manhole base units
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable brackets
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable brackets
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Cable ladders
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable ladders
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Windsocks
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Power busbar trunking
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Busbar trunking tap+AC0-off units
+Power Supply +AC0- Cable arrangement +AC0- Low+AC0-voltage systems +AC0- Cable management and accessories
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Surface and concealed wiring enclosures
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Service outlet poles+ACI-
+Lamp Type,Type of the component,String,Lamp type,LED,Metal+AC0-halide,+ACI-Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Lighting beacons
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Area floodlights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Apron elevated lights
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Infrared lamps
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Emergency luminaires+ACI-
+Voltage,Voltage of the component,Float,Volts (V),120,240,+ACI-Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage dry+AC0-type power transformers
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage liquid+AC0-immersed power transformers
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Power busbar trunking
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Batteries
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Uninterruptible power supply (UPS) units
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Area floodlights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Apron elevated lights
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Infrared lamps
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Control and indicator panels+ACI-
+Warranty,Warranty period of the component,Float,Years,5,10,+ACI-Power Supply +AC0- Power transmission +AC0- Sanitary appliance systems +AC0- Electric boilers
+Power Supply +AC0- Power transmission +AC0- Fossil fuel power generation systems +AC0- Generator sets
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Photovoltaic modules
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Inverters
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Distribution boards
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage dry+AC0-type power transformers
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage liquid+AC0-immersed power transformers
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Power conditioning equipment
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Energy meters
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Batteries
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Uninterruptible power supply (UPS) units
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Lighting beacons
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Area floodlights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Apron elevated lights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Light switches
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Infrared lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Occupancy detectors
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Surface and concealed wiring enclosures
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Service outlet poles
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points+ACI-
+Wheeled (yes/no),Indicates whether the component is wheeled,Boolean,Yes/No,TRUE,FALSE,Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Electrical protective devices
+Year of installation,Year the component was installed,Integer,Year,2020,2021,+ACI-Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage cables
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Low+AC0-voltage switches
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Power busbar trunking
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Busbar trunking tap+AC0-off units
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +//0- Windsocks+ACI-
+Year of manufacture,Year the component was manufactured,Integer,Year,2020,2021,+ACI-Power Supply +AC0- Power transmission +AC0- Sanitary appliance systems +AC0- Electric boilers
+Power Supply +AC0- Power transmission +AC0- Fossil fuel power generation systems +AC0- Generator sets
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Photovoltaic modules
+Power Supply +AC0- Photovoltaic systems +AC0- Grid+AC0-connected photovoltaic systems +AC0- Inverters
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Distribution boards
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage dry+AC0-type power transformers
+Power Supply +AC0- Transformers +AC0- High+AC0-voltage systems +AC0- High+AC0-voltage liquid+AC0-immersed power transformers
+Power Supply +AC0- Power transmission +AC0- High+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Cable arrangement +AC0- High+AC0-voltage systems +AC0- Power busbar trunking
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Master distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Slave distribution boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Electrical protective devices
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Power conditioning equipment
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage systems +AC0- Energy meters
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Batteries
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Distribution boards
+Power Supply +AC0- Power transmission +AC0- Uninterruptible power supply systems +AC0- Uninterruptible power supply (UPS) units
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- Obstacle beacon systems +AC0- Lighting beacons
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Area floodlights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Apron elevated lights
+Power Supply +AC0- Lighting +AC0- External lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Distribution boards
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Lamps
+Power Supply +AC0- Lighting +AC0- General lighting systems +AC0- Infrared lamps
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Central battery+AC0-supplied emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Emergency luminaires
+Power Supply +AC0- Lighting +AC0- Self+AC0-contained emergency lighting systems +AC0- Control and indicator panels
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Power busbar trunking
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Busbar trunking tap+AC0-off units
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electrical connection boxes
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Surface and concealed wiring enclosures
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Service outlet poles
+Power Supply +AC0- Power transmission +AC0- Low+AC0-voltage distribution systems +AC0- Electric vehicle charging points+ACI-
