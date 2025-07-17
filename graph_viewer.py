@@ -7,6 +7,7 @@ import io
 import networkx as nx
 import plotly.graph_objects as go
 import os
+import pandas as pd
 
 pn.extension('plotly')
 pn.extension('jsoneditor')
@@ -180,27 +181,96 @@ def visualize_graph_three_d(graph):
 
     return fig
 
-def update_node_dropdown(graph):
+
+def update_dropdowns(graph):
     node_names = list(graph.nodes())
+    edge_names = [f"{u} - {v}" for u, v in graph.edges()]
     node_dropdown.options = node_names
+    edge_dropdown.options = edge_names
+    # Set values only after both options are set
     if node_names:
         node_dropdown.value = node_names[0]
         update_node_info(node_names[0], graph)
     else:
         node_dropdown.value = None
         node_info_pane.object = "No nodes available."
+    if edge_names:
+        edge_dropdown.value = edge_names[0]
+        # Directly update info pane instead of calling callback
+        edge_str = edge_names[0]
+        if edge_str and " - " in edge_str:
+            u, v = edge_str.split(" - ", 1)
+            edge_tuple = (u, v)
+            if edge_tuple in graph.edges:
+                attrs = graph.edges[edge_tuple]
+                info = f"**Edge:** {edge_tuple}"
+                edge_info_pane.object = info
+                # Display attributes as editable table
+                if attrs:
+                    df = pd.DataFrame(list(attrs.items()), columns=["Attribute", "Value"])
+                    df = df[["Attribute", "Value"]]
+                    edge_attr_df.value = df.copy()
+                else:
+                    edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
+            else:
+                edge_info_pane.object = "No edge selected."
+                edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
+        else:
+            edge_info_pane.object = "No edge selected."
+            edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
+    else:
+        edge_dropdown.value = None
+        edge_info_pane.object = "No edges available."
+        edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
 
 def update_node_info(node, graph):
     if node is not None and node in graph.nodes:
         attrs = graph.nodes[node]
-        info = f"**Node:** {node}\n" + "\n".join([f"- {k}: {v}" for k, v in attrs.items()])
+        info = f"**Node:** {node}"
         node_info_pane.object = info
+        # Display attributes as editable table
+        if attrs:
+            df = pd.DataFrame(list(attrs.items()), columns=["Attribute", "Value"])
+            # Ensure only 'Attribute' and 'Value' columns are present
+            df = df[["Attribute", "Value"]]
+            node_attr_df.value = df.copy()
+        else:
+            node_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
     else:
         node_info_pane.object = "No node selected."
+        node_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
 
 def node_dropdown_callback(event):
     if current_graph[0] is not None:
         update_node_info(event.new, current_graph[0])
+
+def edge_dropdown_callback(event):
+    if current_graph[0] is not None:
+        edge_str = event.new
+        if edge_str and " - " in edge_str:
+            u, v = edge_str.split(" - ", 1)
+            edge_tuple = (u, v)
+            if edge_tuple in current_graph[0].edges:
+                attrs = current_graph[0].edges[edge_tuple]
+                info = f"**Edge:** {edge_tuple}"
+                edge_info_pane.object = info
+                # Display attributes as editable table
+                if attrs:
+                    df = pd.DataFrame(list(attrs.items()), columns=["Attribute", "Value"])
+                    df = df[["Attribute", "Value"]]
+                    edge_attr_df.value = df.copy()
+                else:
+                    edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
+            else:
+                edge_info_pane.object = "No edge selected."
+                edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
+        else:
+            edge_info_pane.object = "No edge selected."
+            edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
+    else:
+        edge_info_pane.object = "No graph loaded."
+        edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
+
 
 def file_input_callback(event):
     if file_input.value is not None:
@@ -210,11 +280,13 @@ def file_input_callback(event):
             fig = visualize_graph_two_d(G)
             plot_pane.object = fig
             current_graph[0] = G
-            update_node_dropdown(G)
+            update_dropdowns(G)
         except Exception as e:
             plot_pane.object = None
             node_dropdown.options = []
+            edge_dropdown.options = []
             node_info_pane.object = "Failed to load graph."
+            edge_info_pane.object = "Failed to load graph."
             pn.state.notifications.error(f"Failed to load graph: {e}")
 
 def autoload_example_graph():
@@ -228,12 +300,14 @@ def autoload_example_graph():
                 three_d_fig = visualize_graph_three_d(G)
                 three_d_pane.object = three_d_fig
                 current_graph[0] = G
-                update_node_dropdown(G)
+                update_dropdowns(G)
         except Exception as e:
             plot_pane.object = None
             three_d_pane.object = None
             node_dropdown.options = []
+            edge_dropdown.options = []
             node_info_pane.object = "Failed to autoload graph."
+            edge_info_pane.object = "Failed to autoload graph."
             print(f"Failed to autoload example graph: {e}")
 
 
@@ -252,18 +326,61 @@ file_input.param.watch(file_input_callback, 'value')
 app.append(pn.Column(
     "### Load MEP Graph File",
     file_input,
+    sizing_mode='stretch_width'
 ))
 
+
 # Node selection dropdown and info
+selection_table_height = 400
 node_dropdown = pn.widgets.Select(name="Select Node", options=[])
 node_info_pane = pn.pane.Markdown("No node selected.")
+# Editable DataFrame for node attributes
+node_attr_df = pn.widgets.DataFrame(
+    pd.DataFrame(columns=["Attribute", "Value"]),
+    editors={"Attribute": None, "Value": "string"},
+    height=selection_table_height,
+    show_index=False,
+    
+)
 current_graph = [None]  # Mutable container for current graph
+
+def node_attr_df_callback(event):
+    node = node_dropdown.value
+    if node and current_graph[0] is not None:
+        # Convert DataFrame to dict and update node attributes
+        df = event.new
+        attrs = dict(zip(df["Attribute"], df["Value"]))
+        for k, v in attrs.items():
+            current_graph[0].nodes[node][k] = v
+        # Do NOT call update_node_info here to avoid recursion
+node_attr_df.param.watch(node_attr_df_callback, 'value')
 node_dropdown.param.watch(node_dropdown_callback, 'value')
-app.append(pn.Column(
-    "### Node Selection",
-    node_dropdown,
-    node_info_pane,
-))
+
+# Add a dropdown for selecting an edge from the graph
+edge_dropdown = pn.widgets.Select(name="Select Edge", options=[])
+edge_info_pane = pn.pane.Markdown("No edge selected.")
+edge_dropdown.param.watch(edge_dropdown_callback, 'value')
+
+# Editable DataFrame for edge attributes
+edge_attr_df = pn.widgets.DataFrame(
+    pd.DataFrame(columns=["Attribute", "Value"]),
+    editors={"Attribute": None, "Value": "string"},
+    height=selection_table_height,
+    show_index=False,
+)
+
+def edge_attr_df_callback(event):
+    edge_str = edge_dropdown.value
+    if edge_str and current_graph[0] is not None and " - " in edge_str:
+        u, v = edge_str.split(" - ", 1)
+        edge_tuple = (u, v)
+        if edge_tuple in current_graph[0].edges:
+            df = event.new
+            attrs = dict(zip(df["Attribute"], df["Value"]))
+            for k, v in attrs.items():
+                current_graph[0].edges[edge_tuple][k] = v
+            # Do NOT call edge_dropdown_callback here to avoid recursion
+edge_attr_df.param.watch(edge_attr_df_callback, 'value')
 
 # Placeholder for the plot
 two_d_column = pn.Column()
@@ -283,8 +400,15 @@ autoload_example_graph()
 
 # Create a row to show both plots side by side
 plots_row = pn.Row(two_d_column, three_d_column, sizing_mode='stretch_width')
-
 app.append(plots_row)
+
+node_column = pn.Column("### Node Selection", node_dropdown, node_info_pane, node_attr_df, sizing_mode='stretch_width')
+
+edge_column = pn.Column("### Edge Selection", edge_dropdown, edge_info_pane, edge_attr_df, sizing_mode='stretch_width')
+
+# Create a row for selections
+selection_row = pn.Row(node_column, edge_column, sizing_mode='stretch_width')
+app.append(selection_row)
 
 print("Starting MEP System Graph Viewer...")
 app.servable()
