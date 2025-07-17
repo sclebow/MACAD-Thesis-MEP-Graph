@@ -337,10 +337,17 @@ node_info_pane = pn.pane.Markdown("No node selected.")
 # Editable DataFrame for node attributes
 node_attr_df = pn.widgets.DataFrame(
     pd.DataFrame(columns=["Attribute", "Value"]),
-    editors={"Attribute": None, "Value": "string"},
+    editors={
+        "Attribute": None,
+        "Value": {
+            "type": "string",
+            "x": "float",
+            "y": "float",
+            "z": "float"
+        }
+    },
     height=selection_table_height,
     show_index=False,
-    
 )
 current_graph = [None]  # Mutable container for current graph
 
@@ -351,8 +358,17 @@ def node_attr_df_callback(event):
         df = event.new
         attrs = dict(zip(df["Attribute"], df["Value"]))
         for k, v in attrs.items():
-            current_graph[0].nodes[node][k] = v
-        # Do NOT call update_node_info here to avoid recursion
+            # Cast x, y, z to float if possible
+            if k in ["x", "y", "z"]:
+                try:
+                    current_graph[0].nodes[node][k] = float(v)
+                except Exception:
+                    current_graph[0].nodes[node][k] = v
+            else:
+                current_graph[0].nodes[node][k] = v
+        # Refresh visualizations after node attribute edit
+        plot_pane.object = visualize_graph_two_d(current_graph[0])
+        three_d_pane.object = visualize_graph_three_d(current_graph[0])
 node_attr_df.param.watch(node_attr_df_callback, 'value')
 node_dropdown.param.watch(node_dropdown_callback, 'value')
 
@@ -379,7 +395,9 @@ def edge_attr_df_callback(event):
             attrs = dict(zip(df["Attribute"], df["Value"]))
             for k, v in attrs.items():
                 current_graph[0].edges[edge_tuple][k] = v
-            # Do NOT call edge_dropdown_callback here to avoid recursion
+            # Refresh visualizations after edge attribute edit
+            plot_pane.object = visualize_graph_two_d(current_graph[0])
+            three_d_pane.object = visualize_graph_three_d(current_graph[0])
 edge_attr_df.param.watch(edge_attr_df_callback, 'value')
 
 # Placeholder for the plot
