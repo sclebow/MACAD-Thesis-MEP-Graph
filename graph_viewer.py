@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import os
 
 pn.extension('plotly')
+pn.extension('jsoneditor')
 
 def visualize_graph_two_d(graph):
     pos = nx.spring_layout(graph)
@@ -179,6 +180,28 @@ def visualize_graph_three_d(graph):
 
     return fig
 
+def update_node_dropdown(graph):
+    node_names = list(graph.nodes())
+    node_dropdown.options = node_names
+    if node_names:
+        node_dropdown.value = node_names[0]
+        update_node_info(node_names[0], graph)
+    else:
+        node_dropdown.value = None
+        node_info_pane.object = "No nodes available."
+
+def update_node_info(node, graph):
+    if node is not None and node in graph.nodes:
+        attrs = graph.nodes[node]
+        info = f"**Node:** {node}\n" + "\n".join([f"- {k}: {v}" for k, v in attrs.items()])
+        node_info_pane.object = info
+    else:
+        node_info_pane.object = "No node selected."
+
+def node_dropdown_callback(event):
+    if current_graph[0] is not None:
+        update_node_info(event.new, current_graph[0])
+
 def file_input_callback(event):
     if file_input.value is not None:
         try:
@@ -186,8 +209,12 @@ def file_input_callback(event):
             G = nx.read_graphml(file_bytes)
             fig = visualize_graph_two_d(G)
             plot_pane.object = fig
+            current_graph[0] = G
+            update_node_dropdown(G)
         except Exception as e:
             plot_pane.object = None
+            node_dropdown.options = []
+            node_info_pane.object = "Failed to load graph."
             pn.state.notifications.error(f"Failed to load graph: {e}")
 
 def autoload_example_graph():
@@ -200,9 +227,13 @@ def autoload_example_graph():
                 plot_pane.object = fig
                 three_d_fig = visualize_graph_three_d(G)
                 three_d_pane.object = three_d_fig
+                current_graph[0] = G
+                update_node_dropdown(G)
         except Exception as e:
             plot_pane.object = None
             three_d_pane.object = None
+            node_dropdown.options = []
+            node_info_pane.object = "Failed to autoload graph."
             print(f"Failed to autoload example graph: {e}")
 
 
@@ -221,6 +252,17 @@ file_input.param.watch(file_input_callback, 'value')
 app.append(pn.Column(
     "### Load MEP Graph File",
     file_input,
+))
+
+# Node selection dropdown and info
+node_dropdown = pn.widgets.Select(name="Select Node", options=[])
+node_info_pane = pn.pane.Markdown("No node selected.")
+current_graph = [None]  # Mutable container for current graph
+node_dropdown.param.watch(node_dropdown_callback, 'value')
+app.append(pn.Column(
+    "### Node Selection",
+    node_dropdown,
+    node_info_pane,
 ))
 
 # Placeholder for the plot
