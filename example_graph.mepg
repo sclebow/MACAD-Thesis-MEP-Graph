@@ -9,6 +9,25 @@
   <key id="x" for="node" attr.name="x" attr.type="double"/>
   <key id="y" for="node" attr.name="y" attr.type="double"/>
   <key id="z" for="node" attr.name="z" attr.type="double"/>
+  <key id="Identifier" for="node" attr.name="Identifier" attr.type="string"/>
+  <key id="Manufacturer" for="node" attr.name="Manufacturer" attr.type="string"/>
+  <key id="Nominal_performance" for="node" attr.name="Nominal_performance" attr.type="string"/>
+  <key id="Short-circuit_strength" for="node" attr.name="Short-circuit_strength" attr.type="string"/>
+  <key id="Physical_Height" for="node" attr.name="Physical_Height" attr.type="string"/>
+  <key id="Physical_Length" for="node" attr.name="Physical_Length" attr.type="string"/>
+  <key id="Physical_Width" for="node" attr.name="Physical_Width" attr.type="string"/>
+  <key id="Type" for="node" attr.name="Type" attr.type="string"/>
+  <key id="Voltage" for="node" attr.name="Voltage" attr.type="string"/>
+  <key id="Warranty" for="node" attr.name="Warranty" attr.type="string"/>
+  <key id="Year_of_manufacture" for="node" attr.name="Year_of_manufacture" attr.type="string"/>
+  <key id="Year_of_installation" for="node" attr.name="Year_of_installation" attr.type="string"/>
+  <key id="Operating_company_department" for="node" attr.name="Operating_company_department" attr.type="string"/>
+  <key id="Owner" for="node" attr.name="Owner" attr.type="string"/>
+  <key id="Nominal_current" for="node" attr.name="Nominal_current" attr.type="string"/>
+  <key id="Masked_yes_no" for="node" attr.name="Masked_yes_no" attr.type="string"/>
+  <key id="Mounting_method" for="node" attr.name="Mounting_method" attr.type="string"/>
+  <key id="Outdoor_Indoor" for="node" attr.name="Outdoor_Indoor" attr.type="string"/>
+  <key id="Number_of_cards" for="node" attr.name="Number_of_cards" attr.type="string"/>
   <key id="distribution_upstream_voltage" for="node" attr.name="distribution_upstream_voltage" attr.type="double"/>
   <key id="distribution_upstream_current_rating" for="node" attr.name="distribution_upstream_current_rating" attr.type="double"/>
   <key id="distribution_upstream_phase_number" for="node" attr.name="distribution_upstream_phase_number" attr.type="int"/>
@@ -34,10 +53,22 @@
     
     <!-- Utility Transformer -->
     <node id="transformer_001">
-      <data key="type">Transformer</data>
+      <data key="type">Power Supply - Transformers - High-voltage systems - High-voltage dry-type power transformers</data>
       <data key="x">0.0</data>
       <data key="y">0.0</data>
       <data key="z">0.0</data>
+      <data key="Identifier">Component 1</data>
+      <data key="Manufacturer">Siemens</data>
+      <data key="Nominal_performance">1000 kVA</data>
+      <data key="Short-circuit_strength">10 kA</data>
+      <data key="Physical_Height">2.5 m</data>
+      <data key="Physical_Length">3 m</data>
+      <data key="Physical_Width">2 m</data>
+      <data key="Type">Dry Type</data>
+      <data key="Voltage">13.8 kV</data>
+      <data key="Warranty">5 years</data>
+      <data key="Year_of_manufacture">2023</data>
+      <data key="Year_of_installation">2023</data>
       <data key="distribution_upstream_voltage">13800.0</data>
       <data key="distribution_upstream_current_rating">126.0</data>
       <data key="distribution_upstream_phase_number">3</data>
@@ -51,10 +82,23 @@
     
     <!-- Main Switchboard -->
     <node id="switchboard_001">
-      <data key="type">Switchboard</data>
+      <data key="type">Power Supply - Power transmission - High-voltage systems - Distribution boards</data>
       <data key="x">10.0</data>
       <data key="y">5.0</data>
       <data key="z">0.0</data>
+      <data key="Identifier">Panelboard-001</data>
+      <data key="Manufacturer">Schneider Electric</data>
+      <data key="Operating_company_department">Facilities</data>
+      <data key="Owner">School District</data>
+      <data key="Nominal_current">10 A</data>
+      <data key="Short-circuit_strength">10 kA</data>
+      <data key="Physical_Height">2.5 m</data>
+      <data key="Physical_Length">3 m</data>
+      <data key="Physical_Width">2 m</data>
+      <data key="Warranty">5 years</data>
+      <data key="Year_of_manufacture">2023</data>
+      <data key="Year_of_installation">2023</data>
+      <data key="Outdoor_Indoor">Indoor</data>
       <data key="distribution_upstream_voltage">480.0</data>
       <data key="distribution_upstream_current_rating">3000.0</data>
       <data key="distribution_upstream_phase_number">3</data>
@@ -68,10 +112,25 @@
     
     <!-- Classroom Wing Panelboard -->
     <node id="panelboard_001">
-      <data key="type">Panelboard</data>
+      <data key="type">Power Supply - Lighting - General lighting systems - Distribution boards</data>
       <data key="x">50.0</data>
       <data key="y">20.0</data>
       <data key="z">0.0</data>
+      <data key="Identifier">Panelboard-001</data>
+      <data key="Manufacturer">Schneider Electric</data>
+      <data key="Masked_yes_no">Yes</data>
+      <data key="Mounting_method">Wall Mounted</data>
+      <data key="Nominal_current">10 A</data>
+      <data key="Short-circuit_strength">10 kA</data>
+      <data key="Physical_Height">2.5 m</data>
+      <data key="Physical_Length">3 m</data>
+      <data key="Physical_Width">2 m</data>
+      <data key="Warranty">5 years</data>
+      <data key="Year_of_manufacture">2023</data>
+      <data key="Year_of_installation">2023</data>
+      <data key="Operating_company_department">Facilities</data>
+      <data key="Owner">School District</data>
+      <data key="Outdoor_Indoor">Indoor</data>
       <data key="distribution_upstream_voltage">480.0</data>
       <data key="distribution_upstream_current_rating">400.0</data>
       <data key="distribution_upstream_phase_number">3</data>
@@ -85,10 +144,25 @@
     
     <!-- Gymnasium Panelboard -->
     <node id="panelboard_002">
-      <data key="type">Panelboard</data>
+      <data key="type">Power Supply - Lighting - General lighting systems - Distribution boards</data>
       <data key="x">25.0</data>
       <data key="y">80.0</data>
       <data key="z">0.0</data>
+      <data key="Identifier">Panelboard-001</data>
+      <data key="Manufacturer">Schneider Electric</data>
+      <data key="Masked_yes_no">Yes</data>
+      <data key="Mounting_method">Wall Mounted</data>
+      <data key="Nominal_current">10 A</data>
+      <data key="Short-circuit_strength">10 kA</data>
+      <data key="Physical_Height">2.5 m</data>
+      <data key="Physical_Length">3 m</data>
+      <data key="Physical_Width">2 m</data>
+      <data key="Warranty">5 years</data>
+      <data key="Year_of_manufacture">2023</data>
+      <data key="Year_of_installation">2023</data>
+      <data key="Operating_company_department">Facilities</data>
+      <data key="Owner">School District</data>
+      <data key="Outdoor_Indoor">Indoor</data>
       <data key="distribution_upstream_voltage">480.0</data>
       <data key="distribution_upstream_current_rating">600.0</data>
       <data key="distribution_upstream_phase_number">3</data>
@@ -102,10 +176,22 @@
     
     <!-- Kitchen Transformer -->
     <node id="transformer_002">
-      <data key="type">Transformer</data>
+      <data key="type">Power Supply - Transformers - High-voltage systems - High-voltage dry-type power transformers</data>
       <data key="x">15.0</data>
       <data key="y">45.0</data>
       <data key="z">0.0</data>
+      <data key="Identifier">Component 1</data>
+      <data key="Manufacturer">Siemens</data>
+      <data key="Nominal_performance">1000 kVA</data>
+      <data key="Short-circuit_strength">10 kA</data>
+      <data key="Physical_Height">2.5 m</data>
+      <data key="Physical_Length">3 m</data>
+      <data key="Physical_Width">2 m</data>
+      <data key="Type">Dry Type</data>
+      <data key="Voltage">13.8 kV</data>
+      <data key="Warranty">5 years</data>
+      <data key="Year_of_manufacture">2023</data>
+      <data key="Year_of_installation">2023</data>
       <data key="distribution_upstream_voltage">480.0</data>
       <data key="distribution_upstream_current_rating">300.0</data>
       <data key="distribution_upstream_phase_number">3</data>
@@ -119,10 +205,25 @@
     
     <!-- Kitchen Panelboard -->
     <node id="panelboard_003">
-      <data key="type">Panelboard</data>
+      <data key="type">Power Supply - Lighting - General lighting systems - Distribution boards</data>
       <data key="x">16.0</data>
       <data key="y">46.0</data>
       <data key="z">0.0</data>
+      <data key="Identifier">Panelboard-001</data>
+      <data key="Manufacturer">Schneider Electric</data>
+      <data key="Masked_yes_no">Yes</data>
+      <data key="Mounting_method">Wall Mounted</data>
+      <data key="Nominal_current">10 A</data>
+      <data key="Short-circuit_strength">10 kA</data>
+      <data key="Physical_Height">2.5 m</data>
+      <data key="Physical_Length">3 m</data>
+      <data key="Physical_Width">2 m</data>
+      <data key="Warranty">5 years</data>
+      <data key="Year_of_manufacture">2023</data>
+      <data key="Year_of_installation">2023</data>
+      <data key="Operating_company_department">Facilities</data>
+      <data key="Owner">School District</data>
+      <data key="Outdoor_Indoor">Indoor</data>
       <data key="distribution_upstream_voltage">208.0</data>
       <data key="distribution_upstream_current_rating">694.0</data>
       <data key="distribution_upstream_phase_number">3</data>
