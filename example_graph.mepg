@@ -12,22 +12,22 @@
   <key id="Identifier" for="node" attr.name="Identifier" attr.type="string"/>
   <key id="Manufacturer" for="node" attr.name="Manufacturer" attr.type="string"/>
   <key id="Nominal_performance" for="node" attr.name="Nominal_performance" attr.type="string"/>
-  <key id="Short-circuit_strength" for="node" attr.name="Short-circuit_strength" attr.type="string"/>
+  <key id="Short-circuit_strength_kA" for="node" attr.name="Short-circuit_strength_kA" attr.type="float"/>
   <key id="Physical_Height_mm" for="node" attr.name="Physical_Height_mm" attr.type="float"/>
   <key id="Physical_Length_mm" for="node" attr.name="Physical_Length_mm" attr.type="float"/>
   <key id="Physical_Width_mm" for="node" attr.name="Physical_Width_mm" attr.type="float"/>
   <key id="Type" for="node" attr.name="Type" attr.type="string"/>
   <key id="Voltage" for="node" attr.name="Voltage" attr.type="string"/>
-  <key id="Warranty" for="node" attr.name="Warranty" attr.type="string"/>
-  <key id="Year_of_manufacture" for="node" attr.name="Year_of_manufacture" attr.type="string"/>
-  <key id="Year_of_installation" for="node" attr.name="Year_of_installation" attr.type="string"/>
+  <key id="Warranty_months" for="node" attr.name="Warranty_months" attr.type="int"/>
+  <key id="Year_of_manufacture" for="node" attr.name="Year_of_manufacture" attr.type="int"/>
+  <key id="Year_of_installation" for="node" attr.name="Year_of_installation" attr.type="int"/>
   <key id="Operating_company_department" for="node" attr.name="Operating_company_department" attr.type="string"/>
   <key id="Owner" for="node" attr.name="Owner" attr.type="string"/>
-  <key id="Nominal_current" for="node" attr.name="Nominal_current" attr.type="string"/>
-  <key id="Masked_yes_no" for="node" attr.name="Masked_yes_no" attr.type="string"/>
+  <key id="Nominal_current" for="node" attr.name="Nominal_current" attr.type="float"/>
+  <key id="Masked_yes_no" for="node" attr.name="Masked_yes_no" attr.type="boolean"/>
   <key id="Mounting_method" for="node" attr.name="Mounting_method" attr.type="string"/>
-  <key id="Outdoor_Indoor" for="node" attr.name="Outdoor_Indoor" attr.type="string"/>
-  <key id="Number_of_cards" for="node" attr.name="Number_of_cards" attr.type="string"/>
+  <key id="Outdoor_rated" for="node" attr.name="Outdoor_rated" attr.type="boolean"/>
+  <key id="Number_of_cards" for="node" attr.name="Number_of_cards" attr.type="int"/>
   <key id="distribution_upstream_voltage" for="node" attr.name="distribution_upstream_voltage" attr.type="double"/>
   <key id="distribution_upstream_current_rating" for="node" attr.name="distribution_upstream_current_rating" attr.type="double"/>
   <key id="distribution_upstream_phase_number" for="node" attr.name="distribution_upstream_phase_number" attr.type="int"/>
@@ -98,7 +98,7 @@
       <data key="Warranty">5 years</data>
       <data key="Year_of_manufacture">2023</data>
       <data key="Year_of_installation">2023</data>
-      <data key="Outdoor_Indoor">Indoor</data>
+      <data key="Outdoor_rated">No</data>
       <data key="distribution_upstream_voltage">480.0</data>
       <data key="distribution_upstream_current_rating">3000.0</data>
       <data key="distribution_upstream_phase_number">3</data>
@@ -130,7 +130,7 @@
       <data key="Year_of_installation">2023</data>
       <data key="Operating_company_department">Facilities</data>
       <data key="Owner">School District</data>
-      <data key="Outdoor_Indoor">Indoor</data>
+      <data key="Outdoor_rated">No</data>
       <data key="distribution_upstream_voltage">480.0</data>
       <data key="distribution_upstream_current_rating">400.0</data>
       <data key="distribution_upstream_phase_number">3</data>
@@ -162,7 +162,7 @@
       <data key="Year_of_installation">2023</data>
       <data key="Operating_company_department">Facilities</data>
       <data key="Owner">School District</data>
-      <data key="Outdoor_Indoor">Indoor</data>
+      <data key="Outdoor_rated">No</data>
       <data key="distribution_upstream_voltage">480.0</data>
       <data key="distribution_upstream_current_rating">600.0</data>
       <data key="distribution_upstream_phase_number">3</data>
@@ -223,7 +223,7 @@
       <data key="Year_of_installation">2023</data>
       <data key="Operating_company_department">Facilities</data>
       <data key="Owner">School District</data>
-      <data key="Outdoor_Indoor">Indoor</data>
+      <data key="Outdoor_rated">No</data>
       <data key="distribution_upstream_voltage">208.0</data>
       <data key="distribution_upstream_current_rating">694.0</data>
       <data key="distribution_upstream_phase_number">3</data>
