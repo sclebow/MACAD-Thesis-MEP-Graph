@@ -13,9 +13,9 @@
   <key id="Manufacturer" for="node" attr.name="Manufacturer" attr.type="string"/>
   <key id="Nominal_performance" for="node" attr.name="Nominal_performance" attr.type="string"/>
   <key id="Short-circuit_strength" for="node" attr.name="Short-circuit_strength" attr.type="string"/>
-  <key id="Physical_Height" for="node" attr.name="Physical_Height" attr.type="string"/>
-  <key id="Physical_Length" for="node" attr.name="Physical_Length" attr.type="string"/>
-  <key id="Physical_Width" for="node" attr.name="Physical_Width" attr.type="string"/>
+  <key id="Physical_Height_mm" for="node" attr.name="Physical_Height_mm" attr.type="float"/>
+  <key id="Physical_Length_mm" for="node" attr.name="Physical_Length_mm" attr.type="float"/>
+  <key id="Physical_Width_mm" for="node" attr.name="Physical_Width_mm" attr.type="float"/>
   <key id="Type" for="node" attr.name="Type" attr.type="string"/>
   <key id="Voltage" for="node" attr.name="Voltage" attr.type="string"/>
   <key id="Warranty" for="node" attr.name="Warranty" attr.type="string"/>
@@ -61,9 +61,9 @@
       <data key="Manufacturer">Siemens</data>
       <data key="Nominal_performance">1000 kVA</data>
       <data key="Short-circuit_strength">10 kA</data>
-      <data key="Physical_Height">2.5 m</data>
-      <data key="Physical_Length">3 m</data>
-      <data key="Physical_Width">2 m</data>
+      <data key="Physical_Height_mm">2500.0</data>
+      <data key="Physical_Length_mm">3000.0</data>
+      <data key="Physical_Width_mm">2000.0</data>
       <data key="Type">Dry Type</data>
       <data key="Voltage">13.8 kV</data>
       <data key="Warranty">5 years</data>
@@ -92,9 +92,9 @@
       <data key="Owner">School District</data>
       <data key="Nominal_current">10 A</data>
       <data key="Short-circuit_strength">10 kA</data>
-      <data key="Physical_Height">2.5 m</data>
-      <data key="Physical_Length">3 m</data>
-      <data key="Physical_Width">2 m</data>
+      <data key="Physical_Height_mm">2500.0</data>
+      <data key="Physical_Length_mm">3000.0</data>
+      <data key="Physical_Width_mm">2000.0</data>
       <data key="Warranty">5 years</data>
       <data key="Year_of_manufacture">2023</data>
       <data key="Year_of_installation">2023</data>
@@ -122,9 +122,9 @@
       <data key="Mounting_method">Wall Mounted</data>
       <data key="Nominal_current">10 A</data>
       <data key="Short-circuit_strength">10 kA</data>
-      <data key="Physical_Height">2.5 m</data>
-      <data key="Physical_Length">3 m</data>
-      <data key="Physical_Width">2 m</data>
+      <data key="Physical_Height_mm">2500.0</data>
+      <data key="Physical_Length_mm">3000.0</data>
+      <data key="Physical_Width_mm">2000.0</data>
       <data key="Warranty">5 years</data>
       <data key="Year_of_manufacture">2023</data>
       <data key="Year_of_installation">2023</data>
@@ -154,9 +154,9 @@
       <data key="Mounting_method">Wall Mounted</data>
       <data key="Nominal_current">10 A</data>
       <data key="Short-circuit_strength">10 kA</data>
-      <data key="Physical_Height">2.5 m</data>
-      <data key="Physical_Length">3 m</data>
-      <data key="Physical_Width">2 m</data>
+      <data key="Physical_Height_mm">2500.0</data>
+      <data key="Physical_Length_mm">3000.0</data>
+      <data key="Physical_Width_mm">2000.0</data>
       <data key="Warranty">5 years</data>
       <data key="Year_of_manufacture">2023</data>
       <data key="Year_of_installation">2023</data>
@@ -184,9 +184,9 @@
       <data key="Manufacturer">Siemens</data>
       <data key="Nominal_performance">1000 kVA</data>
       <data key="Short-circuit_strength">10 kA</data>
-      <data key="Physical_Height">2.5 m</data>
-      <data key="Physical_Length">3 m</data>
-      <data key="Physical_Width">2 m</data>
+      <data key="Physical_Height_mm">2500.0</data>
+      <data key="Physical_Length_mm">3000.0</data>
+      <data key="Physical_Width_mm">2000.0</data>
       <data key="Type">Dry Type</data>
       <data key="Voltage">13.8 kV</data>
       <data key="Warranty">5 years</data>
@@ -215,9 +215,9 @@
       <data key="Mounting_method">Wall Mounted</data>
       <data key="Nominal_current">10 A</data>
       <data key="Short-circuit_strength">10 kA</data>
-      <data key="Physical_Height">2.5 m</data>
-      <data key="Physical_Length">3 m</data>
-      <data key="Physical_Width">2 m</data>
+      <data key="Physical_Height_mm">2500.0</data>
+      <data key="Physical_Length_mm">3000.0</data>
+      <data key="Physical_Width_mm">2000.0</data>
       <data key="Warranty">5 years</data>
       <data key="Year_of_manufacture">2023</data>
       <data key="Year_of_installation">2023</data>
