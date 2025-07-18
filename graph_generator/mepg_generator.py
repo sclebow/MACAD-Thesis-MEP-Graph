@@ -430,20 +430,24 @@ class MEPGraphGenerator:
         
         G.add_edge(source, target, id=edge_id, **edge_attrs)
     
-    def save_graph(self, graph: nx.DiGraph, filename: str = None) -> str:
+    def save_graph(self, graph: nx.DiGraph, filename: str = None, node_count: int = None, seed: int = None) -> str:
         """
         Save the graph to a MEPG file.
         
         Args:
             graph: NetworkX graph to save
-            filename: Output filename (if None, generates timestamp-based name)
+            filename: Output filename (if None, generates timestamp-based name with node count and seed)
+            node_count: Number of nodes in the graph (for filename)
+            seed: Random seed used (for filename)
             
         Returns:
             Path to the saved file
         """
         if filename is None:
             timestamp = datetime.datetime.now().strftime('%y%m%d_%H%M%S')
-            filename = f"generated_graph_{timestamp}.mepg"
+            node_str = f"_{node_count}" if node_count is not None else ""
+            seed_str = f"_seed{seed}" if seed is not None else ""
+            filename = f"generated_graph{node_str}{seed_str}_{timestamp}.mepg"
         
         # Ensure .mepg extension
         if not filename.lower().endswith('.mepg'):
@@ -534,7 +538,7 @@ def main():
     graph = generator.generate_graph(args.node_count)
     
     # Save graph
-    filepath = generator.save_graph(graph, args.filename)
+    filepath = generator.save_graph(graph, args.filename, node_count=args.node_count, seed=args.seed)
     print(f"Graph saved to: {filepath}")
     
     # Print summary
