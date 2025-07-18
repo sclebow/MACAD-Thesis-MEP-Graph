@@ -12,6 +12,7 @@ import random
 import math
 
 # Import helper files
+from helpers.node_risk import *
 
 pn.extension('plotly')
 pn.extension('jsoneditor')
@@ -81,7 +82,6 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
             
     return _hierarchy_pos(G, root, width, vert_gap, vert_loc, xcenter)
 
-
 def visualize_graph_two_d(graph):
     # Select a valid root node (first node in the graph)
     if len(graph.nodes) == 0:
@@ -89,6 +89,28 @@ def visualize_graph_two_d(graph):
     root_node = next(iter(graph.nodes))
     pos = hierarchy_pos(graph, root_node, width = 2*math.pi, xcenter=0)
     pos = {u:(r*math.cos(theta),r*math.sin(theta)) for u, (theta, r) in pos.items()}
+
+    # Get risk scores for color mapping
+    risk_scores = [graph.nodes[n].get('risk_score', 0) for n in graph.nodes]
+    if risk_scores:
+        min_risk = min(risk_scores)
+        max_risk = max(risk_scores)
+        # Avoid division by zero
+        if max_risk == min_risk:
+            norm_risk = [0.5 for _ in risk_scores]
+        else:
+            norm_risk = [(r - min_risk) / (max_risk - min_risk) for r in risk_scores]
+        # Blue (low) to Red (high), more vibrant
+        def vibrant_color(x):
+            # x=0: blue, x=0.5: purple, x=1: red
+            r = int(255 * x)
+            g = 0
+            b = int(255 * (1 - x))
+            return f"rgb({r},{g},{b})"
+        node_colors = [vibrant_color(x) for x in norm_risk]
+    else:
+        node_colors = ['rgb(0,0,255)' for _ in graph.nodes]
+
     edge_x = []
     edge_y = []
     edge_text = []
@@ -131,7 +153,7 @@ def visualize_graph_two_d(graph):
     node_y = []
     names = []
     node_text = []
-    for node, attrs in graph.nodes(data=True):
+    for idx, (node, attrs) in enumerate(graph.nodes(data=True)):
         x, y = pos[node]
         node_x.append(x)
         node_y.append(y)
@@ -145,10 +167,14 @@ def visualize_graph_two_d(graph):
         textposition="top center",
         hoverinfo='text',
         marker=dict(
-            showscale=False,
-            color='blue',
+            showscale=True,
+            colorscale=[[0, 'rgb(0,0,255)'], [0.5, 'rgb(128,0,128)'], [1, 'rgb(255,0,0)']],
+            color=norm_risk if risk_scores else [0.5 for _ in graph.nodes],
+            cmin=0,
+            cmax=1,
             size=15,
-            line_width=2
+            line_width=2,
+            colorbar=dict(title='Risk Score', thickness=15)
         ),
         hovertext=node_text  # Show all attributes on hover
     )
@@ -161,7 +187,6 @@ def visualize_graph_two_d(graph):
                         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
                     ))
-    
     return fig
 
 def visualize_graph_three_d(graph):
@@ -171,12 +196,30 @@ def visualize_graph_three_d(graph):
     """
     pos = nx.spring_layout(graph, dim=3)
 
+    # Get risk scores for color mapping
+    risk_scores = [graph.nodes[n].get('risk_score', 0) for n in graph.nodes]
+    if risk_scores:
+        min_risk = min(risk_scores)
+        max_risk = max(risk_scores)
+        if max_risk == min_risk:
+            norm_risk = [0.5 for _ in risk_scores]
+        else:
+            norm_risk = [(r - min_risk) / (max_risk - min_risk) for r in risk_scores]
+        def vibrant_color(x):
+            r = int(255 * x)
+            g = 0
+            b = int(255 * (1 - x))
+            return f"rgb({r},{g},{b})"
+        node_colors = [vibrant_color(x) for x in norm_risk]
+    else:
+        node_colors = ['rgb(0,0,255)' for _ in graph.nodes]
+
     node_x = []
     node_y = []
     node_z = []
     names = []
     node_text = []
-    for node, attrs in graph.nodes(data=True):
+    for idx, (node, attrs) in enumerate(graph.nodes(data=True)):
         # Get the 'x', 'y', 'z' attributes from the node
         x = attrs.get('x', 0)
         y = attrs.get('y', 0)
@@ -235,10 +278,14 @@ def visualize_graph_three_d(graph):
         textposition="top center",
         hoverinfo='text',
         marker=dict(
-            showscale=False,
-            color='blue',
+            showscale=True,
+            colorscale=[[0, 'rgb(0,0,255)'], [0.5, 'rgb(128,0,128)'], [1, 'rgb(255,0,0)']],
+            color=norm_risk if risk_scores else [0.5 for _ in graph.nodes],
+            cmin=0,
+            cmax=1,
             size=5,
-            line_width=2
+            line_width=2,
+            colorbar=dict(title='Risk Score', thickness=15)
         ),
         hovertext=node_text  # Show all attributes on hover
     )
@@ -253,9 +300,7 @@ def visualize_graph_three_d(graph):
                             zaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
                         )
                     ))
-
     return fig
-
 
 def update_dropdowns(graph):
     node_names = list(graph.nodes())
@@ -346,12 +391,13 @@ def edge_dropdown_callback(event):
         edge_info_pane.object = "No graph loaded."
         edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
 
-
 def file_input_callback(event):
     if file_input.value is not None:
         try:
             file_bytes = io.BytesIO(file_input.value)
             G = nx.read_graphml(file_bytes)
+            # Add risk scores to the graph
+            G = add_risk_scores(G)
             fig = visualize_graph_two_d(G)
             plot_pane.object = fig
             current_graph[0] = G
@@ -364,17 +410,36 @@ def file_input_callback(event):
             edge_info_pane.object = "Failed to load graph."
             pn.state.notifications.error(f"Failed to load graph: {e}")
 
+def add_risk_scores(graph):
+    # Process risk scores with error handling
+    try:
+        print("Calculating risk scores...")
+        graph = apply_risk_scores_to_graph(graph)
+        print("Risk scores calculated successfully.")
+    except Exception as risk_error:
+        print(f"Warning: Failed to calculate risk scores: {risk_error}")
+        # Continue without risk scores
+
+    return graph
+
+
 def autoload_example_graph():
     example_path = 'example_graph.mepg'
     if os.path.exists(example_path):
         try:
             with open(example_path, 'rb') as f:
                 G = nx.read_graphml(f)
+                # Check if the graph is a directed graph
+                if not isinstance(G, nx.DiGraph):
+                    raise ValueError("The example graph must be a directed graph.")
                 fig = visualize_graph_two_d(G)
                 plot_pane.object = fig
                 three_d_fig = visualize_graph_three_d(G)
                 three_d_pane.object = three_d_fig
                 current_graph[0] = G
+
+                G = add_risk_scores(G)
+
                 update_dropdowns(G)
         except Exception as e:
             plot_pane.object = None
@@ -384,7 +449,8 @@ def autoload_example_graph():
             node_info_pane.object = "Failed to autoload graph."
             edge_info_pane.object = "Failed to autoload graph."
             print(f"Failed to autoload example graph: {e}")
-
+    else:
+        print(f"Example graph file '{example_path}' not found.")
 
 app = pn.Column(
     sizing_mode='stretch_width'
@@ -403,7 +469,6 @@ app.append(pn.Column(
     file_input,
     sizing_mode='stretch_width'
 ))
-
 
 # Node selection dropdown and info
 selection_table_height = 400
