@@ -428,5 +428,47 @@ edge_column = pn.Column("### Edge Selection", edge_dropdown, edge_info_pane, edg
 selection_row = pn.Row(node_column, edge_column, sizing_mode='stretch_width')
 app.append(selection_row)
 
+
+# --- Save Graph UI ---
+import datetime
+
+def get_default_filename():
+    today = datetime.datetime.now().strftime('%y%m%d')
+    return f"{today}_graph.mepg"
+
+filename_input = pn.widgets.TextInput(name="Save As Filename", value=get_default_filename())
+save_button = pn.widgets.Button(name="Save Graph", button_type="primary")
+save_status = pn.pane.Markdown(visible=False)
+
+def save_graph_callback(event):
+    if current_graph[0] is not None:
+        fname = filename_input.value.strip()
+        if not fname:
+            fname = get_default_filename()
+        # Ensure .mepg extension
+        if not fname.lower().endswith('.mepg'):
+            fname += '.mepg'
+        # Ensure graph_outputs folder exists
+        output_dir = 'graph_outputs'
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        out_path = os.path.join(output_dir, fname)
+        try:
+            current_graph[0].graph["source"] = "Panel Graph Viewer Export"
+            nx.write_graphml(current_graph[0], out_path)
+            save_status.object = f"**Graph saved to `{out_path}`**"
+            save_status.visible = True
+        except Exception as e:
+            save_status.object = f"**Error saving graph:** {e}"
+            save_status.visible = True
+    else:
+        save_status.object = "**No graph loaded to save.**"
+        save_status.visible = True
+
+save_button.on_click(save_graph_callback)
+
+save_row = pn.Row(filename_input, save_button)
+app.append(pn.Column("### Save Graph", save_row, save_status, sizing_mode='stretch_width'))
+
 print("Starting MEP System Graph Viewer...")
 app.servable()
