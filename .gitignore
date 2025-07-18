@@ -119,7 +119,7 @@ ehthumbs.db
 Thumbs.db
 
 # Project specific
-*.graphml
 data/
 logs/
 temp/
+graph_outputs/
