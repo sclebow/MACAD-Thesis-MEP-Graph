@@ -379,8 +379,19 @@ def determine_riser_attributes(building_attrs: Dict[str, Any], riser_locations: 
     For each riser on each floor, summarize the total power per end load type and voltage.
     Returns a nested dict: {floor: {riser_idx: {type: {voltage: total_power}}}}
     """
+    RISER_EQUIPMENT_AREA_SIZE = 2.0  # meters (change this value to adjust riser equipment area size)
     num_floors = building_attrs['num_floors']
     riser_attrs = {floor: {r: {} for r in range(len(riser_locations))} for floor in range(num_floors)}
+
+    # Generate riser bounds: for each riser, a square centered at riser location
+    riser_bounds = []  # List of (xmin, xmax, ymin, ymax) for each riser
+    half_area = RISER_EQUIPMENT_AREA_SIZE / 2.0
+    for rx, ry in riser_locations:
+        xmin = rx - half_area
+        xmax = rx + half_area
+        ymin = ry - half_area
+        ymax = ry + half_area
+        riser_bounds.append((xmin, xmax, ymin, ymax))
 
     # Helper: find nearest riser index for a given (x, y)
     def nearest_riser_idx(x, y):
@@ -406,6 +417,8 @@ def determine_riser_attributes(building_attrs: Dict[str, Any], riser_locations: 
             riser_attrs[floor][riser_idx][t][v] = 0.0
         riser_attrs[floor][riser_idx][t][v] += p
 
+    # Attach riser_bounds to riser_attrs for use in equipment placement
+    riser_attrs['_riser_bounds'] = riser_bounds
     return riser_attrs
 
 def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_attributes: Dict, voltage_info: Dict[str, Any]) -> Dict:
@@ -414,18 +427,46 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
     For each riser on each floor, determine what equipment is needed based on the load types and voltages.
     Returns a dict: {floor: {riser_idx: [equipment_dict, ...]}}
     """
+    RISER_EQUIPMENT_AREA_SIZE = 6.0  # meters (should match value in determine_riser_attributes)
     equipment = {}
     main_voltage = voltage_info['voltage_3phase']
     is_480_building = (main_voltage == 480)
+    # Get riser bounds from riser_floor_attributes if present
+    riser_bounds = riser_floor_attributes.get('_riser_bounds', None)
+    half_area = RISER_EQUIPMENT_AREA_SIZE / 2.0
     for floor, risers in riser_floor_attributes.items():
+        if floor == '_riser_bounds':
+            continue
         equipment[floor] = {}
         for riser_idx, load_types in risers.items():
             riser_equipment = []
+            # For unique placement, keep track of used (x, y) in this riser/floor
+            used_positions = set()
+            # Helper to generate a unique (x, y) within riser bounds
+            def unique_xy():
+                if riser_bounds:
+                    xmin, xmax, ymin, ymax = riser_bounds[riser_idx]
+                else:
+                    # fallback: square centered at (0,0)
+                    xmin, xmax, ymin, ymax = -half_area, half_area, -half_area, half_area
+                for _ in range(100):
+                    x = random.uniform(xmin, xmax)
+                    y = random.uniform(ymin, ymax)
+                    pos = (round(x, 3), round(y, 3))
+                    if pos not in used_positions:
+                        used_positions.add(pos)
+                        return x, y
+                # fallback: just return xmin, ymin
+                return xmin, ymin
+
             # Always add a main distribution panel at the building's main voltage
+            x, y = unique_xy()
             riser_equipment.append({
                 "type": "main_panel",
                 "voltage": main_voltage,
-                "loads": load_types
+                "loads": load_types,
+                "x": x,
+                "y": y
             })
             # For each load type, handle sub-panels and transformers
             for t, vdict in load_types.items():
@@ -439,67 +480,88 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
                             low_v_power += p
                     if high_v_power > 0 and low_v_power > 0:
                         # Add 480V sub-panel (parent: main_panel)
+                        x, y = unique_xy()
                         riser_equipment.append({
                             "type": "sub_panel",
                             "voltage": 480,
                             "load_type": t,
                             "power": high_v_power,
-                            "parent": "main_panel"
+                            "parent": "main_panel",
+                            "x": x,
+                            "y": y
                         })
                         # Add transformer (parent: 480V sub-panel)
+                        x, y = unique_xy()
                         riser_equipment.append({
                             "type": "transformer",
                             "from_voltage": 480,
                             "to_voltage": 208,
                             "load_type": t,
                             "power": low_v_power,
-                            "parent": "sub_panel_480_{}".format(t)
+                            "parent": "sub_panel_480_{}".format(t),
+                            "x": x,
+                            "y": y
                         })
                         # Add 208V sub-panel (parent: transformer)
+                        x, y = unique_xy()
                         riser_equipment.append({
                             "type": "sub_panel",
                             "voltage": 208,
                             "load_type": t,
                             "power": low_v_power,
-                            "parent": "transformer_208_{}".format(t)
+                            "parent": "transformer_208_{}".format(t),
+                            "x": x,
+                            "y": y
                         })
                     elif high_v_power > 0:
                         # Only high voltage loads: just add 480V sub-panel (parent: main_panel)
+                        x, y = unique_xy()
                         riser_equipment.append({
                             "type": "sub_panel",
                             "voltage": 480,
                             "load_type": t,
                             "power": high_v_power,
-                            "parent": "main_panel"
+                            "parent": "main_panel",
+                            "x": x,
+                            "y": y
                         })
                     elif low_v_power > 0:
                         # Only low voltage loads: transformer and 208V sub-panel, both parented to main_panel
+                        x, y = unique_xy()
                         riser_equipment.append({
                             "type": "transformer",
                             "from_voltage": 480,
                             "to_voltage": 208,
                             "load_type": t,
                             "power": low_v_power,
-                            "parent": "main_panel"
+                            "parent": "main_panel",
+                            "x": x,
+                            "y": y
                         })
+                        x, y = unique_xy()
                         riser_equipment.append({
                             "type": "sub_panel",
                             "voltage": 208,
                             "load_type": t,
                             "power": low_v_power,
-                            "parent": "transformer_208_{}".format(t)
+                            "parent": "transformer_208_{}".format(t),
+                            "x": x,
+                            "y": y
                         })
                 else:
                     # For 208/120V building, just add sub-panels for each voltage if not main
                     for v, total_power in vdict.items():
                         if v == main_voltage:
                             continue
+                        x, y = unique_xy()
                         riser_equipment.append({
                             "type": "sub_panel",
                             "voltage": v,
                             "load_type": t,
                             "power": total_power,
-                            "parent": "main_panel"
+                            "parent": "main_panel",
+                            "x": x,
+                            "y": y
                         })
             equipment[floor][riser_idx] = riser_equipment
     return equipment
@@ -527,7 +589,7 @@ def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[fl
     connect_equipment_hierarchy(G, distribution_equipment)
 
     # # 6. Add end load nodes and connect them to the appropriate equipment
-    add_and_connect_end_loads(G, distribution_equipment, building_attrs)
+    # add_and_connect_end_loads(G, distribution_equipment, building_attrs)
 
     return G
 
@@ -555,12 +617,17 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
     """Add all distribution equipment nodes to the graph with unique IDs and coordinates."""
     for floor, risers in distribution_equipment.items():
         for riser_idx, equipment_list in risers.items():
-            x, y = riser_locations[riser_idx]
+            # Use x/y from equipment dict if present, else fallback to riser_locations
             z = floor * G.graph.get('floor_height', 3.5)
             for eq_idx, eq in enumerate(equipment_list):
                 eq_type = eq.get('type', 'equipment')
                 voltage = eq.get('voltage', '')
                 node_id = f"{eq_type}_f{floor}_r{riser_idx}"
+                # Use x/y from equipment dict if present, else fallback
+                x = eq.get('x', None)
+                y = eq.get('y', None)
+                if x is None or y is None:
+                    x, y = riser_locations[riser_idx]
                 if eq_type == 'transformer':
                     node_id += f"_{eq.get('to_voltage','')}_{eq.get('load_type','')}"
                     # Add all transformer attributes
@@ -594,6 +661,8 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
                         z=z
                     )
                 else:
+                    # Remove x/y from eq dict to avoid duplicate keys
+                    eq_clean = {k: v for k, v in eq.items() if k not in ['type', 'voltage', 'loads', 'load_type', 'x', 'y']}
                     G.add_node(
                         node_id,
                         type=eq_type,
@@ -603,7 +672,7 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
                         x=x,
                         y=y,
                         z=z,
-                        **{k: v for k, v in eq.items() if k not in ['type', 'voltage', 'loads', 'load_type']}
+                        **eq_clean
                     )
 
 def connect_utility_to_main_panel(G, distribution_equipment, riser_locations):
