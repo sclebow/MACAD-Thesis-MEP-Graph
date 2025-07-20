@@ -429,9 +429,7 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
             })
             # For each load type, handle sub-panels and transformers
             for t, vdict in load_types.items():
-                # For 480/277V building
                 if is_480_building:
-                    # Collect total power for 480V/277V and for 208V/120V for this load type
                     high_v_power = 0.0
                     low_v_power = 0.0
                     for v, p in vdict.items():
@@ -439,8 +437,8 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
                             high_v_power += p
                         elif v in [208, 120]:
                             low_v_power += p
-                    # If there are high voltage loads, add a 480V sub-panel for this load type
-                    if high_v_power > 0:
+                    if high_v_power > 0 and low_v_power > 0:
+                        # Add 480V sub-panel (parent: main_panel)
                         riser_equipment.append({
                             "type": "sub_panel",
                             "voltage": 480,
@@ -448,24 +446,48 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
                             "power": high_v_power,
                             "parent": "main_panel"
                         })
-                    # If there are low voltage loads, add transformer and 208V sub-panel for this load type
-                    if low_v_power > 0:
-                        # Transformer from 480V to 208V for this load type, parent is the 480V sub-panel if it exists, else main_panel
-                        parent_panel = "sub_panel" if high_v_power > 0 else "main_panel"
+                        # Add transformer (parent: 480V sub-panel)
                         riser_equipment.append({
                             "type": "transformer",
                             "from_voltage": 480,
                             "to_voltage": 208,
                             "load_type": t,
                             "power": low_v_power,
-                            "parent": parent_panel
+                            "parent": "sub_panel_480_{}".format(t)
+                        })
+                        # Add 208V sub-panel (parent: transformer)
+                        riser_equipment.append({
+                            "type": "sub_panel",
+                            "voltage": 208,
+                            "load_type": t,
+                            "power": low_v_power,
+                            "parent": "transformer_208_{}".format(t)
+                        })
+                    elif high_v_power > 0:
+                        # Only high voltage loads: just add 480V sub-panel (parent: main_panel)
+                        riser_equipment.append({
+                            "type": "sub_panel",
+                            "voltage": 480,
+                            "load_type": t,
+                            "power": high_v_power,
+                            "parent": "main_panel"
+                        })
+                    elif low_v_power > 0:
+                        # Only low voltage loads: transformer and 208V sub-panel, both parented to main_panel
+                        riser_equipment.append({
+                            "type": "transformer",
+                            "from_voltage": 480,
+                            "to_voltage": 208,
+                            "load_type": t,
+                            "power": low_v_power,
+                            "parent": "main_panel"
                         })
                         riser_equipment.append({
                             "type": "sub_panel",
                             "voltage": 208,
                             "load_type": t,
                             "power": low_v_power,
-                            "parent": "transformer"
+                            "parent": "transformer_208_{}".format(t)
                         })
                 else:
                     # For 208/120V building, just add sub-panels for each voltage if not main
@@ -533,28 +555,56 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
     """Add all distribution equipment nodes to the graph with unique IDs and coordinates."""
     for floor, risers in distribution_equipment.items():
         for riser_idx, equipment_list in risers.items():
-            # Get riser (x, y) location
             x, y = riser_locations[riser_idx]
-            z = floor * G.graph.get('floor_height', 3.5)  # fallback if not set
+            z = floor * G.graph.get('floor_height', 3.5)
             for eq_idx, eq in enumerate(equipment_list):
-                # Build a unique node id
                 eq_type = eq.get('type', 'equipment')
                 voltage = eq.get('voltage', '')
                 node_id = f"{eq_type}_f{floor}_r{riser_idx}"
-                if eq_type in ['transformer', 'sub_panel']:
+                if eq_type == 'transformer':
+                    node_id += f"_{eq.get('to_voltage','')}_{eq.get('load_type','')}"
+                    # Add all transformer attributes
+                    G.add_node(
+                        node_id,
+                        type=eq_type,
+                        floor=floor,
+                        riser=riser_idx,
+                        from_voltage=eq.get('from_voltage',''),
+                        to_voltage=eq.get('to_voltage',''),
+                        load_type=eq.get('load_type',''),
+                        power=eq.get('power',0.0),
+                        parent=eq.get('parent',''),
+                        x=x,
+                        y=y,
+                        z=z
+                    )
+                elif eq_type == 'sub_panel':
                     node_id += f"_{voltage}_{eq.get('load_type','')}"
-                # Add node with attributes
-                G.add_node(
-                    node_id,
-                    type=eq_type,
-                    floor=floor,
-                    riser=riser_idx,
-                    voltage=voltage,
-                    x=x,
-                    y=y,
-                    z=z,
-                    **{k: v for k, v in eq.items() if k not in ['type', 'voltage', 'loads', 'load_type']}
-                )
+                    G.add_node(
+                        node_id,
+                        type=eq_type,
+                        floor=floor,
+                        riser=riser_idx,
+                        voltage=voltage,
+                        load_type=eq.get('load_type',''),
+                        power=eq.get('power',0.0),
+                        parent=eq.get('parent',''),
+                        x=x,
+                        y=y,
+                        z=z
+                    )
+                else:
+                    G.add_node(
+                        node_id,
+                        type=eq_type,
+                        floor=floor,
+                        riser=riser_idx,
+                        voltage=voltage,
+                        x=x,
+                        y=y,
+                        z=z,
+                        **{k: v for k, v in eq.items() if k not in ['type', 'voltage', 'loads', 'load_type']}
+                    )
 
 def connect_utility_to_main_panel(G, distribution_equipment, riser_locations):
     """Connect the utility transformer to the nearest main panel on the ground floor."""
@@ -615,41 +665,49 @@ def connect_main_panels_vertically(G, distribution_equipment):
 
 def connect_equipment_hierarchy(G, distribution_equipment):
     """Connect equipment within each riser/floor (main panel → transformer → sub-panel, etc.)."""
-    # For each floor and riser, connect main panel to transformers, transformers to sub-panels
+    # For each floor and riser, connect each equipment node to its parent using the parent field
     for floor, risers in distribution_equipment.items():
         for riser_idx, equipment_list in risers.items():
-            # Find main panel node id
-            main_panel_id = None
-            transformers = []
-            sub_panels = []
+            # Build a mapping from logical parent names to node IDs for this riser/floor
+            node_id_map = {}
             for eq in equipment_list:
                 eq_type = eq.get('type')
                 voltage = eq.get('voltage', '')
+                load_type = eq.get('load_type', '')
                 if eq_type == 'main_panel':
-                    main_panel_id = f"main_panel_f{floor}_r{riser_idx}"
-                elif eq_type == 'transformer':
-                    # Node id includes from_voltage, to_voltage, and load_type
-                    node_id = f"transformer_f{floor}_r{riser_idx}_{eq.get('to_voltage','')}_{eq.get('load_type','')}"
-                    transformers.append((node_id, eq))
+                    node_id = f"main_panel_f{floor}_r{riser_idx}"
+                    node_id_map['main_panel'] = node_id
                 elif eq_type == 'sub_panel':
-                    node_id = f"sub_panel_f{floor}_r{riser_idx}_{voltage}_{eq.get('load_type','')}"
-                    sub_panels.append((node_id, eq))
-            # Connect main panel to all transformers (if any)
-            for transformer_id, transformer in transformers:
-                if main_panel_id:
-                    G.add_edge(main_panel_id, transformer_id, description='Main panel to transformer')
-            # Connect transformer to sub-panel (by matching voltage and load_type)
-            for transformer_id, transformer in transformers:
-                to_voltage = transformer.get('to_voltage','')
-                load_type = transformer.get('load_type','')
-                # Find matching sub-panel
-                for sub_panel_id, sub_panel in sub_panels:
-                    if str(sub_panel.get('voltage','')) == str(to_voltage) and sub_panel.get('load_type','') == load_type:
-                        G.add_edge(transformer_id, sub_panel_id, description='Transformer to sub-panel')
-            # If no transformer, connect main panel directly to sub-panels (for voltages matching main panel)
-            if not transformers and main_panel_id:
-                for sub_panel_id, sub_panel in sub_panels:
-                    G.add_edge(main_panel_id, sub_panel_id, description='Main panel to sub-panel (no transformer)')
+                    node_id = f"sub_panel_f{floor}_r{riser_idx}_{voltage}_{load_type}"
+                    if voltage == 480:
+                        node_id_map[f"sub_panel_480_{load_type}"] = node_id
+                    elif voltage == 208:
+                        node_id_map[f"sub_panel_208_{load_type}"] = node_id
+                    # Add for other voltages if needed
+                elif eq_type == 'transformer':
+                    to_voltage = eq.get('to_voltage', '')
+                    node_id = f"transformer_f{floor}_r{riser_idx}_{to_voltage}_{load_type}"
+                    node_id_map[f"transformer_{to_voltage}_{load_type}"] = node_id
+            # Now connect each node to its parent using the parent field
+            for eq in equipment_list:
+                eq_type = eq.get('type')
+                voltage = eq.get('voltage', '')
+                load_type = eq.get('load_type', '')
+                parent_key = eq.get('parent', None)
+                # Determine this node's ID
+                if eq_type == 'main_panel':
+                    node_id = f"main_panel_f{floor}_r{riser_idx}"
+                elif eq_type == 'sub_panel':
+                    node_id = f"sub_panel_f{floor}_r{riser_idx}_{voltage}_{load_type}"
+                elif eq_type == 'transformer':
+                    to_voltage = eq.get('to_voltage', '')
+                    node_id = f"transformer_f{floor}_r{riser_idx}_{to_voltage}_{load_type}"
+                else:
+                    continue
+                # Connect to parent if parent_key is in map
+                if parent_key and parent_key in node_id_map:
+                    parent_id = node_id_map[parent_key]
+                    G.add_edge(parent_id, node_id, description=f'{parent_key} to {eq_type}')
 
 def add_and_connect_end_loads(G, distribution_equipment, building_attrs):
     """Add end load nodes and connect them to the appropriate equipment."""
@@ -663,8 +721,9 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs):
         for riser_idx, equipment_list in risers.items():
             sub_panel_map = {}
             main_panel_id = None
-            # Track created transformer/sub-panel nodes to avoid duplicates
             created_nodes = set()
+            # Map for transformer nodes (load_type, voltage) → node_id
+            transformer_map = {}
             for eq in equipment_list:
                 eq_type = eq.get('type')
                 voltage = eq.get('voltage', '')
@@ -676,9 +735,11 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs):
                         created_nodes.add(node_id)
                 elif eq_type == 'main_panel':
                     main_panel_id = f"main_panel_f{floor}_r{riser_idx}"
+                elif eq_type == 'transformer':
+                    node_id = f"transformer_f{floor}_r{riser_idx}_{eq.get('to_voltage','')}_{load_type}"
+                    transformer_map[(load_type, eq.get('to_voltage',''))] = node_id
             # For each sub-panel, add end loads for its type/voltage
             for (load_type, voltage), sub_panel_id in sub_panel_map.items():
-                # Get number of end loads for this type/voltage (estimate: 1 per 2kW, min 1)
                 power = 0.0
                 for eq in equipment_list:
                     if eq.get('type') == 'sub_panel' and eq.get('load_type','') == load_type and str(eq.get('voltage','')) == str(voltage):
