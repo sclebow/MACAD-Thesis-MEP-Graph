@@ -42,6 +42,10 @@ class MEPGraphGenerator:
             }
         }
         
+        # Initialize floor-based electrical room system
+        self.floor_levels = self._define_floor_levels()
+        self.electrical_rooms = self._define_electrical_rooms_by_floor()
+        
         # Component type definitions
         self.component_types = {
             'transformer': 'Power Supply - Transformers - High-voltage systems - High-voltage dry-type power transformers',
@@ -78,9 +82,97 @@ class MEPGraphGenerator:
             'load': {'height': (100, 500), 'length': (200, 600), 'width': (100, 400)}
         }
     
+    def _define_floor_levels(self) -> Dict[int, Dict]:
+        """Define Z-coordinate levels for each floor."""
+        config = self.building_config
+        floor_levels = {}
+        
+        # Basement level (negative Z)
+        floor_levels[-1] = {
+            'z_min': config['basement_depth'],
+            'z_max': -0.5,
+            'z_center': config['basement_depth'] + config['floor_height'] / 2,
+            'description': 'Basement level - Main electrical equipment'
+        }
+        
+        # Ground and upper floors
+        for floor in range(config['num_floors']):
+            z_min = floor * config['floor_height']
+            z_max = z_min + config['floor_height']
+            floor_levels[floor] = {
+                'z_min': z_min,
+                'z_max': z_max,
+                'z_center': z_min + config['floor_height'] / 2,
+                'description': f'Floor {floor} - Distribution level'
+            }
+        
+        return floor_levels
+    
+    def _define_electrical_rooms_by_floor(self) -> Dict[int, List[Dict]]:
+        """Define electrical rooms on each floor with specific x,y bounds."""
+        config = self.building_config
+        electrical_rooms = {}
+        
+        # Basement electrical room (main service)
+        electrical_rooms[-1] = [{
+            'id': 'MER-B01',
+            'description': 'Main Electrical Room',
+            'x_min': config['electrical_core']['x_center'] - config['electrical_core']['width'] / 2,
+            'x_max': config['electrical_core']['x_center'] + config['electrical_core']['width'] / 2,
+            'y_min': config['electrical_core']['y_center'] - config['electrical_core']['depth'] / 2,
+            'y_max': config['electrical_core']['y_center'] + config['electrical_core']['depth'] / 2,
+            'equipment_types': ['main_transformer', 'main_switchboard'],
+            'capacity': 4  # Max equipment pieces
+        }]
+        
+        # Electrical rooms on each floor
+        for floor in range(config['num_floors']):
+            rooms = []
+            
+            # Primary electrical closet (center core)
+            rooms.append({
+                'id': f'EC-{floor:02d}A',
+                'description': f'Electrical Closet A - Floor {floor}',
+                'x_min': config['electrical_core']['x_center'] - 6.0,
+                'x_max': config['electrical_core']['x_center'] + 2.0,
+                'y_min': config['electrical_core']['y_center'] - 4.0,
+                'y_max': config['electrical_core']['y_center'] + 4.0,
+                'equipment_types': ['secondary_transformer', 'main_panelboard'],
+                'capacity': 3
+            })
+            
+            # Secondary electrical closet (offset core)
+            rooms.append({
+                'id': f'EC-{floor:02d}B',
+                'description': f'Electrical Closet B - Floor {floor}',
+                'x_min': config['electrical_core']['x_center'] + 2.0,
+                'x_max': config['electrical_core']['x_center'] + 10.0,
+                'y_min': config['electrical_core']['y_center'] - 2.0,
+                'y_max': config['electrical_core']['y_center'] + 6.0,
+                'equipment_types': ['panelboard'],
+                'capacity': 2
+            })
+            
+            # IDF rooms (distributed)
+            if floor > 0:  # Not on ground floor
+                rooms.append({
+                    'id': f'IDF-{floor:02d}',
+                    'description': f'IDF Room - Floor {floor}',
+                    'x_min': config['length'] * 0.8,
+                    'x_max': config['length'] * 0.95,
+                    'y_min': config['width'] * 0.1,
+                    'y_max': config['width'] * 0.3,
+                    'equipment_types': ['panelboard'],
+                    'capacity': 2
+                })
+            
+            electrical_rooms[floor] = rooms
+        
+        return electrical_rooms
+    
     def generate_graph(self, node_count: int) -> nx.DiGraph:
         """
-        Generate a logical electrical system graph.
+        Generate a logical electrical system graph starting from basement and distributing upwards.
         
         Args:
             node_count: Target number of nodes in the graph
@@ -98,55 +190,54 @@ class MEPGraphGenerator:
         # Select one high voltage level for this entire graph
         self.selected_high_voltage = random.choice(self.voltage_levels['high'])
         
-        # Calculate logical distribution of components
-        distribution = self._calculate_component_distribution(node_count)
+        # Calculate logical distribution of components by floor
+        distribution = self._calculate_component_distribution_by_floor(node_count)
         
-        # Generate nodes in hierarchical order
+        # Generate nodes starting from basement (bottom-up approach)
         node_id = 1
-        level_nodes = {}
+        floor_nodes = {}
         
-        # Level 1: Main transformers
-        level_nodes[1] = []
-        for i in range(distribution['transformers_main']):
+        # Basement level (-1): Main service equipment
+        floor_nodes[-1] = []
+        for i in range(distribution['floors'][-1]['transformers']):
             node_id_str = f"transformer_{node_id:03d}"
-            self._add_transformer_node(G, node_id_str, 'main', node_id)
-            level_nodes[1].append(node_id_str)
+            self._add_transformer_node_in_room(G, node_id_str, 'main', node_id, -1)
+            floor_nodes[-1].append(node_id_str)
             node_id += 1
         
-        # Level 2: Main switchboards
-        level_nodes[2] = []
-        for i in range(distribution['switchboards']):
+        for i in range(distribution['floors'][-1]['switchboards']):
             node_id_str = f"switchboard_{node_id:03d}"
-            self._add_switchboard_node(G, node_id_str, node_id)
-            level_nodes[2].append(node_id_str)
+            self._add_switchboard_node_in_room(G, node_id_str, node_id, -1)
+            floor_nodes[-1].append(node_id_str)
             node_id += 1
         
-        # Level 3: Secondary transformers (if needed)
-        level_nodes[3] = []
-        for i in range(distribution['transformers_secondary']):
-            node_id_str = f"transformer_{node_id:03d}"
-            self._add_transformer_node(G, node_id_str, 'secondary', node_id)
-            level_nodes[3].append(node_id_str)
-            node_id += 1
+        # Upper floors (0 to num_floors-1): Distribution equipment and loads
+        for floor in range(self.building_config['num_floors']):
+            floor_nodes[floor] = []
+            
+            # Add transformers for this floor
+            for i in range(distribution['floors'][floor]['transformers']):
+                node_id_str = f"transformer_{node_id:03d}"
+                self._add_transformer_node_in_room(G, node_id_str, 'secondary', node_id, floor)
+                floor_nodes[floor].append(node_id_str)
+                node_id += 1
+            
+            # Add panelboards for this floor
+            for i in range(distribution['floors'][floor]['panelboards']):
+                node_id_str = f"panelboard_{node_id:03d}"
+                self._add_panelboard_node_in_room(G, node_id_str, node_id, floor)
+                floor_nodes[floor].append(node_id_str)
+                node_id += 1
+            
+            # Add loads distributed around the floor (outside electrical rooms)
+            for i in range(distribution['floors'][floor]['loads']):
+                node_id_str = f"load_{node_id:03d}"
+                self._add_load_node_on_floor(G, node_id_str, node_id, floor)
+                floor_nodes[floor].append(node_id_str)
+                node_id += 1
         
-        # Level 4: Distribution panelboards
-        level_nodes[4] = []
-        for i in range(distribution['panelboards']):
-            node_id_str = f"panelboard_{node_id:03d}"
-            self._add_panelboard_node(G, node_id_str, node_id)
-            level_nodes[4].append(node_id_str)
-            node_id += 1
-        
-        # Level 5: End loads (if specified)
-        level_nodes[5] = []
-        for i in range(distribution['loads']):
-            node_id_str = f"load_{node_id:03d}"
-            self._add_load_node(G, node_id_str, node_id)
-            level_nodes[5].append(node_id_str)
-            node_id += 1
-        
-        # Create logical connections
-        self._create_connections(G, level_nodes)
+        # Create logical bottom-up connections
+        self._create_bottom_up_connections(G, floor_nodes)
         
         # Update voltages to ensure proper step-down relationships
         self._update_voltage_relationships(G)
@@ -180,32 +271,377 @@ class MEPGraphGenerator:
                     attrs['y'] = round(ref_attrs.get('y', attrs.get('y', 0.0)) + offset_y, 2)
                     attrs['z'] = round(ref_attrs.get('z', attrs.get('z', 0.0)) + offset_z, 2)
     
-    def _calculate_component_distribution(self, node_count: int) -> Dict[str, int]:
-        """Calculate logical distribution of component types."""
-        # Start with minimum viable system
+    def _calculate_component_distribution_by_floor(self, node_count: int) -> Dict[str, Any]:
+        """Calculate distribution of components across floors for bottom-up topology."""
+        config = self.building_config
+        num_floors = config['num_floors']
+        
+        # Initialize distribution structure
         distribution = {
-            'transformers_main': 1,
-            'switchboards': 1,
-            'transformers_secondary': 0,
+            'floors': {}
+        }
+        
+        # Basement floor (-1): Main service equipment
+        distribution['floors'][-1] = {
+            'transformers': 1,  # Main service transformer
+            'switchboards': 1,  # Main service switchboard
             'panelboards': 0,
             'loads': 0
         }
         
-        remaining = node_count - 2  # Account for main transformer and switchboard
+        remaining_nodes = node_count - 2  # Account for main transformer and switchboard
         
-        # Add components based on typical electrical system ratios
-        if remaining > 0:
-            # 20% secondary transformers, 60% panelboards, 20% loads
-            distribution['transformers_secondary'] = max(0, int(remaining * 0.2))
-            distribution['panelboards'] = max(1, int(remaining * 0.6))
-            distribution['loads'] = max(0, remaining - distribution['transformers_secondary'] - distribution['panelboards'])
-        
-        # Ensure we don't exceed node_count
-        total = sum(distribution.values())
-        if total > node_count:
-            distribution['loads'] = max(0, distribution['loads'] - (total - node_count))
+        # Distribute remaining nodes across upper floors
+        if remaining_nodes > 0:
+            # Calculate nodes per floor (excluding basement)
+            base_nodes_per_floor = max(1, remaining_nodes // num_floors)
+            extra_nodes = remaining_nodes % num_floors
+            
+            for floor in range(num_floors):
+                nodes_for_floor = base_nodes_per_floor
+                if floor < extra_nodes:
+                    nodes_for_floor += 1
+                
+                # Distribute types within floor
+                if nodes_for_floor > 0:
+                    # Floor distribution strategy: transformers -> panelboards -> loads
+                    transformers = 1 if nodes_for_floor >= 3 and floor % 2 == 0 else 0  # Every other floor
+                    remaining_after_transformers = nodes_for_floor - transformers
+                    
+                    panelboards = min(2, max(1, remaining_after_transformers // 2))
+                    loads = max(0, remaining_after_transformers - panelboards)
+                    
+                    distribution['floors'][floor] = {
+                        'transformers': transformers,
+                        'switchboards': 0,  # No switchboards on upper floors
+                        'panelboards': panelboards,
+                        'loads': loads
+                    }
+                else:
+                    distribution['floors'][floor] = {
+                        'transformers': 0,
+                        'switchboards': 0,
+                        'panelboards': 0,
+                        'loads': 0
+                    }
+        else:
+            # If not enough nodes, just use basement equipment
+            for floor in range(num_floors):
+                distribution['floors'][floor] = {
+                    'transformers': 0,
+                    'switchboards': 0,
+                    'panelboards': 0,
+                    'loads': 0
+                }
         
         return distribution
+    
+    def _add_transformer_node_in_room(self, G: nx.DiGraph, node_id: str, transformer_type: str, position_id: int, floor: int):
+        """Add a transformer node positioned within an appropriate electrical room."""
+        x, y, z = self._generate_position_in_electrical_room(node_id, position_id, floor, 'transformer')
+        room_code = self._get_room_code_for_position(floor, x, y, 'transformer')
+        
+        if transformer_type == 'main':
+            upstream_voltage = self.selected_high_voltage
+            downstream_voltage = self.voltage_levels['medium'][0]  # 480V
+            performance = random.choice(['1000 kVA', '1500 kVA', '2000 kVA', '2500 kVA'])
+            current_rating = self._calculate_current_rating(downstream_voltage, performance)
+        else:  # secondary
+            upstream_voltage = 480.0
+            downstream_voltage = self.voltage_levels['low'][0]  # 208V
+            performance = random.choice(['150 kVA', '225 kVA', '300 kVA', '500 kVA'])
+            current_rating = self._calculate_current_rating(downstream_voltage, performance)
+        
+        attrs = {
+            'type': self.component_types['transformer'],
+            'x': x, 'y': y, 'z': z,
+            'room': room_code,
+            'floor': floor,
+            'Identifier': f"Transformer-{position_id:03d}",
+            'Manufacturer': random.choice(self.manufacturers),
+            'Nominal_performance': performance,
+            'Short-circuit_strength_kA': round(random.uniform(10.0, 25.0), 1),
+            'Physical_Height_mm': float(random.randint(*self.physical_dims['transformer']['height'])),
+            'Physical_Length_mm': float(random.randint(*self.physical_dims['transformer']['length'])),
+            'Physical_Width_mm': float(random.randint(*self.physical_dims['transformer']['width'])),
+            'Type': 'Dry Type',
+            'Voltage': f"{upstream_voltage/1000:.1f} kV" if upstream_voltage >= 1000 else f"{upstream_voltage:.0f} V",
+            'Warranty_months': random.choice([24, 36, 60, 120]),
+            'Year_of_manufacture': random.randint(2018, 2024),
+            'Year_of_installation': random.randint(2018, 2024),
+            'distribution_upstream_voltage': upstream_voltage,
+            'distribution_upstream_current_rating': self._calculate_current_rating(upstream_voltage, performance),
+            'distribution_upstream_phase_number': 3,
+            'distribution_upstream_frequency': 60.0,
+            'distribution_downstream_voltage': downstream_voltage,
+            'distribution_downstream_current_rating': current_rating,
+            'distribution_downstream_phase_number': 3,
+            'distribution_downstream_frequency': 60.0,
+            'AIC_rating': round(random.uniform(22.0, 65.0), 1)
+        }
+        
+        G.add_node(node_id, **attrs)
+    
+    def _add_switchboard_node_in_room(self, G: nx.DiGraph, node_id: str, position_id: int, floor: int):
+        """Add a switchboard node positioned within an appropriate electrical room."""
+        x, y, z = self._generate_position_in_electrical_room(node_id, position_id, floor, 'switchboard')
+        room_code = self._get_room_code_for_position(floor, x, y, 'switchboard')
+        voltage = 480.0
+        
+        attrs = {
+            'type': self.component_types['switchboard'],
+            'x': x, 'y': y, 'z': z,
+            'room': room_code,
+            'floor': floor,
+            'Identifier': f"Switchboard-{position_id:03d}",
+            'Manufacturer': random.choice(self.manufacturers),
+            'Operating_company_department': 'Facilities',
+            'Owner': random.choice(['Building Owner', 'Tenant', 'Management Company']),
+            'Nominal_current': 10.0,
+            'Short-circuit_strength_kA': round(random.uniform(25.0, 65.0), 1),
+            'Physical_Height_mm': float(random.randint(*self.physical_dims['switchboard']['height'])),
+            'Physical_Length_mm': float(random.randint(*self.physical_dims['switchboard']['length'])),
+            'Physical_Width_mm': float(random.randint(*self.physical_dims['switchboard']['width'])),
+            'Warranty_months': random.choice([24, 36, 60]),
+            'Year_of_manufacture': random.randint(2018, 2024),
+            'Year_of_installation': random.randint(2018, 2024),
+            'Outdoor_rated': random.choice([True, False]),
+            'distribution_upstream_voltage': voltage,
+            'distribution_upstream_current_rating': round(random.uniform(1000.0, 4000.0), 1),
+            'distribution_upstream_phase_number': 3,
+            'distribution_upstream_frequency': 60.0,
+            'distribution_downstream_voltage': voltage,
+            'distribution_downstream_current_rating': round(random.uniform(800.0, 3500.0), 1),
+            'distribution_downstream_phase_number': 3,
+            'distribution_downstream_frequency': 60.0,
+            'AIC_rating': round(random.uniform(42.0, 65.0), 1)
+        }
+        
+        G.add_node(node_id, **attrs)
+    
+    def _add_panelboard_node_in_room(self, G: nx.DiGraph, node_id: str, position_id: int, floor: int):
+        """Add a panelboard node positioned within an appropriate electrical room."""
+        x, y, z = self._generate_position_in_electrical_room(node_id, position_id, floor, 'panelboard')
+        room_code = self._get_room_code_for_position(floor, x, y, 'panelboard')
+        voltage = 208.0
+        
+        attrs = {
+            'type': self.component_types['panelboard'],
+            'x': x, 'y': y, 'z': z,
+            'room': room_code,
+            'floor': floor,
+            'Identifier': f"Panelboard-{position_id:03d}",
+            'Manufacturer': random.choice(self.manufacturers),
+            'Masked_yes_no': random.choice([True, False]),
+            'Mounting_method': random.choice(self.mounting_methods),
+            'Nominal_current': 10.0,
+            'Short-circuit_strength_kA': round(random.uniform(10.0, 22.0), 1),
+            'Physical_Height_mm': float(random.randint(*self.physical_dims['panelboard']['height'])),
+            'Physical_Length_mm': float(random.randint(*self.physical_dims['panelboard']['length'])),
+            'Physical_Width_mm': float(random.randint(*self.physical_dims['panelboard']['width'])),
+            'Warranty_months': random.choice([24, 36, 60]),
+            'Year_of_manufacture': random.randint(2018, 2024),
+            'Year_of_installation': random.randint(2018, 2024),
+            'Operating_company_department': 'Facilities',
+            'Owner': random.choice(['Building Owner', 'Tenant']),
+            'Outdoor_rated': False,
+            'distribution_upstream_voltage': voltage,
+            'distribution_upstream_current_rating': round(random.uniform(100.0, 800.0), 1),
+            'distribution_upstream_phase_number': 3,
+            'distribution_upstream_frequency': 60.0,
+            'distribution_downstream_voltage': voltage,
+            'distribution_downstream_current_rating': round(random.uniform(80.0, 600.0), 1),
+            'distribution_downstream_phase_number': 1,
+            'distribution_downstream_frequency': 60.0,
+            'AIC_rating': round(random.uniform(10.0, 25.0), 1)
+        }
+        
+        G.add_node(node_id, **attrs)
+    
+    def _add_load_node_on_floor(self, G: nx.DiGraph, node_id: str, position_id: int, floor: int):
+        """Add a load node distributed around the floor, outside electrical rooms."""
+        x, y, z = self._generate_position_outside_electrical_rooms(node_id, position_id, floor)
+        room_code = self._get_room_code_for_position(floor, x, y, 'load')
+        voltage = 120.0
+        
+        attrs = {
+            'type': self.component_types['load'],
+            'x': x, 'y': y, 'z': z,
+            'room': room_code,
+            'floor': floor,
+            'Identifier': f"Load-{position_id:03d}",
+            'Manufacturer': random.choice(self.manufacturers),
+            'Nominal_current': round(random.uniform(5.0, 50.0), 1),
+            'Physical_Height_mm': float(random.randint(*self.physical_dims['load']['height'])),
+            'Physical_Length_mm': float(random.randint(*self.physical_dims['load']['length'])),
+            'Physical_Width_mm': float(random.randint(*self.physical_dims['load']['width'])),
+            'Voltage': f"{voltage:.0f} V",
+            'Warranty_months': random.choice([12, 24, 36]),
+            'Year_of_manufacture': random.randint(2018, 2024),
+            'Year_of_installation': random.randint(2018, 2024),
+            'distribution_upstream_voltage': voltage,
+            'distribution_upstream_current_rating': round(random.uniform(10.0, 100.0), 1),
+            'distribution_upstream_phase_number': 1,
+            'distribution_upstream_frequency': 60.0
+        }
+        
+        G.add_node(node_id, **attrs)
+    
+    def _generate_position_in_electrical_room(self, node_id: str, position_id: int, floor: int, equipment_type: str) -> Tuple[float, float, float]:
+        """Generate position within an appropriate electrical room for the equipment type."""
+        # Get floor level info
+        floor_level = self.floor_levels[floor]
+        
+        # Find appropriate room for this equipment type
+        available_rooms = []
+        if floor in self.electrical_rooms:
+            for room in self.electrical_rooms[floor]:
+                if equipment_type in room['equipment_types'] or 'any' in room['equipment_types']:
+                    available_rooms.append(room)
+        
+        if not available_rooms:
+            # Fallback to first available room on floor
+            if floor in self.electrical_rooms and self.electrical_rooms[floor]:
+                available_rooms = [self.electrical_rooms[floor][0]]
+            else:
+                # Ultimate fallback - generate position in building center
+                config = self.building_config
+                x = config['electrical_core']['x_center'] + random.uniform(-2.0, 2.0)
+                y = config['electrical_core']['y_center'] + random.uniform(-2.0, 2.0)
+                z = floor_level['z_center'] + random.uniform(-0.5, 0.5)
+                return round(x, 1), round(y, 1), round(z, 1)
+        
+        # Select room (prefer less crowded rooms)
+        selected_room = random.choice(available_rooms)
+        
+        # Generate position within room bounds
+        x = random.uniform(selected_room['x_min'], selected_room['x_max'])
+        y = random.uniform(selected_room['y_min'], selected_room['y_max'])
+        z = floor_level['z_center'] + random.uniform(-0.3, 0.3)
+        
+        return round(x, 1), round(y, 1), round(z, 1)
+    
+    def _generate_position_outside_electrical_rooms(self, node_id: str, position_id: int, floor: int) -> Tuple[float, float, float]:
+        """Generate position for loads distributed around the floor, avoiding electrical rooms."""
+        config = self.building_config
+        floor_level = self.floor_levels[floor]
+        
+        # Define usable floor area (excluding electrical rooms)
+        max_attempts = 20
+        for attempt in range(max_attempts):
+            # Generate random position on floor
+            x = random.uniform(5.0, config['length'] - 5.0)
+            y = random.uniform(5.0, config['width'] - 5.0)
+            z = floor_level['z_center'] + random.uniform(0.0, 2.0)  # Above floor level
+            
+            # Check if position conflicts with electrical rooms
+            if self._is_position_outside_electrical_rooms(x, y, floor):
+                return round(x, 1), round(y, 1), round(z, 1)
+        
+        # If all attempts failed, place at edge of building
+        edge = random.choice(['north', 'south', 'east', 'west'])
+        if edge == 'north':
+            x = random.uniform(10.0, config['length'] - 10.0)
+            y = config['width'] - 8.0
+        elif edge == 'south':
+            x = random.uniform(10.0, config['length'] - 10.0)
+            y = 8.0
+        elif edge == 'east':
+            x = config['length'] - 8.0
+            y = random.uniform(10.0, config['width'] - 10.0)
+        else:  # west
+            x = 8.0
+            y = random.uniform(10.0, config['width'] - 10.0)
+        
+        z = floor_level['z_center'] + random.uniform(0.0, 2.0)
+        return round(x, 1), round(y, 1), round(z, 1)
+    
+    def _is_position_outside_electrical_rooms(self, x: float, y: float, floor: int) -> bool:
+        """Check if position is outside all electrical rooms on the floor."""
+        if floor not in self.electrical_rooms:
+            return True
+        
+        for room in self.electrical_rooms[floor]:
+            # Add buffer around electrical rooms
+            buffer = 2.0
+            if (room['x_min'] - buffer <= x <= room['x_max'] + buffer and
+                room['y_min'] - buffer <= y <= room['y_max'] + buffer):
+                return False
+        
+        return True
+    
+    def _get_room_code_for_position(self, floor: int, x: float, y: float, equipment_type: str) -> str:
+        """Get room code based on position and equipment type."""
+        # Check if position is within any electrical room
+        if floor in self.electrical_rooms:
+            for room in self.electrical_rooms[floor]:
+                if (room['x_min'] <= x <= room['x_max'] and
+                    room['y_min'] <= y <= room['y_max']):
+                    return room['id']
+        
+        # For loads outside electrical rooms, generate appropriate room codes
+        if equipment_type == 'load':
+            room_types = ['OFFICE', 'LAB', 'CONF', 'MECH', 'STOR']
+            room_type = random.choice(room_types)
+            room_num = random.randint(1, 20)
+            return f"{room_type}-{floor:02d}{room_num:02d}"
+        
+        # Fallback room code
+        return f"ROOM-{floor:02d}-{random.randint(1, 99):02d}"
+    
+    def _create_bottom_up_connections(self, G: nx.DiGraph, floor_nodes: Dict[int, List[str]]):
+        """Create logical bottom-up connections starting from basement."""
+        edge_id = 1
+        
+        # Start from basement main equipment
+        basement_transformers = [n for n in floor_nodes.get(-1, []) if 'transformer' in n]
+        basement_switchboards = [n for n in floor_nodes.get(-1, []) if 'switchboard' in n]
+        
+        # Connect basement transformers to switchboards
+        for transformer in basement_transformers:
+            for switchboard in basement_switchboards:
+                self._add_connection(G, f"connection_{edge_id:03d}", transformer, switchboard, 'Main Distribution')
+                edge_id += 1
+        
+        # Track equipment that can serve upper floors
+        feeding_equipment = basement_switchboards.copy()
+        
+        # Connect each floor in ascending order
+        for floor in sorted([f for f in floor_nodes.keys() if f >= 0]):
+            floor_equipment = floor_nodes[floor]
+            floor_transformers = [n for n in floor_equipment if 'transformer' in n]
+            floor_panelboards = [n for n in floor_equipment if 'panelboard' in n]
+            floor_loads = [n for n in floor_equipment if 'load' in n]
+            
+            # Connect transformers on this floor to feeding equipment from below
+            for transformer in floor_transformers:
+                if feeding_equipment:
+                    closest_feeder = self._find_closest_equipment(G, transformer, feeding_equipment)
+                    if closest_feeder:
+                        self._add_connection(G, f"connection_{edge_id:03d}", closest_feeder, transformer, 'Floor Distribution')
+                        edge_id += 1
+            
+            # Connect panelboards to transformers on same floor, or feeding equipment from below
+            available_sources = floor_transformers + feeding_equipment
+            for panelboard in floor_panelboards:
+                if available_sources:
+                    closest_source = self._find_closest_equipment(G, panelboard, available_sources)
+                    if closest_source:
+                        load_type = random.choice(['Lighting', 'General Power', 'HVAC'])
+                        self._add_connection(G, f"connection_{edge_id:03d}", closest_source, panelboard, load_type)
+                        edge_id += 1
+            
+            # Connect loads to panelboards on same floor
+            for load in floor_loads:
+                if floor_panelboards:
+                    closest_panelboard = self._find_closest_equipment(G, load, floor_panelboards)
+                    if closest_panelboard:
+                        load_type = random.choice(['Lighting', 'General Power', 'Motor Loads'])
+                        self._add_connection(G, f"connection_{edge_id:03d}", closest_panelboard, load, load_type)
+                        edge_id += 1
+            
+            # Add floor equipment to feeding equipment for next floor
+            feeding_equipment.extend(floor_transformers + floor_panelboards)
     
     def _define_equipment_zones(self) -> Dict[str, Dict]:
         """Define realistic zones for different equipment types."""
@@ -762,30 +1198,48 @@ class MEPGraphGenerator:
                     edge_id += 1
     
     def _find_closest_equipment(self, G: nx.DiGraph, source_node: str, target_candidates: List[str]) -> str:
-        """Find the closest equipment from a list of candidates."""
+        """Find the closest equipment from a list of candidates, with floor-aware logic."""
         if not target_candidates:
             return None
 
         source_attrs = G.nodes[source_node]
         source_z = source_attrs.get('z', 0.0)
+        source_floor = source_attrs.get('floor', 0)
         min_distance = float('inf')
         closest_node = None
 
-        # Prefer only candidates at a higher elevation (z)
-        higher_candidates = [c for c in target_candidates if G.nodes[c].get('z', 0.0) > source_z]
-        candidates_to_check = higher_candidates if higher_candidates else target_candidates
+        # For bottom-up topology, prefer candidates at lower or same floor for distribution
+        # This reverses the previous logic for upward distribution
+        same_floor_candidates = [c for c in target_candidates if G.nodes[c].get('floor', 0) == source_floor]
+        lower_floor_candidates = [c for c in target_candidates if G.nodes[c].get('floor', 0) < source_floor]
+        
+        # Priority: same floor first, then lower floors (for distribution from below)
+        candidates_to_check = same_floor_candidates + lower_floor_candidates
+        if not candidates_to_check:
+            candidates_to_check = target_candidates  # Fallback to all candidates
 
         for candidate in candidates_to_check:
-            candidate_z = G.nodes[candidate].get('z', 0.0)
-            # If possible, only allow connections from lower to higher z
-            if higher_candidates and candidate_z <= source_z:
-                continue
+            candidate_floor = G.nodes[candidate].get('floor', 0)
             distance = self._calculate_distance(G, source_node, candidate)
-            if distance < min_distance and self._is_reasonable_distance(distance, source_node, candidate):
-                min_distance = distance
+            
+            # Apply floor preference weighting
+            if candidate_floor == source_floor:
+                # Same floor - prefer closer distances
+                weight = 1.0
+            elif candidate_floor < source_floor:
+                # Lower floor (feeding from below) - slight penalty for distance
+                weight = 1.2
+            else:
+                # Higher floor - larger penalty
+                weight = 2.0
+            
+            weighted_distance = distance * weight
+            
+            if weighted_distance < min_distance and self._is_reasonable_distance(distance, source_node, candidate):
+                min_distance = weighted_distance
                 closest_node = candidate
 
-        # If no candidates meet distance criteria, return the closest one anyway (from higher_candidates if possible)
+        # If no candidates meet distance criteria, return the closest one anyway
         if closest_node is None and candidates_to_check:
             closest_node = min(candidates_to_check, key=lambda x: self._calculate_distance(G, source_node, x))
 
