@@ -83,12 +83,17 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
     return _hierarchy_pos(G, root, width, vert_gap, vert_loc, xcenter)
 
 def visualize_graph_two_d(graph):
-    # Select a valid root node (first node in the graph)
-    if len(graph.nodes) == 0:
-        return go.Figure()
-    root_node = next(iter(graph.nodes))
-    pos = hierarchy_pos(graph, root_node, width = 2*math.pi, xcenter=0)
-    pos = {u:(r*math.cos(theta),r*math.sin(theta)) for u, (theta, r) in pos.items()}
+    try:
+        # Select a valid root node (first node in the graph)
+        if len(graph.nodes) == 0:
+            return go.Figure()
+        root_node = next(iter(graph.nodes))
+        pos = hierarchy_pos(graph, root_node, width = 2*math.pi, xcenter=0)
+        pos = {u:(r*math.cos(theta),r*math.sin(theta)) for u, (theta, r) in pos.items()}
+
+    except Exception as e:
+        print(f"Error calculating positions: {e}")
+        pos = nx.spring_layout(graph)
 
     # Get risk scores for color mapping
     risk_scores = [graph.nodes[n].get('risk_score', 0) for n in graph.nodes]
@@ -245,18 +250,27 @@ def visualize_graph_three_d(graph):
         x1 = graph.nodes[edge[1]].get('x', 0)
         y1 = graph.nodes[edge[1]].get('y', 0)
         z1 = graph.nodes[edge[1]].get('z', 0)
+        # First segment: (x0, y0, z0) -> (x1, y1, z0)
         edge_x += [x0, x1, None]
         edge_y += [y0, y1, None]
+        edge_z += [z0, z0, None]
+        # Second segment: (x1, y1, z0) -> (x1, y1, z1)
+        edge_x += [x1, x1, None]
+        edge_y += [y1, y1, None]
         edge_z += [z0, z1, None]
-        # Add invisible marker at edge midpoint for better hover
-        edge_marker_x.append((x0 + x1) / 2)
-        edge_marker_y.append((y0 + y1) / 2)
-        edge_marker_z.append((z0 + z1) / 2)
+        # Add invisible marker at the bend and at the midpoint of the vertical segment for better hover
+        bend_x = x1
+        bend_y = y1
+        bend_z = z0
+        mid_z = (z0 + z1) / 2
+        edge_marker_x.extend([(x0 + x1) / 2, bend_x, bend_x])
+        edge_marker_y.extend([(y0 + y1) / 2, bend_y, bend_y])
+        edge_marker_z.extend([z0, bend_z, mid_z])
         hover_text = f"{edge[0]} - {edge[1]}"
         edge_attrs = graph.edges[edge]
         if edge_attrs:
             hover_text += "<br>" + "<br>".join([f"{k}: {v}" for k, v in edge_attrs.items()])
-        edge_marker_text.append(hover_text)
+        edge_marker_text.extend([hover_text, hover_text, hover_text])
     edge_trace = go.Scatter3d(
         x=edge_x, y=edge_y, z=edge_z,
         line=dict(width=2, color='#888'),
