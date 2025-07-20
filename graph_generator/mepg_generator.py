@@ -901,24 +901,132 @@ class MEPGraphGenerator:
                                        'Direct Distribution')
                     edge_id += 1
         
-        # Step 5: Connect loads to closest panelboards (ensure each load has only one connection)
+        # Step 5: Connect loads to distribution equipment (panelboards/switchboards) with floor-level priority (ensure each load has only one connection)
         connected_loads = set()  # Track which loads have been connected
+        max_same_floor_distance = 30.0  # Maximum distance to consider same-floor equipment (meters)
+        
+        # Combine panelboards and switchboards as potential feeding equipment for loads
+        feeding_equipment = panelboards + switchboards
         
         for load in loads:
             if load in connected_loads:
                 continue  # Skip if already connected
                 
-            # Find the closest panelboard regardless of floor
-            if panelboards:
-                closest_panelboard = min(panelboards, 
-                                       key=lambda p: self._calculate_decision_distance(load, p))
+            if feeding_equipment:
+                best_equipment = self._find_best_feeding_equipment_for_load(load, feeding_equipment, max_same_floor_distance)
                 load_type = load.subtype.replace('_', ' ').title()
                 self._add_connection(G, f"connection_{edge_id:03d}", 
-                                   decision_to_node_id[closest_panelboard], 
+                                   decision_to_node_id[best_equipment], 
                                    decision_to_node_id[load], 
                                    load_type)
                 edge_id += 1
                 connected_loads.add(load)
+
+    def _find_best_feeding_equipment_for_load(self, load_decision: NodeDecision, feeding_equipment: List[NodeDecision], 
+                                             max_same_floor_distance: float) -> NodeDecision:
+        """
+        Find the best feeding equipment (panelboard or switchboard) for a load with floor-level priority.
+        
+        Priority order:
+        1. Same floor equipment within max_same_floor_distance
+        2. Adjacent floor equipment (floor ± 1)
+        3. Any equipment (fallback)
+        
+        Within each priority level, prefer panelboards over switchboards for typical loads,
+        but allow switchboards for high-power loads or when panelboards are not available.
+        """
+        load_floor = load_decision.floor
+        
+        # Separate equipment by floor relationship
+        same_floor_equipment = [e for e in feeding_equipment if e.floor == load_floor]
+        adjacent_floor_equipment = [e for e in feeding_equipment if abs(e.floor - load_floor) == 1]
+        other_floor_equipment = [e for e in feeding_equipment if abs(e.floor - load_floor) > 1]
+        
+        # Priority 1: Same floor equipment within distance limit
+        if same_floor_equipment:
+            same_floor_distances = [(e, self._calculate_decision_distance(load_decision, e)) 
+                                  for e in same_floor_equipment]
+            # Filter by distance and find closest
+            close_same_floor = [(e, d) for e, d in same_floor_distances if d <= max_same_floor_distance]
+            
+            if close_same_floor:
+                # Return closest same-floor equipment within distance limit
+                # Prefer panelboards over switchboards if distances are similar (within 10%)
+                return self._select_preferred_equipment(close_same_floor, load_decision)
+            else:
+                # All same-floor equipment is too far, but still prefer them over adjacent floors
+                closest_same_floor = min(same_floor_distances, key=lambda x: x[1])
+                # Only use adjacent floors if significantly closer
+                if adjacent_floor_equipment:
+                    closest_adjacent_candidates = [(e, self._calculate_decision_distance(load_decision, e)) 
+                                                 for e in adjacent_floor_equipment]
+                    closest_adjacent = min(closest_adjacent_candidates, key=lambda x: x[1])
+                    
+                    # Use adjacent floor only if it's significantly closer (more than 20% closer)
+                    if closest_adjacent[1] < closest_same_floor[1] * 0.8:
+                        return closest_adjacent[0]
+                
+                # Otherwise, use the closest same-floor equipment even if far
+                return closest_same_floor[0]
+        
+        # Priority 2: Adjacent floor equipment (if no same-floor options)
+        if adjacent_floor_equipment:
+            adjacent_distances = [(e, self._calculate_decision_distance(load_decision, e)) 
+                                for e in adjacent_floor_equipment]
+            return self._select_preferred_equipment(adjacent_distances, load_decision)
+        
+        # Priority 3: Any equipment (fallback)
+        if other_floor_equipment:
+            other_distances = [(e, self._calculate_decision_distance(load_decision, e)) 
+                             for e in other_floor_equipment]
+            return self._select_preferred_equipment(other_distances, load_decision)
+        
+        # Should never reach here if equipment exists, but fallback to first available
+        return feeding_equipment[0] if feeding_equipment else None
+
+    def _select_preferred_equipment(self, equipment_distance_pairs: List[Tuple[NodeDecision, float]], 
+                                   load_decision: NodeDecision) -> NodeDecision:
+        """
+        Select preferred equipment from candidates, considering both distance and equipment type.
+        Prefer panelboards for typical loads, but allow switchboards for high-power loads.
+        """
+        if not equipment_distance_pairs:
+            return None
+        
+        # Sort by distance first
+        equipment_distance_pairs.sort(key=lambda x: x[1])
+        
+        # Check if load is high-power (>50kW) - prefer switchboards for these
+        is_high_power_load = load_decision.capacity_kw > 50.0
+        
+        # If high-power load, prefer switchboards
+        if is_high_power_load:
+            for equipment, distance in equipment_distance_pairs:
+                if equipment.node_type == 'switchboard':
+                    return equipment
+        
+        # For normal loads or if no switchboards available for high-power loads,
+        # prefer panelboards but allow closest equipment if needed
+        for equipment, distance in equipment_distance_pairs:
+            if equipment.node_type == 'panelboard':
+                return equipment
+        
+        # If no panelboards available, use the closest equipment (likely switchboard)
+        return equipment_distance_pairs[0][0]
+
+    def _find_best_panelboard_for_load(self, load_decision: NodeDecision, panelboards: List[NodeDecision], 
+                                      max_same_floor_distance: float) -> NodeDecision:
+        """
+        Find the best panelboard for a load with floor-level priority.
+        DEPRECATED: Use _find_best_feeding_equipment_for_load instead.
+        
+        Priority order:
+        1. Same floor panelboards within max_same_floor_distance
+        2. Adjacent floor panelboards (floor ± 1)
+        3. Any panelboard (fallback)
+        """
+        # Delegate to the new method for consistency
+        return self._find_best_feeding_equipment_for_load(load_decision, panelboards, max_same_floor_distance)
 
     def _calculate_decision_distance(self, load_decision: NodeDecision, panel_decision: NodeDecision) -> float:
         """Calculate distance between two node decisions based on their locations."""
@@ -1390,6 +1498,7 @@ class MEPGraphGenerator:
             floor_equipment = floor_nodes[floor]
             floor_transformers = [n for n in floor_equipment if 'transformer' in n]
             floor_panelboards = [n for n in floor_equipment if 'panelboard' in n]
+            floor_switchboards = [n for n in floor_equipment if 'switchboard' in n]
             floor_loads = [n for n in floor_equipment if 'load' in n]
             
             # Connect transformers on this floor to switchboards/panelboards (never to other transformers)
@@ -1426,21 +1535,23 @@ class MEPGraphGenerator:
                         self._add_connection(G, f"connection_{edge_id:03d}", closest_source, panelboard, load_type)
                         edge_id += 1
             
-            # Connect loads to closest panelboards on same floor (ensure single connection per load)
+            # Connect loads to distribution equipment (panelboards/switchboards) with floor-level priority (ensure single connection per load)
+            floor_feeding_equipment = floor_panelboards + floor_switchboards
             for load in floor_loads:
                 # Check if load is already connected (avoid multiple connections)
                 if G.in_degree(load) > 0:
                     continue  # Skip if already connected
                     
-                if floor_panelboards:
-                    closest_panelboard = self._find_closest_equipment(G, load, floor_panelboards)
-                    if closest_panelboard:
+                if floor_feeding_equipment:
+                    # Use floor-prioritized method for loads that considers both panelboards and switchboards
+                    closest_equipment = self._find_best_panelboard_for_load_node(G, load, floor_feeding_equipment)
+                    if closest_equipment:
                         load_type = random.choice(['Lighting', 'General Power', 'Motor Loads'])
-                        self._add_connection(G, f"connection_{edge_id:03d}", closest_panelboard, load, load_type)
+                        self._add_connection(G, f"connection_{edge_id:03d}", closest_equipment, load, load_type)
                         edge_id += 1
             
-            # Add panelboards (not transformers) to feeding equipment for next floor
-            feeding_equipment.extend(floor_panelboards)
+            # Add panelboards and switchboards (not transformers) to feeding equipment for next floor
+            feeding_equipment.extend(floor_panelboards + floor_switchboards)
     
     def _define_equipment_zones(self) -> Dict[str, Dict]:
         """Define realistic zones for different equipment types based on multi-core strategy."""
@@ -2034,19 +2145,115 @@ class MEPGraphGenerator:
                         available_sources.append(panelboard)
                         edge_id += 1
         
-        # Level 4 to Level 5: Panelboards to Loads (proximity-based, single connection per load)
+        # Level 4 to Level 5: Distribution Equipment to Loads (floor-level priority, single connection per load)
         if level_nodes[5]:  # If there are load nodes
+            # Combine panelboards (level 4) and switchboards (level 2) as potential feeding equipment
+            available_feeding_equipment = level_nodes[4] + level_nodes[2]  # panelboards + switchboards
+            
             for load in level_nodes[5]:
                 # Check if load is already connected (avoid multiple connections)
                 if G.in_degree(load) > 0:
                     continue  # Skip if already connected
                     
-                closest_panelboard = self._find_closest_equipment(G, load, level_nodes[4])
-                if closest_panelboard:
+                # Use floor-prioritized method for loads that considers both panelboards and switchboards
+                closest_equipment = self._find_best_panelboard_for_load_node(G, load, available_feeding_equipment)
+                if closest_equipment:
                     load_type = random.choice(['Lighting', 'General Power', 'Motor Loads'])
-                    self._add_connection(G, f"connection_{edge_id:03d}", closest_panelboard, load, load_type)
+                    self._add_connection(G, f"connection_{edge_id:03d}", closest_equipment, load, load_type)
                     edge_id += 1
     
+    def _find_best_panelboard_for_load_node(self, G: nx.DiGraph, load_node: str, equipment_candidates: List[str],
+                                           max_same_floor_distance: float = 30.0) -> str:
+        """
+        Find the best feeding equipment (panelboard or switchboard) for a load node with floor-level priority.
+        
+        Priority order:
+        1. Same floor equipment within max_same_floor_distance
+        2. Adjacent floor equipment (floor ± 1) 
+        3. Any equipment (fallback)
+        
+        Within each priority level, prefer panelboards over switchboards for typical loads,
+        but allow switchboards for high-power loads.
+        """
+        if not equipment_candidates:
+            return None
+            
+        load_attrs = G.nodes[load_node]
+        load_floor = load_attrs.get('floor', 0)
+        load_kw = load_attrs.get('load_kw', load_attrs.get('Nominal_current', 0) * 0.208)  # Estimate kW from current
+        
+        # Separate equipment by floor relationship
+        same_floor_equipment = [e for e in equipment_candidates if G.nodes[e].get('floor', 0) == load_floor]
+        adjacent_floor_equipment = [e for e in equipment_candidates if abs(G.nodes[e].get('floor', 0) - load_floor) == 1]
+        other_floor_equipment = [e for e in equipment_candidates if abs(G.nodes[e].get('floor', 0) - load_floor) > 1]
+        
+        # Priority 1: Same floor equipment within distance limit
+        if same_floor_equipment:
+            same_floor_distances = [(e, self._calculate_distance(G, load_node, e)) for e in same_floor_equipment]
+            # Filter by distance and find closest
+            close_same_floor = [(e, d) for e, d in same_floor_distances if d <= max_same_floor_distance]
+            
+            if close_same_floor:
+                # Return closest same-floor equipment within distance limit
+                return self._select_preferred_equipment_node(close_same_floor, load_kw)
+            else:
+                # All same-floor equipment is too far, but still prefer them over adjacent floors
+                closest_same_floor = min(same_floor_distances, key=lambda x: x[1])
+                # Only use adjacent floors if significantly closer
+                if adjacent_floor_equipment:
+                    adjacent_distances = [(e, self._calculate_distance(G, load_node, e)) for e in adjacent_floor_equipment]
+                    closest_adjacent = min(adjacent_distances, key=lambda x: x[1])
+                    
+                    # Use adjacent floor only if it's significantly closer (more than 20% closer)
+                    if closest_adjacent[1] < closest_same_floor[1] * 0.8:
+                        return closest_adjacent[0]
+                
+                # Otherwise, use the closest same-floor equipment even if far
+                return closest_same_floor[0]
+        
+        # Priority 2: Adjacent floor equipment (if no same-floor options)
+        if adjacent_floor_equipment:
+            adjacent_distances = [(e, self._calculate_distance(G, load_node, e)) for e in adjacent_floor_equipment]
+            return self._select_preferred_equipment_node(adjacent_distances, load_kw)
+        
+        # Priority 3: Any equipment (fallback)
+        if other_floor_equipment:
+            other_distances = [(e, self._calculate_distance(G, load_node, e)) for e in other_floor_equipment]
+            return self._select_preferred_equipment_node(other_distances, load_kw)
+        
+        # Should never reach here if equipment exists, but fallback to first available
+        return equipment_candidates[0] if equipment_candidates else None
+
+    def _select_preferred_equipment_node(self, equipment_distance_pairs: List[Tuple[str, float]], 
+                                        load_kw: float) -> str:
+        """
+        Select preferred equipment from candidates, considering both distance and equipment type.
+        Prefer panelboards for typical loads, but allow switchboards for high-power loads.
+        """
+        if not equipment_distance_pairs:
+            return None
+        
+        # Sort by distance first
+        equipment_distance_pairs.sort(key=lambda x: x[1])
+        
+        # Check if load is high-power (>50kW) - prefer switchboards for these
+        is_high_power_load = load_kw > 50.0
+        
+        # If high-power load, prefer switchboards
+        if is_high_power_load:
+            for equipment, distance in equipment_distance_pairs:
+                if 'switchboard' in equipment:
+                    return equipment
+        
+        # For normal loads or if no switchboards available for high-power loads,
+        # prefer panelboards but allow closest equipment if needed
+        for equipment, distance in equipment_distance_pairs:
+            if 'panelboard' in equipment:
+                return equipment
+        
+        # If no panelboards available, use the closest equipment (likely switchboard)
+        return equipment_distance_pairs[0][0]
+
     def _find_closest_equipment(self, G: nx.DiGraph, source_node: str, target_candidates: List[str]) -> str:
         """Find the closest equipment from a list of candidates, with floor-aware logic."""
         if not target_candidates:
