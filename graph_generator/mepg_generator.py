@@ -10,7 +10,43 @@ import random
 import math
 import datetime
 import networkx as nx
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any, Optional
+from dataclasses import dataclass
+from enum import Enum
+
+
+@dataclass(frozen=True)
+class ElectricalRequirement:
+    """Represents an electrical requirement that drives node creation."""
+    load_kw: float
+    voltage_level: str  # 'high', 'medium', 'low'
+    location: Tuple[float, float, float]  # x, y, z
+    load_type: str  # 'lighting', 'power', 'hvac', etc.
+    floor: int
+    room: str
+    priority: int = 1  # 1=critical, 2=important, 3=normal
+
+@dataclass
+class NodeDecision:
+    """Represents a logical decision about what type of node to create."""
+    node_type: str  # 'transformer', 'switchboard', 'panelboard', 'load'
+    subtype: str    # 'main', 'secondary', etc.
+    reason: str
+    capacity_kw: float
+    floor: int
+    location: Tuple[float, float, float]
+    serves_requirements: List[ElectricalRequirement]
+    electrical_characteristics: Dict = None
+    decision_id: int = 0  # Unique identifier for hashing
+    
+    def __post_init__(self):
+        if not hasattr(NodeDecision, '_id_counter'):
+            NodeDecision._id_counter = 0
+        NodeDecision._id_counter += 1
+        object.__setattr__(self, 'decision_id', NodeDecision._id_counter)
+    
+    def __hash__(self):
+        return hash(self.decision_id)
 
 
 class MEPGraphGenerator:
@@ -68,7 +104,7 @@ class MEPGraphGenerator:
         self.voltage_levels = {
             'high': [13500.0, 4160.0],  # Only one will be selected per graph
             'medium': [480.0],
-            'low': [208.0]
+            'low': [208.0]  # Lowest voltage level - no 120V equipment
         }
         
         # Mounting methods
@@ -172,7 +208,7 @@ class MEPGraphGenerator:
     
     def generate_graph(self, node_count: int) -> nx.DiGraph:
         """
-        Generate a logical electrical system graph starting from basement and distributing upwards.
+        Generate a logical electrical system graph using demand-driven approach.
         
         Args:
             node_count: Target number of nodes in the graph
@@ -190,59 +226,22 @@ class MEPGraphGenerator:
         # Select one high voltage level for this entire graph
         self.selected_high_voltage = random.choice(self.voltage_levels['high'])
         
-        # Calculate logical distribution of components by floor
-        distribution = self._calculate_component_distribution_by_floor(node_count)
+        # Step 1: Analyze building electrical requirements
+        building_requirements = self._analyze_building_electrical_requirements()
         
-        # Generate nodes starting from basement (bottom-up approach)
-        node_id = 1
-        floor_nodes = {}
+        # Step 2: Generate logical node decisions based on requirements
+        node_decisions = self._generate_logical_node_decisions(building_requirements, node_count)
         
-        # Basement level (-1): Main service equipment
-        floor_nodes[-1] = []
-        for i in range(distribution['floors'][-1]['transformers']):
-            node_id_str = f"transformer_{node_id:03d}"
-            self._add_transformer_node_in_room(G, node_id_str, 'main', node_id, -1)
-            floor_nodes[-1].append(node_id_str)
-            node_id += 1
+        # Step 3: Create nodes and connections from decisions
+        G = self._build_graph_from_logical_decisions(G, node_decisions)
         
-        for i in range(distribution['floors'][-1]['switchboards']):
-            node_id_str = f"switchboard_{node_id:03d}"
-            self._add_switchboard_node_in_room(G, node_id_str, node_id, -1)
-            floor_nodes[-1].append(node_id_str)
-            node_id += 1
-        
-        # Upper floors (0 to num_floors-1): Distribution equipment and loads
-        for floor in range(self.building_config['num_floors']):
-            floor_nodes[floor] = []
-            
-            # Add transformers for this floor
-            for i in range(distribution['floors'][floor]['transformers']):
-                node_id_str = f"transformer_{node_id:03d}"
-                self._add_transformer_node_in_room(G, node_id_str, 'secondary', node_id, floor)
-                floor_nodes[floor].append(node_id_str)
-                node_id += 1
-            
-            # Add panelboards for this floor
-            for i in range(distribution['floors'][floor]['panelboards']):
-                node_id_str = f"panelboard_{node_id:03d}"
-                self._add_panelboard_node_in_room(G, node_id_str, node_id, floor)
-                floor_nodes[floor].append(node_id_str)
-                node_id += 1
-            
-            # Add loads distributed around the floor (outside electrical rooms)
-            for i in range(distribution['floors'][floor]['loads']):
-                node_id_str = f"load_{node_id:03d}"
-                self._add_load_node_on_floor(G, node_id_str, node_id, floor)
-                floor_nodes[floor].append(node_id_str)
-                node_id += 1
-        
-        # Create logical bottom-up connections
-        self._create_bottom_up_connections(G, floor_nodes)
-        
-        # Update voltages to ensure proper step-down relationships
+        # Step 4: Update voltages to ensure proper step-down relationships
         self._update_voltage_relationships(G)
+        
+        # Step 5: Validate electrical constraints
+        self._validate_electrical_constraints(G)
 
-        # Align transformer positions with upstream or downstream node
+        # Step 6: Align transformer positions with upstream or downstream node
         self._align_transformer_positions(G)
         
         return G
@@ -270,6 +269,594 @@ class MEPGraphGenerator:
                     attrs['x'] = round(ref_attrs.get('x', attrs.get('x', 0.0)) + offset_x, 2)
                     attrs['y'] = round(ref_attrs.get('y', attrs.get('y', 0.0)) + offset_y, 2)
                     attrs['z'] = round(ref_attrs.get('z', attrs.get('z', 0.0)) + offset_z, 2)
+    
+    def _analyze_building_electrical_requirements(self) -> List[ElectricalRequirement]:
+        """Analyze building characteristics to generate electrical requirements."""
+        requirements = []
+        config = self.building_config
+        
+        # Calculate floor area for load density calculations
+        floor_area = config['length'] * config['width']
+        
+        # Standard electrical load densities (W/sf)
+        load_densities = {
+            'lighting': 1.5,      # 1.5 W/sf for LED lighting
+            'general_power': 3.0, # 3.0 W/sf for general receptacles
+            'hvac': 2.0,         # 2.0 W/sf for HVAC systems
+            'kitchen': 8.0,      # 8.0 W/sf for kitchen equipment (if applicable)
+            'data_center': 50.0  # 50 W/sf for high-density areas
+        }
+        
+        # Generate requirements for each floor
+        for floor in range(-1, config['num_floors']):
+            
+            if floor == -1:  # Basement - mechanical and service equipment
+                # Main service requirement
+                total_building_load = self._estimate_total_building_load(floor_area, config['num_floors'])
+                requirements.append(ElectricalRequirement(
+                    load_kw=total_building_load,
+                    voltage_level='high',
+                    location=self._get_electrical_core_location(floor),
+                    load_type='main_service',
+                    floor=floor,
+                    room='MER-B01',
+                    priority=1
+                ))
+                
+                # Mechanical equipment
+                mech_load = floor_area * load_densities['hvac'] / 1000  # Convert to kW
+                requirements.append(ElectricalRequirement(
+                    load_kw=mech_load,
+                    voltage_level='medium',
+                    location=self._get_mechanical_room_location(floor),
+                    load_type='hvac',
+                    floor=floor,
+                    room=f'MECH-{floor:02d}',
+                    priority=1
+                ))
+                
+            else:  # Upper floors - office/commercial loads
+                # Lighting loads
+                lighting_load = floor_area * load_densities['lighting'] / 1000
+                requirements.append(ElectricalRequirement(
+                    load_kw=lighting_load,
+                    voltage_level='low',
+                    location=self._get_distributed_floor_location(floor),
+                    load_type='lighting',
+                    floor=floor,
+                    room=f'GENERAL-{floor:02d}',
+                    priority=2
+                ))
+                
+                # General power loads
+                power_load = floor_area * load_densities['general_power'] / 1000
+                requirements.append(ElectricalRequirement(
+                    load_kw=power_load,
+                    voltage_level='low',
+                    location=self._get_distributed_floor_location(floor),
+                    load_type='general_power',
+                    floor=floor,
+                    room=f'GENERAL-{floor:02d}',
+                    priority=2
+                ))
+                
+                # Special loads for certain floors
+                if floor % 3 == 0:  # Every third floor has kitchen/break room
+                    kitchen_load = 200.0 * load_densities['kitchen'] / 1000  # 200 sf kitchen
+                    requirements.append(ElectricalRequirement(
+                        load_kw=kitchen_load,
+                        voltage_level='low',
+                        location=self._get_special_room_location(floor, 'kitchen'),
+                        load_type='kitchen',
+                        floor=floor,
+                        room=f'KITCHEN-{floor:02d}',
+                        priority=2
+                    ))
+                
+                if floor == config['num_floors'] - 1:  # Top floor has data center
+                    dc_load = 500.0 * load_densities['data_center'] / 1000  # 500 sf data center
+                    requirements.append(ElectricalRequirement(
+                        load_kw=dc_load,
+                        voltage_level='medium',
+                        location=self._get_special_room_location(floor, 'data_center'),
+                        load_type='data_center',
+                        floor=floor,
+                        room=f'DC-{floor:02d}',
+                        priority=1
+                    ))
+        
+        return requirements
+    
+    def _generate_logical_node_decisions(self, requirements: List[ElectricalRequirement], 
+                                       target_node_count: int) -> List[NodeDecision]:
+        """Generate logical decisions about what nodes to create based on requirements."""
+        decisions = []
+        
+        # Step 1: Analyze total load to determine main service requirements
+        total_load = sum(req.load_kw for req in requirements)
+        main_service_req = next((req for req in requirements if req.load_type == 'main_service'), None)
+        
+        if main_service_req and total_load > 100:  # Lowered threshold to 100kW for testing
+            decisions.append(NodeDecision(
+                node_type='transformer',
+                subtype='main',
+                reason=f"Main service transformer for {total_load:.0f}kW building load",
+                capacity_kw=total_load * 1.25,  # 25% safety factor
+                floor=-1,
+                location=main_service_req.location,
+                serves_requirements=[main_service_req]
+            ))
+            
+            decisions.append(NodeDecision(
+                node_type='switchboard',
+                subtype='main',
+                reason="Main service switchboard for distribution",
+                capacity_kw=total_load * 1.2,
+                floor=-1,
+                location=main_service_req.location,
+                serves_requirements=[main_service_req]
+            ))
+        
+        # Step 2: Group requirements by floor and voltage for distribution planning
+        floor_groups = {}
+        for req in requirements:
+            if req.floor not in floor_groups:
+                floor_groups[req.floor] = {'medium': [], 'low': []}
+            
+            voltage_key = req.voltage_level if req.voltage_level in ['medium', 'low'] else 'medium'
+            floor_groups[req.floor][voltage_key].append(req)
+        
+        # Step 3: Create distribution equipment decisions
+        for floor, voltage_groups in floor_groups.items():
+            if floor == -1:  # Skip basement, already handled
+                continue
+                
+            # Medium voltage loads (HVAC, large equipment)
+            medium_loads = voltage_groups.get('medium', [])
+            if medium_loads:
+                total_medium_load = sum(req.load_kw for req in medium_loads)
+                
+                if total_medium_load > 75:  # Needs secondary transformer
+                    decisions.append(NodeDecision(
+                        node_type='transformer',
+                        subtype='secondary',
+                        reason=f"Secondary transformer for {total_medium_load:.0f}kW medium voltage loads on floor {floor}",
+                        capacity_kw=total_medium_load * 1.3,
+                        floor=floor,
+                        location=self._get_electrical_closet_location(floor),
+                        serves_requirements=medium_loads
+                    ))
+                
+                decisions.append(NodeDecision(
+                    node_type='panelboard',
+                    subtype='distribution',
+                    reason=f"Distribution panel for medium voltage loads on floor {floor}",
+                    capacity_kw=total_medium_load * 1.2,
+                    floor=floor,
+                    location=self._get_electrical_closet_location(floor),
+                    serves_requirements=medium_loads
+                ))
+            
+            # Low voltage loads (lighting, power)
+            low_loads = voltage_groups.get('low', [])
+            if low_loads:
+                total_low_load = sum(req.load_kw for req in low_loads)
+                
+                # Determine number of panelboards needed based on load and layout
+                num_panels = max(1, min(3, int(total_low_load / 40)))  # 40kW per panel max
+                
+                load_per_panel = total_low_load / num_panels
+                loads_per_panel = [low_loads[i::num_panels] for i in range(num_panels)]
+                
+                for i, panel_loads in enumerate(loads_per_panel):
+                    if panel_loads:  # Only create panel if it has loads
+                        decisions.append(NodeDecision(
+                            node_type='panelboard',
+                            subtype='lighting' if any(req.load_type == 'lighting' for req in panel_loads) else 'power',
+                            reason=f"Panel {i+1} for {load_per_panel:.0f}kW low voltage loads on floor {floor}",
+                            capacity_kw=load_per_panel * 1.25,
+                            floor=floor,
+                            location=self._get_electrical_closet_location(floor, i),
+                            serves_requirements=panel_loads
+                        ))
+        
+        # Step 4: Create individual load decisions
+        for req in requirements:
+            if req.load_type not in ['main_service']:  # Skip service requirements, already handled
+                decisions.append(NodeDecision(
+                    node_type='load',
+                    subtype=req.load_type,
+                    reason=f"{req.load_type} load ({req.load_kw:.1f}kW) on floor {req.floor}",
+                    capacity_kw=req.load_kw,
+                    floor=req.floor,
+                    location=req.location,
+                    serves_requirements=[req]
+                ))
+        
+        # Step 5: Adjust decisions to meet target node count
+        decisions = self._adjust_decisions_to_target_count(decisions, target_node_count)
+        
+        return decisions
+    
+    def _build_graph_from_logical_decisions(self, G: nx.DiGraph, decisions: List[NodeDecision]) -> nx.DiGraph:
+        """Build the actual graph from logical decisions."""
+        node_id_counter = 1
+        decision_to_node_id = {}
+        
+        # Create nodes from decisions
+        for decision in decisions:
+            node_id = f"{decision.node_type}_{node_id_counter:03d}"
+            decision_to_node_id[decision] = node_id
+            node_id_counter += 1
+            
+            # Create node based on its type
+            if decision.node_type == 'transformer':
+                self._add_logical_transformer_node(G, node_id, decision)
+            elif decision.node_type == 'switchboard':
+                self._add_logical_switchboard_node(G, node_id, decision)
+            elif decision.node_type == 'panelboard':
+                self._add_logical_panelboard_node(G, node_id, decision)
+            elif decision.node_type == 'load':
+                self._add_logical_load_node(G, node_id, decision)
+        
+        # Create logical connections between nodes
+        self._create_logical_connections_from_decisions(G, decisions, decision_to_node_id)
+        
+        return G
+    
+    def _add_logical_transformer_node(self, G: nx.DiGraph, node_id: str, decision: NodeDecision):
+        """Add a transformer node based on logical decision."""
+        x, y, z = decision.location
+        room_code = self._get_room_code_for_floor_and_type(decision.floor, 'transformer')
+        
+        performance = f"{decision.capacity_kw:.0f} kVA"
+        
+        if decision.subtype == 'main':
+            upstream_voltage = self.selected_high_voltage
+            downstream_voltage = self.voltage_levels['medium'][0]
+        else:  # secondary
+            upstream_voltage = self.voltage_levels['medium'][0]
+            downstream_voltage = self.voltage_levels['low'][0]
+        
+        attrs = {
+            'type': self.component_types['transformer'],
+            'x': x, 'y': y, 'z': z,
+            'room': room_code,
+            'floor': decision.floor,
+            'Identifier': f"Transformer-{node_id.split('_')[1]}",
+            'Manufacturer': random.choice(self.manufacturers),
+            'Nominal_performance': performance,
+            'Short-circuit_strength_kA': round(random.uniform(10.0, 25.0), 1),
+            'Physical_Height_mm': float(random.randint(*self.physical_dims['transformer']['height'])),
+            'Physical_Length_mm': float(random.randint(*self.physical_dims['transformer']['length'])),
+            'Physical_Width_mm': float(random.randint(*self.physical_dims['transformer']['width'])),
+            'Type': 'Dry Type',
+            'Voltage': f"{upstream_voltage/1000:.1f} kV" if upstream_voltage >= 1000 else f"{upstream_voltage:.0f} V",
+            'Warranty_months': random.choice([24, 36, 60, 120]),
+            'Year_of_manufacture': random.randint(2018, 2024),
+            'Year_of_installation': random.randint(2018, 2024),
+            'distribution_upstream_voltage': upstream_voltage,
+            'distribution_upstream_current_rating': self._calculate_current_rating(upstream_voltage, performance),
+            'distribution_upstream_phase_number': 3,
+            'distribution_upstream_frequency': 60.0,
+            'distribution_downstream_voltage': downstream_voltage,
+            'distribution_downstream_current_rating': self._calculate_current_rating(downstream_voltage, performance),
+            'distribution_downstream_phase_number': 3,
+            'distribution_downstream_frequency': 60.0,
+            'AIC_rating': round(random.uniform(22.0, 65.0), 1),
+            'generation_reason': decision.reason,
+            'serves_load_kw': decision.capacity_kw
+        }
+        
+        G.add_node(node_id, **attrs)
+    
+    def _add_logical_switchboard_node(self, G: nx.DiGraph, node_id: str, decision: NodeDecision):
+        """Add a switchboard node based on logical decision."""
+        x, y, z = decision.location
+        room_code = self._get_room_code_for_floor_and_type(decision.floor, 'switchboard')
+        
+        attrs = {
+            'type': self.component_types['switchboard'],
+            'x': x, 'y': y, 'z': z,
+            'room': room_code,
+            'floor': decision.floor,
+            'Identifier': f"Switchboard-{node_id.split('_')[1]}",
+            'Manufacturer': random.choice(self.manufacturers),
+            'Operating_company_department': 'Facilities',
+            'Owner': random.choice(['Building Owner', 'Tenant', 'Management Company']),
+            'Nominal_current': round(decision.capacity_kw / 480.0 * 1000 / 1.732, 1),  # Rough 3-phase current
+            'Short-circuit_strength_kA': round(random.uniform(25.0, 65.0), 1),
+            'Physical_Height_mm': float(random.randint(*self.physical_dims['switchboard']['height'])),
+            'Physical_Length_mm': float(random.randint(*self.physical_dims['switchboard']['length'])),
+            'Physical_Width_mm': float(random.randint(*self.physical_dims['switchboard']['width'])),
+            'Warranty_months': random.choice([24, 36, 60]),
+            'Year_of_manufacture': random.randint(2018, 2024),
+            'Year_of_installation': random.randint(2018, 2024),
+            'Outdoor_rated': random.choice([True, False]),
+            'distribution_upstream_voltage': None,  # Will be set by propagation
+            'distribution_upstream_current_rating': round(decision.capacity_kw / 480.0 * 1000 / 1.732, 1),
+            'distribution_upstream_phase_number': 3,
+            'distribution_upstream_frequency': 60.0,
+            'distribution_downstream_voltage': None,  # Will be set by propagation
+            'distribution_downstream_current_rating': round(decision.capacity_kw / 480.0 * 1000 / 1.732 * 0.8, 1),
+            'distribution_downstream_phase_number': 3,
+            'distribution_downstream_frequency': 60.0,
+            'AIC_rating': round(random.uniform(42.0, 65.0), 1),
+            'generation_reason': decision.reason,
+            'serves_load_kw': decision.capacity_kw
+        }
+        
+        G.add_node(node_id, **attrs)
+    
+    def _add_logical_panelboard_node(self, G: nx.DiGraph, node_id: str, decision: NodeDecision):
+        """Add a panelboard node based on logical decision."""
+        x, y, z = decision.location
+        room_code = self._get_room_code_for_floor_and_type(decision.floor, 'panelboard')
+        
+        attrs = {
+            'type': self.component_types['panelboard'],
+            'x': x, 'y': y, 'z': z,
+            'room': room_code,
+            'floor': decision.floor,
+            'Identifier': f"Panelboard-{node_id.split('_')[1]}",
+            'Manufacturer': random.choice(self.manufacturers),
+            'Masked_yes_no': random.choice([True, False]),
+            'Mounting_method': random.choice(self.mounting_methods),
+            'Nominal_current': round(decision.capacity_kw / 208.0 * 1000, 1),  # Single phase assumption
+            'Short-circuit_strength_kA': round(random.uniform(10.0, 22.0), 1),
+            'Physical_Height_mm': float(random.randint(*self.physical_dims['panelboard']['height'])),
+            'Physical_Length_mm': float(random.randint(*self.physical_dims['panelboard']['length'])),
+            'Physical_Width_mm': float(random.randint(*self.physical_dims['panelboard']['width'])),
+            'Warranty_months': random.choice([24, 36, 60]),
+            'Year_of_manufacture': random.randint(2018, 2024),
+            'Year_of_installation': random.randint(2018, 2024),
+            'Operating_company_department': 'Facilities',
+            'Owner': random.choice(['Building Owner', 'Tenant']),
+            'Outdoor_rated': False,
+            'distribution_upstream_voltage': None,  # Will be set by propagation
+            'distribution_upstream_current_rating': round(decision.capacity_kw / 208.0 * 1000, 1),
+            'distribution_upstream_phase_number': 3,
+            'distribution_upstream_frequency': 60.0,
+            'distribution_downstream_voltage': None,  # Will be set by propagation
+            'distribution_downstream_current_rating': round(decision.capacity_kw / 208.0 * 1000 * 0.8, 1),
+            'distribution_downstream_phase_number': 1,
+            'distribution_downstream_frequency': 60.0,
+            'AIC_rating': round(random.uniform(10.0, 25.0), 1),
+            'generation_reason': decision.reason,
+            'serves_load_kw': decision.capacity_kw,
+            'panel_type': decision.subtype
+        }
+        
+        G.add_node(node_id, **attrs)
+    
+    def _add_logical_load_node(self, G: nx.DiGraph, node_id: str, decision: NodeDecision):
+        """Add a load node based on logical decision."""
+        x, y, z = decision.location
+        room_code = decision.serves_requirements[0].room if decision.serves_requirements else f"ROOM-{decision.floor:02d}"
+        
+        attrs = {
+            'type': self.component_types['load'],
+            'x': x, 'y': y, 'z': z,
+            'room': room_code,
+            'floor': decision.floor,
+            'Identifier': f"Load-{node_id.split('_')[1]}",
+            'Manufacturer': random.choice(self.manufacturers),
+            'Nominal_current': round(decision.capacity_kw / 208.0 * 1000, 1),
+            'Physical_Height_mm': float(random.randint(*self.physical_dims['load']['height'])),
+            'Physical_Length_mm': float(random.randint(*self.physical_dims['load']['length'])),
+            'Physical_Width_mm': float(random.randint(*self.physical_dims['load']['width'])),
+            'Voltage': "TBD",  # Will be set by propagation
+            'Warranty_months': random.choice([12, 24, 36]),
+            'Year_of_manufacture': random.randint(2018, 2024),
+            'Year_of_installation': random.randint(2018, 2024),
+            'distribution_upstream_voltage': None,  # Will be set by propagation
+            'distribution_upstream_current_rating': round(decision.capacity_kw / 208.0 * 1000, 1),
+            'distribution_upstream_phase_number': 1,
+            'distribution_upstream_frequency': 60.0,
+            'generation_reason': decision.reason,
+            'load_kw': decision.capacity_kw,
+            'load_type': decision.subtype
+        }
+        
+        G.add_node(node_id, **attrs)
+    
+    def _create_logical_connections_from_decisions(self, G: nx.DiGraph, decisions: List[NodeDecision], 
+                                                 decision_to_node_id: Dict[NodeDecision, str]):
+        """Create logical connections between nodes based on electrical hierarchy."""
+        
+        # Group decisions by type and hierarchy
+        transformers = [d for d in decisions if d.node_type == 'transformer']
+        switchboards = [d for d in decisions if d.node_type == 'switchboard']
+        panelboards = [d for d in decisions if d.node_type == 'panelboard']
+        loads = [d for d in decisions if d.node_type == 'load']
+        
+        edge_id = 1
+        
+        # Step 1: Connect transformers to switchboards
+        main_transformer = next((t for t in transformers if t.subtype == 'main'), None)
+        main_switchboard = next((s for s in switchboards if s.subtype == 'main'), None)
+        
+        if main_transformer and main_switchboard:
+            self._add_connection(G, f"connection_{edge_id:03d}", 
+                               decision_to_node_id[main_transformer], 
+                               decision_to_node_id[main_switchboard], 
+                               'Main Distribution')
+            edge_id += 1
+        
+        # Step 2: Connect main switchboard to secondary transformers on other floors
+        if main_switchboard:
+            secondary_transformers = [t for t in transformers if t.subtype == 'secondary']
+            for transformer in secondary_transformers:
+                self._add_connection(G, f"connection_{edge_id:03d}", 
+                                   decision_to_node_id[main_switchboard], 
+                                   decision_to_node_id[transformer], 
+                                   'Floor Distribution')
+                edge_id += 1
+        
+        # Step 3: Connect transformers to panelboards on same floor
+        for transformer in transformers:
+            if transformer.subtype == 'secondary':
+                # Connect to panelboards on same floor
+                floor_panelboards = [p for p in panelboards if p.floor == transformer.floor]
+                for panelboard in floor_panelboards:
+                    self._add_connection(G, f"connection_{edge_id:03d}", 
+                                       decision_to_node_id[transformer], 
+                                       decision_to_node_id[panelboard], 
+                                       'Secondary Distribution')
+                    edge_id += 1
+        
+        # Step 4: Connect main switchboard directly to panelboards on floors without transformers
+        if main_switchboard:
+            transformer_floors = set(t.floor for t in transformers if t.subtype == 'secondary')
+            
+            for panelboard in panelboards:
+                if panelboard.floor not in transformer_floors and panelboard.floor != -1:
+                    self._add_connection(G, f"connection_{edge_id:03d}", 
+                                       decision_to_node_id[main_switchboard], 
+                                       decision_to_node_id[panelboard], 
+                                       'Direct Distribution')
+                    edge_id += 1
+        
+        # Step 5: Connect panelboards to loads on same floor
+        for panelboard in panelboards:
+            floor_loads = [l for l in loads if l.floor == panelboard.floor]
+            
+            # Distribute loads among panelboards on same floor
+            panelboards_on_floor = [p for p in panelboards if p.floor == panelboard.floor]
+            
+            if panelboards_on_floor:
+                panel_index = panelboards_on_floor.index(panelboard)
+                
+                # Assign loads to this panelboard based on load type and panel type
+                for i, load in enumerate(floor_loads):
+                    should_connect = False
+                    
+                    # Distribute loads round-robin among panels, with some preference for matching types
+                    if panelboard.subtype == 'lighting' and load.subtype == 'lighting':
+                        should_connect = True
+                    elif panelboard.subtype in ['power', 'distribution'] and load.subtype in ['general_power', 'kitchen', 'data_center', 'hvac']:
+                        should_connect = True
+                    elif i % len(panelboards_on_floor) == panel_index:
+                        should_connect = True
+                    
+                    if should_connect:
+                        load_type = load.subtype.replace('_', ' ').title()
+                        self._add_connection(G, f"connection_{edge_id:03d}", 
+                                           decision_to_node_id[panelboard], 
+                                           decision_to_node_id[load], 
+                                           load_type)
+                        edge_id += 1
+    
+    # Helper methods for the logical generation
+    def _estimate_total_building_load(self, floor_area: float, num_floors: int) -> float:
+        """Estimate total building electrical load."""
+        # Typical office building: 4-6 W/sf
+        load_density = 5.0  # W/sf
+        total_load = floor_area * num_floors * load_density / 1000  # Convert to kW
+        return total_load
+    
+    def _get_electrical_core_location(self, floor: int) -> Tuple[float, float, float]:
+        """Get location in electrical core."""
+        config = self.building_config
+        return (
+            config['electrical_core']['x_center'],
+            config['electrical_core']['y_center'],
+            self.floor_levels[floor]['z_center']
+        )
+    
+    def _get_mechanical_room_location(self, floor: int) -> Tuple[float, float, float]:
+        """Get mechanical room location."""
+        config = self.building_config
+        return (
+            config['electrical_core']['x_center'] + random.uniform(-4, 4),
+            config['electrical_core']['y_center'] + random.uniform(-4, 4),
+            self.floor_levels[floor]['z_center']
+        )
+    
+    def _get_distributed_floor_location(self, floor: int) -> Tuple[float, float, float]:
+        """Get distributed location on floor."""
+        config = self.building_config
+        return (
+            random.uniform(10, config['length'] - 10),
+            random.uniform(10, config['width'] - 10),
+            self.floor_levels[floor]['z_center'] + random.uniform(0, 2)
+        )
+    
+    def _get_special_room_location(self, floor: int, room_type: str) -> Tuple[float, float, float]:
+        """Get location for special rooms."""
+        config = self.building_config
+        
+        if room_type == 'kitchen':
+            # Kitchens typically in core area
+            x = config['electrical_core']['x_center'] + random.uniform(-8, 8)
+            y = config['electrical_core']['y_center'] + random.uniform(-6, 6)
+        elif room_type == 'data_center':
+            # Data centers typically in secure areas
+            x = config['length'] * 0.8
+            y = config['width'] * 0.2
+        else:
+            x = random.uniform(10, config['length'] - 10)
+            y = random.uniform(10, config['width'] - 10)
+        
+        return (x, y, self.floor_levels[floor]['z_center'])
+    
+    def _get_electrical_closet_location(self, floor: int, closet_number: int = 0) -> Tuple[float, float, float]:
+        """Get electrical closet location."""
+        config = self.building_config
+        
+        # Multiple closets on larger floors
+        if closet_number == 0:
+            x = config['electrical_core']['x_center'] + random.uniform(-2, 2)
+            y = config['electrical_core']['y_center'] + random.uniform(-2, 2)
+        else:
+            # Distribute additional closets around the floor
+            x = config['length'] * (0.2 + closet_number * 0.3)
+            y = config['width'] * (0.2 + closet_number * 0.3)
+        
+        return (x, y, self.floor_levels[floor]['z_center'])
+    
+    def _get_room_code_for_floor_and_type(self, floor: int, equipment_type: str) -> str:
+        """Get appropriate room code for equipment type and floor."""
+        if equipment_type in ['transformer', 'switchboard'] and floor == -1:
+            return 'MER-B01'
+        elif equipment_type in ['transformer', 'panelboard']:
+            return f'EC-{floor:02d}A'
+        else:
+            return f'ELEC-{floor:02d}'
+    
+    def _adjust_decisions_to_target_count(self, decisions: List[NodeDecision], 
+                                        target_count: int) -> List[NodeDecision]:
+        """Adjust number of decisions to approximately match target node count."""
+        current_count = len(decisions)
+        
+        if current_count < target_count:
+            # Add more distribution equipment
+            needed = target_count - current_count
+            for i in range(needed):
+                floor = random.randint(0, self.building_config['num_floors'] - 1)
+                decisions.append(NodeDecision(
+                    node_type='panelboard',
+                    subtype='additional',
+                    reason=f"Additional distribution panel {i+1} for load balancing",
+                    capacity_kw=random.uniform(20, 50),
+                    floor=floor,
+                    location=self._get_electrical_closet_location(floor, i % 3),
+                    serves_requirements=[]
+                ))
+        elif current_count > target_count:
+            # Remove some of the smaller loads
+            loads = [d for d in decisions if d.node_type == 'load']
+            infrastructure = [d for d in decisions if d.node_type != 'load']
+            
+            # Keep infrastructure, reduce loads
+            loads_to_keep = target_count - len(infrastructure)
+            if loads_to_keep > 0:
+                loads.sort(key=lambda x: x.capacity_kw, reverse=True)
+                decisions = infrastructure + loads[:loads_to_keep]
+            else:
+                decisions = infrastructure[:target_count]
+        
+        return decisions
     
     def _calculate_component_distribution_by_floor(self, node_count: int) -> Dict[str, Any]:
         """Calculate distribution of components across floors for bottom-up topology."""
@@ -342,15 +929,23 @@ class MEPGraphGenerator:
         room_code = self._get_room_code_for_position(floor, x, y, 'transformer')
         
         if transformer_type == 'main':
+            # Main transformer: Set upstream to selected high voltage, downstream will be updated by propagation
             upstream_voltage = self.selected_high_voltage
-            downstream_voltage = self.voltage_levels['medium'][0]  # 480V
+            downstream_voltage = self.voltage_levels['medium'][0]  # 480V - will be verified by propagation
             performance = random.choice(['1000 kVA', '1500 kVA', '2000 kVA', '2500 kVA'])
-            current_rating = self._calculate_current_rating(downstream_voltage, performance)
         else:  # secondary
-            upstream_voltage = 480.0
-            downstream_voltage = self.voltage_levels['low'][0]  # 208V
+            # Secondary transformer: Voltages will be set by propagation based on actual connections
+            upstream_voltage = None  # Will be set by propagation
+            downstream_voltage = None  # Will be set by propagation
             performance = random.choice(['150 kVA', '225 kVA', '300 kVA', '500 kVA'])
+        
+        # Calculate current rating if we have voltages, otherwise use placeholder
+        if downstream_voltage:
             current_rating = self._calculate_current_rating(downstream_voltage, performance)
+            upstream_current = self._calculate_current_rating(upstream_voltage, performance) if upstream_voltage else 0.0
+        else:
+            current_rating = 0.0  # Will be updated by propagation
+            upstream_current = 0.0
         
         attrs = {
             'type': self.component_types['transformer'],
@@ -365,12 +960,12 @@ class MEPGraphGenerator:
             'Physical_Length_mm': float(random.randint(*self.physical_dims['transformer']['length'])),
             'Physical_Width_mm': float(random.randint(*self.physical_dims['transformer']['width'])),
             'Type': 'Dry Type',
-            'Voltage': f"{upstream_voltage/1000:.1f} kV" if upstream_voltage >= 1000 else f"{upstream_voltage:.0f} V",
+            'Voltage': f"{upstream_voltage/1000:.1f} kV" if upstream_voltage and upstream_voltage >= 1000 else f"{upstream_voltage:.0f} V" if upstream_voltage else "TBD",
             'Warranty_months': random.choice([24, 36, 60, 120]),
             'Year_of_manufacture': random.randint(2018, 2024),
             'Year_of_installation': random.randint(2018, 2024),
             'distribution_upstream_voltage': upstream_voltage,
-            'distribution_upstream_current_rating': self._calculate_current_rating(upstream_voltage, performance),
+            'distribution_upstream_current_rating': upstream_current,
             'distribution_upstream_phase_number': 3,
             'distribution_upstream_frequency': 60.0,
             'distribution_downstream_voltage': downstream_voltage,
@@ -386,7 +981,7 @@ class MEPGraphGenerator:
         """Add a switchboard node positioned within an appropriate electrical room."""
         x, y, z = self._generate_position_in_electrical_room(node_id, position_id, floor, 'switchboard')
         room_code = self._get_room_code_for_position(floor, x, y, 'switchboard')
-        voltage = 480.0
+        # Voltage will be set by propagation based on upstream connection
         
         attrs = {
             'type': self.component_types['switchboard'],
@@ -406,11 +1001,11 @@ class MEPGraphGenerator:
             'Year_of_manufacture': random.randint(2018, 2024),
             'Year_of_installation': random.randint(2018, 2024),
             'Outdoor_rated': random.choice([True, False]),
-            'distribution_upstream_voltage': voltage,
+            'distribution_upstream_voltage': None,  # Will be set by propagation
             'distribution_upstream_current_rating': round(random.uniform(1000.0, 4000.0), 1),
             'distribution_upstream_phase_number': 3,
             'distribution_upstream_frequency': 60.0,
-            'distribution_downstream_voltage': voltage,
+            'distribution_downstream_voltage': None,  # Will be set by propagation
             'distribution_downstream_current_rating': round(random.uniform(800.0, 3500.0), 1),
             'distribution_downstream_phase_number': 3,
             'distribution_downstream_frequency': 60.0,
@@ -423,7 +1018,7 @@ class MEPGraphGenerator:
         """Add a panelboard node positioned within an appropriate electrical room."""
         x, y, z = self._generate_position_in_electrical_room(node_id, position_id, floor, 'panelboard')
         room_code = self._get_room_code_for_position(floor, x, y, 'panelboard')
-        voltage = 208.0
+        # Voltage will be set by propagation based on upstream connection
         
         attrs = {
             'type': self.component_types['panelboard'],
@@ -445,13 +1040,13 @@ class MEPGraphGenerator:
             'Operating_company_department': 'Facilities',
             'Owner': random.choice(['Building Owner', 'Tenant']),
             'Outdoor_rated': False,
-            'distribution_upstream_voltage': voltage,
+            'distribution_upstream_voltage': None,  # Will be set by propagation
             'distribution_upstream_current_rating': round(random.uniform(100.0, 800.0), 1),
             'distribution_upstream_phase_number': 3,
             'distribution_upstream_frequency': 60.0,
-            'distribution_downstream_voltage': voltage,
+            'distribution_downstream_voltage': None,  # Will be set by propagation
             'distribution_downstream_current_rating': round(random.uniform(80.0, 600.0), 1),
-            'distribution_downstream_phase_number': 1,
+            'distribution_downstream_phase_number': 1,  # Panelboards can supply single-phase to loads
             'distribution_downstream_frequency': 60.0,
             'AIC_rating': round(random.uniform(10.0, 25.0), 1)
         }
@@ -462,7 +1057,7 @@ class MEPGraphGenerator:
         """Add a load node distributed around the floor, outside electrical rooms."""
         x, y, z = self._generate_position_outside_electrical_rooms(node_id, position_id, floor)
         room_code = self._get_room_code_for_position(floor, x, y, 'load')
-        voltage = 120.0
+        # Voltage will be set by propagation based on upstream panelboard
         
         attrs = {
             'type': self.component_types['load'],
@@ -475,13 +1070,13 @@ class MEPGraphGenerator:
             'Physical_Height_mm': float(random.randint(*self.physical_dims['load']['height'])),
             'Physical_Length_mm': float(random.randint(*self.physical_dims['load']['length'])),
             'Physical_Width_mm': float(random.randint(*self.physical_dims['load']['width'])),
-            'Voltage': f"{voltage:.0f} V",
+            'Voltage': "TBD",  # Will be set by propagation
             'Warranty_months': random.choice([12, 24, 36]),
             'Year_of_manufacture': random.randint(2018, 2024),
             'Year_of_installation': random.randint(2018, 2024),
-            'distribution_upstream_voltage': voltage,
+            'distribution_upstream_voltage': None,  # Will be set by propagation
             'distribution_upstream_current_rating': round(random.uniform(10.0, 100.0), 1),
-            'distribution_upstream_phase_number': 1,
+            'distribution_upstream_phase_number': 1,  # Loads are typically single-phase
             'distribution_upstream_frequency': 60.0
         }
         
@@ -603,7 +1198,7 @@ class MEPGraphGenerator:
                 self._add_connection(G, f"connection_{edge_id:03d}", transformer, switchboard, 'Main Distribution')
                 edge_id += 1
         
-        # Track equipment that can serve upper floors
+        # Track equipment that can serve upper floors (switchboards and panelboards only)
         feeding_equipment = basement_switchboards.copy()
         
         # Connect each floor in ascending order
@@ -613,19 +1208,35 @@ class MEPGraphGenerator:
             floor_panelboards = [n for n in floor_equipment if 'panelboard' in n]
             floor_loads = [n for n in floor_equipment if 'load' in n]
             
-            # Connect transformers on this floor to feeding equipment from below
+            # Connect transformers on this floor to switchboards/panelboards (never to other transformers)
             for transformer in floor_transformers:
                 if feeding_equipment:
-                    closest_feeder = self._find_closest_equipment(G, transformer, feeding_equipment)
-                    if closest_feeder:
-                        self._add_connection(G, f"connection_{edge_id:03d}", closest_feeder, transformer, 'Floor Distribution')
+                    # Only connect to switchboards or panelboards, not other transformers
+                    valid_feeders = [f for f in feeding_equipment if 'transformer' not in f]
+                    if valid_feeders:
+                        closest_feeder = self._find_closest_equipment(G, transformer, valid_feeders)
+                        if closest_feeder:
+                            self._add_connection(G, f"connection_{edge_id:03d}", closest_feeder, transformer, 'Floor Distribution')
+                            edge_id += 1
+            
+            # Connect each transformer to panelboards (transformers must feed panelboards)
+            for transformer in floor_transformers:
+                # Find panelboards on same floor that aren't connected yet
+                available_panelboards = [pb for pb in floor_panelboards if not any(pred for pred in G.predecessors(pb))]
+                if available_panelboards:
+                    closest_panelboard = self._find_closest_equipment(G, transformer, available_panelboards)
+                    if closest_panelboard:
+                        self._add_connection(G, f"connection_{edge_id:03d}", transformer, closest_panelboard, 'Secondary Distribution')
                         edge_id += 1
             
-            # Connect panelboards to transformers on same floor, or feeding equipment from below
-            available_sources = floor_transformers + feeding_equipment
+            # Connect remaining panelboards to feeding equipment from below
             for panelboard in floor_panelboards:
-                if available_sources:
-                    closest_source = self._find_closest_equipment(G, panelboard, available_sources)
+                # Skip if already connected to a transformer
+                if any('transformer' in pred for pred in G.predecessors(panelboard)):
+                    continue
+                    
+                if feeding_equipment:
+                    closest_source = self._find_closest_equipment(G, panelboard, feeding_equipment)
                     if closest_source:
                         load_type = random.choice(['Lighting', 'General Power', 'HVAC'])
                         self._add_connection(G, f"connection_{edge_id:03d}", closest_source, panelboard, load_type)
@@ -640,8 +1251,8 @@ class MEPGraphGenerator:
                         self._add_connection(G, f"connection_{edge_id:03d}", closest_panelboard, load, load_type)
                         edge_id += 1
             
-            # Add floor equipment to feeding equipment for next floor
-            feeding_equipment.extend(floor_transformers + floor_panelboards)
+            # Add panelboards (not transformers) to feeding equipment for next floor
+            feeding_equipment.extend(floor_panelboards)
     
     def _define_equipment_zones(self) -> Dict[str, Dict]:
         """Define realistic zones for different equipment types."""
@@ -935,7 +1546,7 @@ class MEPGraphGenerator:
         x, y, z = self._generate_position(position_id, node_id)
         room_code = self._assign_room_to_equipment(node_id, position_id, x, y, z)
         # Switchboards will have voltage set later based on upstream transformer
-        voltage = 480.0  # Default medium voltage, will be updated in connections
+        voltage = self.voltage_levels['medium'][0]  # Use standard medium voltage, will be updated in connections
         
         attrs = {
             'type': self.component_types['switchboard'],
@@ -972,7 +1583,7 @@ class MEPGraphGenerator:
         x, y, z = self._generate_position(position_id, node_id)
         room_code = self._assign_room_to_equipment(node_id, position_id, x, y, z)
         # Panelboards will have voltage set later based on upstream equipment
-        voltage = 208.0  # Default voltage, will be updated in connections
+        voltage = self.voltage_levels['low'][0]  # Use standard low voltage, will be updated in connections
         
         attrs = {
             'type': self.component_types['panelboard'],
@@ -1011,7 +1622,7 @@ class MEPGraphGenerator:
         x, y, z = self._generate_position(position_id, node_id)
         room_code = self._assign_room_to_equipment(node_id, position_id, x, y, z)
         # Loads will have voltage set later based on upstream panelboard
-        voltage = 120.0  # Default low voltage, will be updated in connections
+        voltage = self.voltage_levels['low'][0]  # Use standard low voltage (208V), will be updated in connections
         
         attrs = {
             'type': self.component_types['load'],
@@ -1117,12 +1728,18 @@ class MEPGraphGenerator:
     
     def _calculate_current_rating(self, voltage: float, performance: str) -> float:
         """Calculate realistic current rating based on voltage and power."""
+        if voltage is None or voltage <= 0:
+            return 0.0
+            
         # Extract kVA from performance string
         if 'kVA' in performance:
-            kva = float(performance.replace(' kVA', ''))
-            # I = P / (√3 × V) for three-phase
-            current = (kva * 1000) / (math.sqrt(3) * voltage)
-            return round(current, 1)
+            try:
+                kva = float(performance.replace(' kVA', ''))
+                # I = P / (√3 × V) for three-phase
+                current = (kva * 1000) / (math.sqrt(3) * voltage)
+                return round(current, 1)
+            except (ValueError, ZeroDivisionError):
+                return round(random.uniform(100.0, 1000.0), 1)
         return round(random.uniform(100.0, 1000.0), 1)
     
     def _create_connections(self, G: nx.DiGraph, level_nodes: Dict[int, List[str]]):
@@ -1288,8 +1905,20 @@ class MEPGraphGenerator:
         # Calculate actual cable distance
         cable_distance = self._calculate_distance(G, source, target)
         
-        # Determine voltage based on source downstream voltage
-        voltage = source_attrs.get('distribution_downstream_voltage', 480.0)
+        # Determine voltage based on source downstream voltage, with fallback
+        voltage = source_attrs.get('distribution_downstream_voltage')
+        if voltage is None:
+            # Fallback voltage based on equipment type
+            if 'transformer' in source and 'transformer_001' in source:
+                voltage = 480.0  # Main transformer output
+            elif 'transformer' in source:
+                voltage = 208.0  # Secondary transformer output
+            elif 'switchboard' in source:
+                voltage = 480.0  # Switchboard voltage
+            elif 'panelboard' in source:
+                voltage = 208.0  # Panelboard voltage
+            else:
+                voltage = 120.0  # Default load voltage
         
         # Calculate current rating (typically less than source capacity)
         source_current = source_attrs.get('distribution_downstream_current_rating', 1000.0)
@@ -1317,6 +1946,9 @@ class MEPGraphGenerator:
     
     def _calculate_realistic_voltage_drop(self, distance: float, current: float, voltage: float) -> float:
         """Calculate realistic voltage drop based on distance, current, and voltage."""
+        if voltage is None or voltage <= 0:
+            return 0.0
+            
         # Simplified voltage drop calculation: V_drop = I × R × L
         # Where R is approximately 0.02 ohms per 100m for typical cable
         resistance_per_100m = 0.02  # ohms per 100m
@@ -1360,58 +1992,201 @@ class MEPGraphGenerator:
         
         filepath = os.path.join(output_dir, filename)
         
+        # Clean up None values before saving (GraphML doesn't support None values)
+        self._clean_none_values(graph)
+        
         # Save as GraphML
         nx.write_graphml(graph, filepath)
         
         return filepath
     
+    def _clean_none_values(self, G: nx.DiGraph):
+        """Remove or replace None values in graph attributes to make it GraphML-compatible."""
+        # Default values for common attributes that might be None
+        default_values = {
+            'distribution_upstream_voltage': 0.0,
+            'distribution_downstream_voltage': 0.0,
+            'distribution_upstream_current_rating': 0.0,
+            'distribution_downstream_current_rating': 0.0,
+            'Voltage': "TBD",
+            'electrical_characteristics': {}
+        }
+        
+        # Clean node attributes
+        for node_id, attrs in G.nodes(data=True):
+            for key, value in list(attrs.items()):
+                if value is None:
+                    if key in default_values:
+                        attrs[key] = default_values[key]
+                    else:
+                        # Remove the attribute entirely if no default is specified
+                        del attrs[key]
+        
+        # Clean edge attributes
+        for source, target, attrs in G.edges(data=True):
+            for key, value in list(attrs.items()):
+                if value is None:
+                    # For edges, just remove None attributes
+                    del attrs[key]
+    
     def _update_voltage_relationships(self, G: nx.DiGraph):
         """Update voltage relationships to ensure proper step-down from transformers."""
-        # Start from main transformers and propagate voltages downstream
-        for node_id, attrs in G.nodes(data=True):
-            if 'transformer' in node_id and 'transformer_001' in node_id:  # Main transformer
-                # Main transformers already have correct voltages set
-                self._propagate_voltage_downstream(G, node_id)
+        # Find all source nodes (nodes with no predecessors) and start propagation from them
+        source_nodes = [node for node in G.nodes() if G.in_degree(node) == 0]
+        
+        # If no source nodes found, start from main transformers
+        if not source_nodes:
+            source_nodes = [node for node in G.nodes() if 'transformer' in node and 'transformer_001' in node]
+        
+        # Propagate voltages from all source nodes
+        for source_node in source_nodes:
+            self._propagate_voltage_downstream(G, source_node)
     
+    def _get_standard_voltage(self, upstream_voltage: float, equipment_type: str) -> float:
+        """Get appropriate standard voltage for equipment based on upstream voltage and type."""
+        all_voltages = []
+        for level_voltages in self.voltage_levels.values():
+            all_voltages.extend(level_voltages)
+        all_voltages.sort(reverse=True)  # Sort highest to lowest
+        
+        if equipment_type == 'transformer':
+            # Transformers step down to next lower standard voltage level
+            # Ensure meaningful step-down (at least 50% reduction)
+            for voltage in all_voltages:
+                if voltage < upstream_voltage and voltage <= upstream_voltage * 0.8:
+                    return voltage
+            # If no suitable step-down found, use the lowest voltage level
+            return self.voltage_levels['low'][0]  # 208V
+            
+        elif equipment_type == 'load':
+            # Loads always get 208V (lowest available voltage)
+            return self.voltage_levels['low'][0]
+            
+        else:
+            # Switchboards and panelboards pass through voltage
+            # Find closest standard voltage to upstream
+            closest_voltage = min(all_voltages, key=lambda x: abs(x - upstream_voltage))
+            return closest_voltage
+
     def _propagate_voltage_downstream(self, G: nx.DiGraph, source_node: str):
         """Recursively propagate voltages downstream from a source node."""
         source_attrs = G.nodes[source_node]
         source_downstream_voltage = source_attrs.get('distribution_downstream_voltage')
+        
+        if source_downstream_voltage is None:
+            return  # Skip if source voltage is not set
         
         # Get all nodes this source feeds
         for target_node in G.successors(source_node):
             target_attrs = G.nodes[target_node]
             
             if 'transformer' in target_node:
-                # For transformers, ensure step-down only (downstream < upstream)
-                # Secondary transformers step down from 480V to 208V
-                if source_downstream_voltage == 480.0:
-                    # Step down to 208V
-                    new_downstream = 208.0
-                    G.nodes[target_node]['distribution_upstream_voltage'] = source_downstream_voltage
-                    G.nodes[target_node]['distribution_downstream_voltage'] = new_downstream
-                    
-                    # Update the Voltage display attribute
-                    G.nodes[target_node]['Voltage'] = f"{source_downstream_voltage:.0f} V"
+                # For transformers, get appropriate step-down voltage from standard levels
+                upstream_voltage = source_downstream_voltage
+                downstream_voltage = self._get_standard_voltage(upstream_voltage, 'transformer')
                 
-            else:
-                # For switchboards, panelboards, and loads: upstream = downstream voltage
-                G.nodes[target_node]['distribution_upstream_voltage'] = source_downstream_voltage
-                G.nodes[target_node]['distribution_downstream_voltage'] = source_downstream_voltage
+                # Update transformer voltages
+                G.nodes[target_node]['distribution_upstream_voltage'] = upstream_voltage
+                G.nodes[target_node]['distribution_downstream_voltage'] = downstream_voltage
                 
-                # Update Voltage display attribute for loads
-                if 'load' in target_node:
-                    G.nodes[target_node]['Voltage'] = f"{source_downstream_voltage:.0f} V"
+                # Update the Voltage display attribute
+                voltage_display = f"{upstream_voltage/1000:.1f} kV" if upstream_voltage >= 1000 else f"{upstream_voltage:.0f} V"
+                G.nodes[target_node]['Voltage'] = voltage_display
+                
+                # Update current ratings based on actual voltages
+                performance = G.nodes[target_node].get('Nominal_performance', '150 kVA')
+                G.nodes[target_node]['distribution_upstream_current_rating'] = self._calculate_current_rating(upstream_voltage, performance)
+                G.nodes[target_node]['distribution_downstream_current_rating'] = self._calculate_current_rating(downstream_voltage, performance)
+                
+            elif 'switchboard' in target_node:
+                # Switchboards pass through voltage (no transformation), but use closest standard voltage
+                standard_voltage = self._get_standard_voltage(source_downstream_voltage, 'switchboard')
+                G.nodes[target_node]['distribution_upstream_voltage'] = standard_voltage
+                G.nodes[target_node]['distribution_downstream_voltage'] = standard_voltage
+                
+            elif 'panelboard' in target_node:
+                # Panelboards pass through voltage, but use closest standard voltage
+                upstream_voltage = source_downstream_voltage
+                standard_voltage = self._get_standard_voltage(upstream_voltage, 'panelboard')
+                
+                G.nodes[target_node]['distribution_upstream_voltage'] = standard_voltage
+                G.nodes[target_node]['distribution_downstream_voltage'] = standard_voltage
+                
+            elif 'load' in target_node:
+                # Loads always get 208V (lowest available voltage) from standard voltage levels
+                load_voltage = self._get_standard_voltage(source_downstream_voltage, 'load')
+                phase_number = 1  # All loads are single-phase
+                
+                G.nodes[target_node]['distribution_upstream_voltage'] = load_voltage
+                G.nodes[target_node]['distribution_upstream_phase_number'] = phase_number
+                G.nodes[target_node]['Voltage'] = f"{load_voltage:.0f} V"
             
             # Update the edge voltage to match the actual voltage being transmitted
             edge_data = G.get_edge_data(source_node, target_node)
             if edge_data:
-                edge_data['voltage'] = source_downstream_voltage
-                # Update phase number based on voltage level
-                edge_data['phase_number'] = 3 if source_downstream_voltage > 240 else 1
+                transmitted_voltage = source_downstream_voltage
+                edge_data['voltage'] = transmitted_voltage
+                
+                # Update phase number based on voltage level and target type
+                if 'load' in target_node:
+                    edge_data['phase_number'] = 1  # Single-phase to loads
+                else:
+                    edge_data['phase_number'] = 3 if transmitted_voltage > 240 else 1
             
             # Continue propagating downstream
             self._propagate_voltage_downstream(G, target_node)
+    
+    def _validate_electrical_constraints(self, G: nx.DiGraph):
+        """Validate electrical safety constraints and fix violations."""
+        violations = []
+        
+        for node_id, attrs in G.nodes(data=True):
+            if 'transformer' in node_id:
+                upstream_voltage = attrs.get('distribution_upstream_voltage')
+                downstream_voltage = attrs.get('distribution_downstream_voltage')
+                
+                if upstream_voltage and downstream_voltage:
+                    # Transformers should always step down (downstream < upstream)
+                    if downstream_voltage >= upstream_voltage:
+                        violations.append(f"Transformer {node_id}: downstream voltage ({downstream_voltage}V) >= upstream voltage ({upstream_voltage}V)")
+                        
+                        # Fix the violation by setting appropriate step-down using standard voltages
+                        new_downstream = self._get_standard_voltage(upstream_voltage, 'transformer')
+                        
+                        # Ensure we don't go below 208V minimum
+                        min_voltage = self.voltage_levels['low'][0]  # 208V
+                        if new_downstream < min_voltage:
+                            new_downstream = min_voltage
+                            
+                        G.nodes[node_id]['distribution_downstream_voltage'] = new_downstream
+                        violations.append(f"  Fixed: Set downstream to {new_downstream}V")
+                        
+                        # Update current rating
+                        performance = attrs.get('Nominal_performance', '150 kVA')
+                        G.nodes[node_id]['distribution_downstream_current_rating'] = self._calculate_current_rating(new_downstream, performance)
+        
+        # Validate that transformers are properly connected
+        for node_id in G.nodes():
+            if 'transformer' in node_id:
+                predecessors = list(G.predecessors(node_id))
+                successors = list(G.successors(node_id))
+                
+                # Transformers should be fed by switchboards or panelboards
+                if predecessors:
+                    feeder = predecessors[0]
+                    if 'transformer' in feeder:
+                        violations.append(f"Transformer {node_id}: fed by another transformer {feeder} (should be fed by switchboard/panelboard)")
+                
+                # Transformers should feed panelboards
+                if successors:
+                    for successor in successors:
+                        if 'transformer' in successor:
+                            violations.append(f"Transformer {node_id}: feeds another transformer {successor} (should feed panelboard)")
+        
+        if violations:
+            print("Electrical constraint violations found and fixed:")
+            for violation in violations:
+                print(f"  {violation}")
     
 
 def main():
