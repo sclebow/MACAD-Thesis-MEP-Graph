@@ -162,17 +162,17 @@ def visualize_graph_two_d(graph):
         hover = f"{node}<br>Type: {node_type}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items() if k != 'type'])
         node_text.append(hover)
 
-    # Use risk scores to scale node size
-    risk_scores = [graph.nodes[n].get('risk_score', 0) for n in graph.nodes]
-    if risk_scores:
-        min_risk = min(risk_scores)
-        max_risk = max(risk_scores)
-        if max_risk == min_risk:
-            norm_risk = [0.5 for _ in risk_scores]
+    # Use propagated_power to scale node size
+    prop_powers = [graph.nodes[n].get('propagated_power', 0) for n in graph.nodes]
+    if prop_powers:
+        min_power = min(prop_powers)
+        max_power = max(prop_powers)
+        if max_power == min_power:
+            norm_power = [0.5 for _ in prop_powers]
         else:
-            norm_risk = [(r - min_risk) / (max_risk - min_risk) for r in risk_scores]
+            norm_power = [(p - min_power) / (max_power - min_power) for p in prop_powers]
         # Scale size between 10 and 30
-        node_sizes = [10 + 20 * x for x in norm_risk]
+        node_sizes = [10 + 20 * x for x in norm_power]
     else:
         node_sizes = [15 for _ in graph.nodes]
 
@@ -307,17 +307,17 @@ def visualize_graph_three_d(graph):
         hovertext=edge_marker_text,
         showlegend=False
     )
-    # Use risk scores to scale node size
-    risk_scores = [graph.nodes[n].get('risk_score', 0) for n in graph.nodes]
-    if risk_scores:
-        min_risk = min(risk_scores)
-        max_risk = max(risk_scores)
-        if max_risk == min_risk:
-            norm_risk = [0.5 for _ in risk_scores]
+    # Use propagated_power to scale node size
+    prop_powers = [graph.nodes[n].get('propagated_power', 0) for n in graph.nodes]
+    if prop_powers:
+        min_power = min(prop_powers)
+        max_power = max(prop_powers)
+        if max_power == min_power:
+            norm_power = [0.5 for _ in prop_powers]
         else:
-            norm_risk = [(r - min_risk) / (max_risk - min_risk) for r in risk_scores]
+            norm_power = [(p - min_power) / (max_power - min_power) for p in prop_powers]
         # Scale size between 4 and 16
-        node_sizes = [4 + 12 * x for x in norm_risk]
+        node_sizes = [4 + 12 * x for x in norm_power]
     else:
         node_sizes = [8 for _ in graph.nodes]
 

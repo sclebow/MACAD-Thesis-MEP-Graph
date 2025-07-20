@@ -479,36 +479,59 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
     equipment = {}
     main_voltage = voltage_info['voltage_3phase']
     is_480_building = (main_voltage == 480)
-    # Get riser bounds from riser_floor_attributes if present
     riser_bounds = riser_floor_attributes.get('_riser_bounds', None)
     half_area = RISER_EQUIPMENT_AREA_SIZE / 2.0
+
+    def unique_xy(riser_idx, used_positions):
+        if riser_bounds:
+            xmin, xmax, ymin, ymax = riser_bounds[riser_idx]
+        else:
+            xmin, xmax, ymin, ymax = -half_area, half_area, -half_area, half_area
+        for _ in range(100):
+            x = random.uniform(xmin, xmax)
+            y = random.uniform(ymin, ymax)
+            pos = (round(x, 3), round(y, 3))
+            if pos not in used_positions:
+                used_positions.add(pos)
+                return x, y
+        return xmin, ymin
+
+    def add_panel(equipment_list, panel_type, voltage, load_type, power, parent, riser_idx, used_positions):
+        x, y = unique_xy(riser_idx, used_positions)
+        panel = {
+            "type": panel_type,
+            "voltage": voltage,
+            "load_type": load_type,
+            "power": power,
+            "parent": parent,
+            "x": x,
+            "y": y
+        }
+        equipment_list.append(panel)
+
+    def add_transformer(equipment_list, from_voltage, to_voltage, load_type, power, parent, riser_idx, used_positions):
+        x, y = unique_xy(riser_idx, used_positions)
+        transformer = {
+            "type": "transformer",
+            "from_voltage": from_voltage,
+            "to_voltage": to_voltage,
+            "load_type": load_type,
+            "power": power,
+            "parent": parent,
+            "x": x,
+            "y": y
+        }
+        equipment_list.append(transformer)
+
     for floor, risers in riser_floor_attributes.items():
         if floor == '_riser_bounds':
             continue
         equipment[floor] = {}
         for riser_idx, load_types in risers.items():
             riser_equipment = []
-            # For unique placement, keep track of used (x, y) in this riser/floor
             used_positions = set()
-            # Helper to generate a unique (x, y) within riser bounds
-            def unique_xy():
-                if riser_bounds:
-                    xmin, xmax, ymin, ymax = riser_bounds[riser_idx]
-                else:
-                    # fallback: square centered at (0,0)
-                    xmin, xmax, ymin, ymax = -half_area, half_area, -half_area, half_area
-                for _ in range(100):
-                    x = random.uniform(xmin, xmax)
-                    y = random.uniform(ymin, ymax)
-                    pos = (round(x, 3), round(y, 3))
-                    if pos not in used_positions:
-                        used_positions.add(pos)
-                        return x, y
-                # fallback: just return xmin, ymin
-                return xmin, ymin
-
             # Always add a main distribution panel at the building's main voltage
-            x, y = unique_xy()
+            x, y = unique_xy(riser_idx, used_positions)
             riser_equipment.append({
                 "type": "main_panel",
                 "voltage": main_voltage,
@@ -516,103 +539,29 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
                 "x": x,
                 "y": y
             })
-            # For each load type, handle sub-panels and transformers
+
             for t, vdict in load_types.items():
                 if is_480_building:
-                    high_v_power = 0.0
-                    low_v_power = 0.0
-                    for v, p in vdict.items():
-                        if v in [480, 277]:
-                            high_v_power += p
-                        elif v in [208, 120]:
-                            low_v_power += p
+                    high_v_power = sum(p for v, p in vdict.items() if v in [480, 277])
+                    low_v_power = sum(p for v, p in vdict.items() if v in [208, 120])
                     if high_v_power > 0 and low_v_power > 0:
-                        # Add 480V sub-panel (parent: main_panel)
-                        x, y = unique_xy()
-                        riser_equipment.append({
-                            "type": "sub_panel",
-                            "voltage": 480,
-                            "load_type": t,
-                            "power": high_v_power,
-                            "parent": "main_panel",
-                            "x": x,
-                            "y": y
-                        })
-                        # Add transformer (parent: 480V sub-panel)
-                        x, y = unique_xy()
-                        riser_equipment.append({
-                            "type": "transformer",
-                            "from_voltage": 480,
-                            "to_voltage": 208,
-                            "load_type": t,
-                            "power": low_v_power,
-                            "parent": "sub_panel_480_{}".format(t),
-                            "x": x,
-                            "y": y
-                        })
-                        # Add 208V sub-panel (parent: transformer)
-                        x, y = unique_xy()
-                        riser_equipment.append({
-                            "type": "sub_panel",
-                            "voltage": 208,
-                            "load_type": t,
-                            "power": low_v_power,
-                            "parent": "transformer_208_{}".format(t),
-                            "x": x,
-                            "y": y
-                        })
+                        # 480V sub-panel (parent: main_panel)
+                        add_panel(riser_equipment, "sub_panel", 480, t, high_v_power, "main_panel", riser_idx, used_positions)
+                        # transformer (parent: sub_panel_480_{t})
+                        add_transformer(riser_equipment, 480, 208, t, low_v_power, f"sub_panel_480_{t}", riser_idx, used_positions)
+                        # 208V sub-panel (parent: transformer_208_{t})
+                        add_panel(riser_equipment, "sub_panel", 208, t, low_v_power, f"transformer_208_{t}", riser_idx, used_positions)
                     elif high_v_power > 0:
-                        # Only high voltage loads: just add 480V sub-panel (parent: main_panel)
-                        x, y = unique_xy()
-                        riser_equipment.append({
-                            "type": "sub_panel",
-                            "voltage": 480,
-                            "load_type": t,
-                            "power": high_v_power,
-                            "parent": "main_panel",
-                            "x": x,
-                            "y": y
-                        })
+                        add_panel(riser_equipment, "sub_panel", 480, t, high_v_power, "main_panel", riser_idx, used_positions)
                     elif low_v_power > 0:
-                        # Only low voltage loads: transformer and 208V sub-panel, both parented to main_panel
-                        x, y = unique_xy()
-                        riser_equipment.append({
-                            "type": "transformer",
-                            "from_voltage": 480,
-                            "to_voltage": 208,
-                            "load_type": t,
-                            "power": low_v_power,
-                            "parent": "main_panel",
-                            "x": x,
-                            "y": y
-                        })
-                        x, y = unique_xy()
-                        riser_equipment.append({
-                            "type": "sub_panel",
-                            "voltage": 208,
-                            "load_type": t,
-                            "power": low_v_power,
-                            "parent": "transformer_208_{}".format(t),
-                            "x": x,
-                            "y": y
-                        })
+                        add_transformer(riser_equipment, 480, 208, t, low_v_power, "main_panel", riser_idx, used_positions)
+                        add_panel(riser_equipment, "sub_panel", 208, t, low_v_power, f"transformer_208_{t}", riser_idx, used_positions)
                 else:
                     # For 208/120V building, only add sub-panels for 208 or 480V (not 120V)
                     for v, total_power in vdict.items():
-                        if v == main_voltage:
+                        if v == main_voltage or v not in [208, 480]:
                             continue
-                        if v not in [208, 480]:
-                            continue  # Only allow sub-panels for 208 or 480V
-                        x, y = unique_xy()
-                        riser_equipment.append({
-                            "type": "sub_panel",
-                            "voltage": v,
-                            "load_type": t,
-                            "power": total_power,
-                            "parent": "main_panel",
-                            "x": x,
-                            "y": y
-                        })
+                        add_panel(riser_equipment, "sub_panel", v, t, total_power, "main_panel", riser_idx, used_positions)
             equipment[floor][riser_idx] = riser_equipment
     return equipment
 
