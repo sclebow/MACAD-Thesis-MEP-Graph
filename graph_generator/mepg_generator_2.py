@@ -128,12 +128,12 @@ def main():
     parser.add_argument('--total_load', type=int, default=1000, help='Total electrical load in kW')
     parser.add_argument('--filename', '-f', type=str, help='Output filename (optional)')
     parser.add_argument('--seed', '-s', type=int, help='Random seed for reproducible results')
-    parser.add_argument('--building-length', type=float, default=20.0, help='Building length in meters')
-    parser.add_argument('--building-width', type=float, default=20.0, help='Building width in meters')
-    parser.add_argument('--num-floors', type=int, default=4, help='Number of floors')
-    parser.add_argument('--floor-height', type=float, default=3.5, help='Floor height in meters')
-    parser.add_argument('--cluster-strength', type=float, default=0.95, help='Strength of clustering (0.0 = no clustering, 1.0 = full clustering)')
-    
+    parser.add_argument('--building_length', type=float, default=20.0, help='Building length in meters')
+    parser.add_argument('--building_width', type=float, default=20.0, help='Building width in meters')
+    parser.add_argument('--num_floors', type=int, default=4, help='Number of floors')
+    parser.add_argument('--floor_height', type=float, default=3.5, help='Floor height in meters')
+    parser.add_argument('--cluster_strength', type=float, default=0.95, help='Strength of clustering (0.0 = no clustering, 1.0 = full clustering)')
+
     args = parser.parse_args()
 
     if args.seed is not None:
@@ -597,10 +597,12 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
                             "y": y
                         })
                 else:
-                    # For 208/120V building, just add sub-panels for each voltage if not main
+                    # For 208/120V building, only add sub-panels for 208 or 480V (not 120V)
                     for v, total_power in vdict.items():
                         if v == main_voltage:
                             continue
+                        if v not in [208, 480]:
+                            continue  # Only allow sub-panels for 208 or 480V
                         x, y = unique_xy()
                         riser_equipment.append({
                             "type": "sub_panel",
