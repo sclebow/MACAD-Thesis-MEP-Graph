@@ -76,7 +76,7 @@ from dataclasses import dataclass
 
 # --- Constants ---
 # Standard equipment sizes in Amps for distribution panels and switchboards.
-STANDARD_EQUIPMENT_SIZES = [
+STANDARD_DISTRIBUTION_EQUIPMENT_SIZES = [
     60,
     100,
     150,
@@ -101,6 +101,24 @@ STANDARD_EQUIPMENT_SIZES = [
 ]
 
 MAXIMUM_PANEL_SIZE = 800 # Any larger than this is considered a switchboard
+
+STANDARD_TRANSFORMER_SIZES = [
+    15,  # kVA
+    25,
+    37.5,
+    50,
+    75,
+    100,
+    112.5,
+    150,
+    167,
+    200,
+    225,
+    250,
+    300,
+    400,
+    500,
+]
 
 def main():
     """Main function for command-line usage."""
@@ -616,8 +634,17 @@ def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[fl
     # 5. Connect equipment within each riser/floor (main panel → transformer → sub-panel, etc.)
     connect_equipment_hierarchy(G, distribution_equipment)
 
-    # # 6. Add end load nodes and connect them to the appropriate equipment
-    # add_and_connect_end_loads(G, distribution_equipment, building_attrs)
+    # 6. Add end load nodes and connect them to the appropriate equipment
+    add_and_connect_end_loads(G, distribution_equipment, building_attrs)
+
+    # 7. Propagate the power loads through the graph from the end loads to the utility transformer
+    propagate_power_loads(G, distribution_equipment)
+
+    # 8. Calculate the amperage for each node based on the power
+    calculate_amperage(G, voltage_info)
+
+    # 9. Size the equipment based on the calculated amperage
+    size_equipment(G)
 
     return G
 
@@ -896,6 +923,112 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs):
                                     )
                                     created_nodes.add(end_load_id)
                                 G.add_edge(main_panel_id, end_load_id, description='Main panel to end load')
+
+def propagate_power_loads(G: nx.DiGraph, distribution_equipment: Dict[str, Any]) -> None:
+
+    """
+    Step 9: Propagate the power loads through the graph from the end loads to the utility transformer.
+    For each node, calculate the total downstream power (sum of all end loads it serves).
+    Adds a 'propagated_power' attribute to each node.
+    """
+    # 1. Initialize propagated_power to 0 for all nodes
+    for n in G.nodes:
+        G.nodes[n]['propagated_power'] = 0.0
+
+    # 2. Set propagated_power for end loads to their own power
+    end_load_nodes = [n for n, d in G.nodes(data=True) if d.get('type') == 'end_load']
+    for n in end_load_nodes:
+        G.nodes[n]['propagated_power'] = G.nodes[n].get('power', 0.0)
+
+    # 3. Traverse in reverse topological order (leaves to root)
+    try:
+        topo_order = list(nx.topological_sort(G))
+    except nx.NetworkXUnfeasible:
+        # Not a DAG, skip propagation
+        return
+    for n in reversed(topo_order):
+        node_power = G.nodes[n].get('propagated_power', 0.0)
+        for pred in G.predecessors(n):
+            G.nodes[pred]['propagated_power'] += node_power
+
+def calculate_amperage(G: nx.DiGraph, voltage_info: Dict[str, Any]) -> None:
+    """
+    Step 10: Calculate the amperage for each node based on the power and voltage.
+    For transformers, add both primary and secondary amperage.
+    """
+    import math
+
+    def is_three_phase(voltage):
+        # 3-phase voltages are 480 and 208
+        return str(voltage) in ["480", "208", 480, 208]
+
+    def calc_amperage(power_kw, voltage):
+        if not voltage or voltage == 0:
+            return 0.0
+        power_w = power_kw * 1000.0
+        if is_three_phase(voltage):
+            return power_w / (float(voltage) * math.sqrt(3))
+        else:
+            return power_w / float(voltage)
+
+    for n, d in G.nodes(data=True):
+        # Transformers: calculate both primary and secondary amperage
+        if d.get('type') == 'transformer':
+            power = d.get('propagated_power', d.get('power', 0.0))
+            from_v = d.get('from_voltage', None)
+            to_v = d.get('to_voltage', None)
+            # Primary (upstream)
+            if from_v:
+                G.nodes[n]['primary_amperage'] = calc_amperage(power, from_v)
+            # Secondary (downstream)
+            if to_v:
+                G.nodes[n]['secondary_amperage'] = calc_amperage(power, to_v)
+        else:
+            # For all other nodes with voltage and propagated_power
+            voltage = d.get('voltage', None)
+            power = d.get('propagated_power', d.get('power', 0.0))
+            if voltage and power:
+                G.nodes[n]['amperage'] = calc_amperage(power, voltage)
+
+def size_equipment(G: nx.DiGraph) -> None:
+    """
+    Step 11: Size the equipment based on the calculated amperage.
+    For each node, determine the appropriate equipment size based on amperage.
+    Adds a 'size' attribute to each node.
+    Use STANDARD_DISTRIBUTION_EQUIPMENT_SIZES constant for sizing.
+    Assume the standard sizes are 80% rated
+    """
+    for n, d in G.nodes(data=True):
+        if 'panel' in d.get('type'):
+            amperage = d.get('amperage', 0.0)
+            if amperage > 0:
+                # Example sizing logic: round up to nearest 10A
+                standard_sizes_sorted = sorted(STANDARD_DISTRIBUTION_EQUIPMENT_SIZES)
+
+                d['amperage_rating'] = standard_sizes_sorted[-1]  # Default to largest size if no match found
+                # Find the appropriate size based on amperage
+                # Use 80% of the size as the threshold for sizing
+                for size in standard_sizes_sorted:
+                    if amperage <= size * 0.8:  # Check if 80% of the size is greater than or equal to the amperage
+                        d['amperage_rating'] = size
+                        break
+                    
+                # Use MAXIMUM_PANEL_SIZE to determine if the node is a panel or switchboard
+                if d['amperage_rating'] > MAXIMUM_PANEL_SIZE:
+                    d['type'] = 'switchboard'
+                else:
+                    d['type'] = 'panel'
+        elif 'transformer' in d.get('type'):
+            power = d.get('propagated_power', d.get('power', 0.0))
+
+            standard_sizes_sorted = sorted(STANDARD_TRANSFORMER_SIZES)
+            d['power_rating'] = standard_sizes_sorted[-1]  # Default to largest size
+
+            # Find the appropriate size based on power
+            for size in standard_sizes_sorted:
+                if power <= size * 0.8:
+                    d['power_rating'] = size
+                    break
 
 if __name__ == "__main__":
     main()
