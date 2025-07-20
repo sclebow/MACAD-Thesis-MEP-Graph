@@ -95,26 +95,18 @@ def visualize_graph_two_d(graph):
         print(f"Error calculating positions: {e}")
         pos = nx.spring_layout(graph)
 
-    # Get risk scores for color mapping
-    risk_scores = [graph.nodes[n].get('risk_score', 0) for n in graph.nodes]
-    if risk_scores:
-        min_risk = min(risk_scores)
-        max_risk = max(risk_scores)
-        # Avoid division by zero
-        if max_risk == min_risk:
-            norm_risk = [0.5 for _ in risk_scores]
-        else:
-            norm_risk = [(r - min_risk) / (max_risk - min_risk) for r in risk_scores]
-        # Blue (low) to Red (high), more vibrant
-        def vibrant_color(x):
-            # x=0: blue, x=0.5: purple, x=1: red
-            r = int(255 * x)
-            g = 0
-            b = int(255 * (1 - x))
-            return f"rgb({r},{g},{b})"
-        node_colors = [vibrant_color(x) for x in norm_risk]
-    else:
-        node_colors = ['rgb(0,0,255)' for _ in graph.nodes]
+    # Get node types for color mapping
+    node_types = [graph.nodes[n].get('type', 'Unknown') for n in graph.nodes]
+    unique_types = list(sorted(set(node_types)))
+    # Assign a color to each type (using Plotly qualitative palette)
+    plotly_palette = [
+        '#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3',
+        '#FF6692', '#B6E880', '#FF97FF', '#FECB52', '#1f77b4', '#ff7f0e',
+        '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
+        '#bcbd22', '#17becf'
+    ]
+    type_color_map = {t: plotly_palette[i % len(plotly_palette)] for i, t in enumerate(unique_types)}
+    node_colors = [type_color_map[t] for t in node_types]
 
     edge_x = []
     edge_y = []
@@ -154,39 +146,62 @@ def visualize_graph_two_d(graph):
         showlegend=False
     )
 
+
     node_x = []
     node_y = []
     names = []
     node_text = []
+    node_type_list = []
     for idx, (node, attrs) in enumerate(graph.nodes(data=True)):
         x, y = pos[node]
         node_x.append(x)
         node_y.append(y)
         names.append(node)
-        hover = f"{node}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items()])
+        node_type = attrs.get('type', 'Unknown')
+        node_type_list.append(node_type)
+        hover = f"{node}<br>Type: {node_type}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items() if k != 'type'])
         node_text.append(hover)
-    node_trace = go.Scatter(
-        x=node_x, y=node_y,
-        mode='markers+text',
-        text=names,  # Show node name as label
-        textposition="top center",
-        hoverinfo='text',
-        marker=dict(
-            showscale=True,
-            colorscale=[[0, 'rgb(0,0,255)'], [0.5, 'rgb(128,0,128)'], [1, 'rgb(255,0,0)']],
-            color=norm_risk if risk_scores else [0.5 for _ in graph.nodes],
-            cmin=0,
-            cmax=1,
-            size=15,
-            line_width=2,
-            colorbar=dict(title='Risk Score', thickness=15)
-        ),
-        hovertext=node_text  # Show all attributes on hover
-    )
 
-    fig = go.Figure(data=[edge_trace, edge_marker_trace, node_trace],
+    # Use risk scores to scale node size
+    risk_scores = [graph.nodes[n].get('risk_score', 0) for n in graph.nodes]
+    if risk_scores:
+        min_risk = min(risk_scores)
+        max_risk = max(risk_scores)
+        if max_risk == min_risk:
+            norm_risk = [0.5 for _ in risk_scores]
+        else:
+            norm_risk = [(r - min_risk) / (max_risk - min_risk) for r in risk_scores]
+        # Scale size between 10 and 30
+        node_sizes = [10 + 20 * x for x in norm_risk]
+    else:
+        node_sizes = [15 for _ in graph.nodes]
+
+    # Create a trace for each type for legend
+    node_traces = []
+    for t in unique_types:
+        indices = [i for i, typ in enumerate(node_type_list) if typ == t]
+        if not indices:
+            continue
+        trace = go.Scatter(
+            x=[node_x[i] for i in indices],
+            y=[node_y[i] for i in indices],
+            mode='markers+text',
+            text=[names[i] for i in indices],
+            textposition="top center",
+            hoverinfo='text',
+            marker=dict(
+                color=type_color_map[t],
+                size=[node_sizes[i] for i in indices],
+                line_width=2
+            ),
+            hovertext=[node_text[i] for i in indices],
+            name=str(t)
+        )
+        node_traces.append(trace)
+
+    fig = go.Figure(data=[edge_trace, edge_marker_trace] + node_traces,
                     layout=go.Layout(
-                        showlegend=False,
+                        showlegend=True,
                         hovermode='closest',
                         margin=dict(b=20,l=5,r=5,t=40),
                         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
@@ -201,31 +216,25 @@ def visualize_graph_three_d(graph):
     """
     pos = nx.spring_layout(graph, dim=3)
 
-    # Get risk scores for color mapping
-    risk_scores = [graph.nodes[n].get('risk_score', 0) for n in graph.nodes]
-    if risk_scores:
-        min_risk = min(risk_scores)
-        max_risk = max(risk_scores)
-        if max_risk == min_risk:
-            norm_risk = [0.5 for _ in risk_scores]
-        else:
-            norm_risk = [(r - min_risk) / (max_risk - min_risk) for r in risk_scores]
-        def vibrant_color(x):
-            r = int(255 * x)
-            g = 0
-            b = int(255 * (1 - x))
-            return f"rgb({r},{g},{b})"
-        node_colors = [vibrant_color(x) for x in norm_risk]
-    else:
-        node_colors = ['rgb(0,0,255)' for _ in graph.nodes]
+    # Get node types for color mapping
+    node_types = [graph.nodes[n].get('type', 'Unknown') for n in graph.nodes]
+    unique_types = list(sorted(set(node_types)))
+    plotly_palette = [
+        '#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3',
+        '#FF6692', '#B6E880', '#FF97FF', '#FECB52', '#1f77b4', '#ff7f0e',
+        '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
+        '#bcbd22', '#17becf'
+    ]
+    type_color_map = {t: plotly_palette[i % len(plotly_palette)] for i, t in enumerate(unique_types)}
+    node_colors = [type_color_map[t] for t in node_types]
 
     node_x = []
     node_y = []
     node_z = []
     names = []
     node_text = []
+    node_type_list = []
     for idx, (node, attrs) in enumerate(graph.nodes(data=True)):
-        # Get the 'x', 'y', 'z' attributes from the node
         x = attrs.get('x', 0)
         y = attrs.get('y', 0)
         z = attrs.get('z', 0)
@@ -233,7 +242,9 @@ def visualize_graph_three_d(graph):
         node_y.append(y)
         node_z.append(z)
         names.append(node)
-        hover = f"{node}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items()])
+        node_type = attrs.get('type', 'Unknown')
+        node_type_list.append(node_type)
+        hover = f"{node}<br>Type: {node_type}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items() if k != 'type'])
         node_text.append(hover)
 
     # Set axis ranges to ensure equal scale
@@ -296,24 +307,43 @@ def visualize_graph_three_d(graph):
         hovertext=edge_marker_text,
         showlegend=False
     )
-    node_trace = go.Scatter3d(
-        x=node_x, y=node_y, z=node_z,
-        mode='markers+text',
-        text=names,  # Show node name as label
-        textposition="top center",
-        hoverinfo='text',
-        marker=dict(
-            showscale=True,
-            colorscale=[[0, 'rgb(0,0,255)'], [0.5, 'rgb(128,0,128)'], [1, 'rgb(255,0,0)']],
-            color=norm_risk if risk_scores else [0.5 for _ in graph.nodes],
-            cmin=0,
-            cmax=1,
-            size=5,
-            line_width=2,
-            colorbar=dict(title='Risk Score', thickness=15)
-        ),
-        hovertext=node_text  # Show all attributes on hover
-    )
+    # Use risk scores to scale node size
+    risk_scores = [graph.nodes[n].get('risk_score', 0) for n in graph.nodes]
+    if risk_scores:
+        min_risk = min(risk_scores)
+        max_risk = max(risk_scores)
+        if max_risk == min_risk:
+            norm_risk = [0.5 for _ in risk_scores]
+        else:
+            norm_risk = [(r - min_risk) / (max_risk - min_risk) for r in risk_scores]
+        # Scale size between 4 and 16
+        node_sizes = [4 + 12 * x for x in norm_risk]
+    else:
+        node_sizes = [8 for _ in graph.nodes]
+
+    # Create a trace for each type for legend
+    node_traces = []
+    for t in unique_types:
+        indices = [i for i, typ in enumerate(node_type_list) if typ == t]
+        if not indices:
+            continue
+        trace = go.Scatter3d(
+            x=[node_x[i] for i in indices],
+            y=[node_y[i] for i in indices],
+            z=[node_z[i] for i in indices],
+            mode='markers+text',
+            text=[names[i] for i in indices],
+            textposition="top center",
+            hoverinfo='text',
+            marker=dict(
+                color=type_color_map[t],
+                size=[node_sizes[i] for i in indices],
+                line_width=2
+            ),
+            hovertext=[node_text[i] for i in indices],
+            name=str(t)
+        )
+        node_traces.append(trace)
     # --- Add building bounds as a rectangular prism if metadata is present ---
     building_length = graph.graph.get('building_length')
     building_width = graph.graph.get('building_width')
@@ -355,7 +385,7 @@ def visualize_graph_three_d(graph):
             print(f"Error drawing building bounds: {e}")
             prism_trace = None
     # Compose figure data
-    fig_data = [edge_trace, edge_marker_trace, node_trace]
+    fig_data = [edge_trace, edge_marker_trace] + node_traces
     if prism_trace:
         fig_data.append(prism_trace)
     fig = go.Figure(data=fig_data,
