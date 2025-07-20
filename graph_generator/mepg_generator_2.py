@@ -183,7 +183,7 @@ def main():
     nx.write_graphml(graph, f"{output_dir}{filename}")
     print(f"Graph saved to {output_dir}{filename}")
 
-def generate_mep_graph(building_attributes: Dict[str, Any]) -> nx.Graph:
+def generate_mep_graph(building_attributes: Dict[str, Any]) -> nx.DiGraph:
     """
     Framework for generating a random MEP graph based on building attributes.
     Each step is modularized for clarity and future extension.
@@ -504,12 +504,12 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
             equipment[floor][riser_idx] = riser_equipment
     return equipment
 
-def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[float, float]], distribution_equipment: Dict, voltage_info: Dict[str, Any]) -> nx.Graph:
+def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[float, float]], distribution_equipment: Dict, voltage_info: Dict[str, Any]) -> nx.DiGraph:
     """
     Step 8: Connect all nodes to form the final graph.
     Framework only: placeholder functions for each connection step.
     """
-    G = nx.Graph()
+    G = nx.DiGraph()
 
     # 1. Add utility transformer node
     add_utility_transformer(G, building_attrs)
@@ -661,7 +661,7 @@ def connect_main_panels_vertically(G, distribution_equipment):
         for i in range(len(main_panels) - 1):
             upper_node = main_panels[i][1]
             lower_node = main_panels[i + 1][1]
-            G.add_edge(upper_node, lower_node, description='Vertical main panel connection')
+            G.add_edge(lower_node, upper_node, description='Vertical main panel connection')
 
 def connect_equipment_hierarchy(G, distribution_equipment):
     """Connect equipment within each riser/floor (main panel → transformer → sub-panel, etc.)."""
