@@ -236,6 +236,17 @@ def visualize_graph_three_d(graph):
         hover = f"{node}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items()])
         node_text.append(hover)
 
+    # Set axis ranges to ensure equal scale
+    all_coords = node_x + node_y + node_z
+    if all_coords:
+        min_coord = min(all_coords)
+        max_coord = max(all_coords)
+        # Add a small margin
+        margin = 0.05 * (max_coord - min_coord) if max_coord > min_coord else 1
+        axis_range = [min_coord - margin, max_coord + margin]
+    else:
+        axis_range = [-1, 1]
+
     edge_x = []
     edge_y = []
     edge_z = []
@@ -309,9 +320,9 @@ def visualize_graph_three_d(graph):
                         hovermode='closest',
                         margin=dict(b=20,l=5,r=5,t=40),
                         scene=dict(
-                            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                            zaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+                            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=axis_range),
+                            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=axis_range),
+                            zaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=axis_range)
                         )
                     ))
     return fig
