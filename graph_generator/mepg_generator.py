@@ -16,15 +16,31 @@ from typing import List, Dict, Tuple, Any
 class MEPGraphGenerator:
     """Generates realistic electrical system graphs with logical topology."""
     
-    def __init__(self, seed: int = None):
+    def __init__(self, seed: int = None, building_config: Dict = None):
         """
         Initialize the generator.
         
         Args:
             seed: Random seed for reproducible results
+            building_config: Building configuration parameters
         """
         if seed is not None:
             random.seed(seed)
+        
+        # Default building configuration
+        self.building_config = building_config or {
+            'length': 80.0,          # Building length (m)
+            'width': 60.0,           # Building width (m)
+            'floor_height': 3.5,     # Typical floor height (m)
+            'num_floors': 8,         # Number of floors
+            'basement_depth': -3.0,  # Basement depth (m)
+            'electrical_core': {     # Central electrical core area
+                'x_center': 40.0,    # Center of building length
+                'y_center': 30.0,    # Center of building width
+                'width': 12.0,       # Electrical room width
+                'depth': 8.0         # Electrical room depth
+            }
+        }
         
         # Component type definitions
         self.component_types = {
@@ -134,8 +150,28 @@ class MEPGraphGenerator:
         
         # Update voltages to ensure proper step-down relationships
         self._update_voltage_relationships(G)
+
+        # Align transformer positions with upstream or downstream node
+        self._align_transformer_positions(G)
         
         return G
+    def _align_transformer_positions(self, G: nx.DiGraph):
+        """Set transformer node positions to match either their upstream or downstream node."""
+        for node_id, attrs in G.nodes(data=True):
+            if 'transformer' in node_id:
+                # Try to align with upstream node if exists, else downstream
+                predecessors = list(G.predecessors(node_id))
+                successors = list(G.successors(node_id))
+                ref_node = None
+                if predecessors:
+                    ref_node = predecessors[0]
+                elif successors:
+                    ref_node = successors[0]
+                if ref_node:
+                    ref_attrs = G.nodes[ref_node]
+                    attrs['x'] = ref_attrs.get('x', attrs.get('x', 0.0))
+                    attrs['y'] = ref_attrs.get('y', attrs.get('y', 0.0))
+                    attrs['z'] = ref_attrs.get('z', attrs.get('z', 0.0))
     
     def _calculate_component_distribution(self, node_count: int) -> Dict[str, int]:
         """Calculate logical distribution of component types."""
@@ -164,9 +200,250 @@ class MEPGraphGenerator:
         
         return distribution
     
+    def _define_equipment_zones(self) -> Dict[str, Dict]:
+        """Define realistic zones for different equipment types."""
+        config = self.building_config
+        
+        zones = {
+            'main_electrical': {
+                'description': 'Main electrical room (basement/ground floor)',
+                'x_range': (config['electrical_core']['x_center'] - config['electrical_core']['width']/2,
+                           config['electrical_core']['x_center'] + config['electrical_core']['width']/2),
+                'y_range': (config['electrical_core']['y_center'] - config['electrical_core']['depth']/2,
+                           config['electrical_core']['y_center'] + config['electrical_core']['depth']/2),
+                'z_range': (config['basement_depth'], config['floor_height']),
+                'equipment': ['main_transformer', 'main_switchboard']
+            },
+            
+            'floor_electrical_rooms': {
+                'description': 'Electrical closets on each floor',
+                'x_range': (config['electrical_core']['x_center'] - 6.0,
+                           config['electrical_core']['x_center'] + 6.0),
+                'y_range': (config['electrical_core']['y_center'] - 4.0,
+                           config['electrical_core']['y_center'] + 4.0),
+                'z_range': (0.0, config['num_floors'] * config['floor_height']),
+                'equipment': ['secondary_transformer', 'distribution_panelboard']
+            },
+            
+            'corridor_locations': {
+                'description': 'Corridor locations for smaller panels',
+                'x_range': (5.0, config['length'] - 5.0),
+                'y_range': (5.0, config['width'] - 5.0),
+                'z_range': (0.0, config['num_floors'] * config['floor_height']),
+                'equipment': ['panelboard']
+            },
+            
+            'end_use_areas': {
+                'description': 'Distributed throughout usable floor areas',
+                'x_range': (8.0, config['length'] - 8.0),
+                'y_range': (8.0, config['width'] - 8.0),
+                'z_range': (0.0, config['num_floors'] * config['floor_height']),
+                'equipment': ['load']
+            }
+        }
+        
+        return zones
+    
+    def _define_room_types(self) -> Dict[str, Dict]:
+        """Define room types for different equipment based on building zones."""
+        return {
+            'main_electrical_room': {
+                'description': 'Main electrical room in basement/ground floor',
+                'typical_equipment': ['main_transformer', 'main_switchboard'],
+                'room_codes': ['MER-B01', 'MER-001', 'ELEC-MAIN']
+            },
+            'electrical_closet': {
+                'description': 'Electrical closets distributed on floors',
+                'typical_equipment': ['secondary_transformer', 'distribution_panelboard'],
+                'room_codes': ['EC-{floor:02d}A', 'EC-{floor:02d}B', 'ELEC-{floor:02d}']
+            },
+            'idf_room': {
+                'description': 'Intermediate Distribution Frame rooms',
+                'typical_equipment': ['panelboard', 'IT_equipment'],
+                'room_codes': ['IDF-{floor:02d}A', 'IDF-{floor:02d}B', 'COMM-{floor:02d}']
+            },
+            'corridor': {
+                'description': 'Corridor locations for wall-mounted panels',
+                'typical_equipment': ['panelboard'],
+                'room_codes': ['CORR-{floor:02d}A', 'CORR-{floor:02d}B', 'HALL-{floor:02d}']
+            },
+            'office': {
+                'description': 'Office spaces',
+                'typical_equipment': ['load'],
+                'room_codes': ['OFF-{floor:02d}{room:02d}', 'OFFICE-{floor:02d}{room:02d}']
+            },
+            'conference_room': {
+                'description': 'Conference and meeting rooms',
+                'typical_equipment': ['load'],
+                'room_codes': ['CONF-{floor:02d}{room:02d}', 'MEET-{floor:02d}{room:02d}']
+            },
+            'lab': {
+                'description': 'Laboratory spaces',
+                'typical_equipment': ['load'],
+                'room_codes': ['LAB-{floor:02d}{room:02d}', 'RESEARCH-{floor:02d}{room:02d}']
+            },
+            'mechanical_room': {
+                'description': 'Mechanical equipment rooms',
+                'typical_equipment': ['load', 'panelboard'],
+                'room_codes': ['MECH-{floor:02d}', 'HVAC-{floor:02d}', 'UTL-{floor:02d}']
+            },
+            'storage': {
+                'description': 'Storage and utility rooms',
+                'typical_equipment': ['load'],
+                'room_codes': ['STOR-{floor:02d}{room:02d}', 'UTIL-{floor:02d}{room:02d}']
+            }
+        }
+    
+    def _assign_room_to_equipment(self, node_id: str, position_id: int, x: float, y: float, z: float) -> str:
+        """Assign a realistic room code to equipment based on type and position."""
+        room_types = self._define_room_types()
+        config = self.building_config
+        
+        # Calculate floor number
+        floor = max(0, int(z // config['floor_height']))
+        if z < 0:
+            floor = 0  # Basement considered as floor 0
+        
+        # Determine room based on equipment type and position
+        if 'transformer' in node_id and 'transformer_001' in node_id:
+            # Main transformer - main electrical room
+            room_codes = room_types['main_electrical_room']['room_codes']
+            return random.choice(room_codes)
+            
+        elif 'transformer' in node_id:
+            # Secondary transformers - electrical closets
+            room_codes = room_types['electrical_closet']['room_codes']
+            selected_code = random.choice(room_codes)
+            return selected_code.format(floor=floor)
+            
+        elif 'switchboard' in node_id:
+            # Switchboards - main electrical room
+            room_codes = room_types['main_electrical_room']['room_codes']
+            return random.choice(room_codes)
+            
+        elif 'panelboard' in node_id:
+            if self._is_main_distribution_panel(node_id):
+                # Main distribution panels - electrical closets
+                room_codes = room_types['electrical_closet']['room_codes']
+                selected_code = random.choice(room_codes)
+                return selected_code.format(floor=floor)
+            else:
+                # Sub-distribution panels - corridors or IDF rooms
+                if random.random() < 0.3:  # 30% in IDF rooms
+                    room_codes = room_types['idf_room']['room_codes']
+                else:  # 70% in corridors
+                    room_codes = room_types['corridor']['room_codes']
+                selected_code = random.choice(room_codes)
+                return selected_code.format(floor=floor)
+                
+        elif 'load' in node_id:
+            # Loads - various room types based on building area
+            room_type = self._determine_load_room_type(x, y, z, position_id)
+            room_codes = room_types[room_type]['room_codes']
+            selected_code = random.choice(room_codes)
+            
+            # Generate room number for spaces that need it
+            if '{room:02d}' in selected_code:
+                room_number = (position_id % 20) + 1  # Rooms 01-20
+                return selected_code.format(floor=floor, room=room_number)
+            else:
+                return selected_code.format(floor=floor)
+        
+        # Fallback
+        return f"ROOM-{floor:02d}-{position_id:03d}"
+    
+    def _determine_load_room_type(self, x: float, y: float, z: float, position_id: int) -> str:
+        """Determine the room type for a load based on its position and building layout."""
+        config = self.building_config
+        
+        # Calculate relative position in building
+        x_ratio = x / config['length']
+        y_ratio = y / config['width']
+        floor = max(0, int(z // config['floor_height']))
+        
+        # Building layout assumptions:
+        # - Core area (center): mechanical, storage, elevators
+        # - Perimeter: offices, conference rooms
+        # - Corners: labs, special equipment
+        
+        core_x_range = (0.3, 0.7)  # Central 40% of building width
+        core_y_range = (0.3, 0.7)  # Central 40% of building depth
+        
+        # Determine if position is in core area
+        in_core = (core_x_range[0] <= x_ratio <= core_x_range[1] and 
+                  core_y_range[0] <= y_ratio <= core_y_range[1])
+        
+        # Ground floor has more mechanical rooms
+        if floor == 0:
+            if in_core:
+                return random.choice(['mechanical_room', 'storage']) if random.random() < 0.6 else 'office'
+            else:
+                return random.choice(['office', 'conference_room', 'storage'])
+        
+        # Upper floors
+        if in_core:
+            # Core areas: mechanical, storage, conference rooms
+            return random.choice(['mechanical_room', 'conference_room', 'storage'])
+        else:
+            # Perimeter areas: offices, labs, conference rooms
+            # Corner positions more likely to be labs
+            is_corner = ((x_ratio < 0.2 or x_ratio > 0.8) and 
+                        (y_ratio < 0.2 or y_ratio > 0.8))
+            
+            if is_corner:
+                return random.choice(['lab', 'conference_room'])
+            else:
+                return random.choice(['office', 'conference_room']) if random.random() < 0.8 else 'lab'
+    
+    def _assign_floor_for_equipment(self, position_id: int, equipment_type: str) -> int:
+        """Assign floor based on equipment distribution strategy."""
+        config = self.building_config
+        
+        if equipment_type in ['secondary_transformer', 'main_panelboard']:
+            # Distribute major equipment across floors (every 2-3 floors)
+            floors_per_equipment = max(2, config['num_floors'] // 4)
+            return min(position_id * floors_per_equipment, config['num_floors'] - 1)
+        else:
+            # Distribute other equipment more evenly
+            return position_id % config['num_floors']
+
+    def _assign_floor_for_load(self, position_id: int) -> int:
+        """Assign floor for loads with realistic distribution."""
+        config = self.building_config
+        
+        # Weight distribution - more loads on middle floors (typical office usage)
+        floor_weights = []
+        for floor in range(config['num_floors']):
+            if floor == 0:  # Ground floor
+                weight = 0.8  # Some loads but less than upper floors
+            elif floor < config['num_floors'] // 2:  # Lower floors
+                weight = 1.0
+            else:  # Upper floors
+                weight = 1.2  # Higher density
+            floor_weights.append(weight)
+        
+        # Weighted random selection
+        total_weight = sum(floor_weights)
+        rand_val = random.uniform(0, total_weight)
+        cumulative = 0
+        
+        for floor, weight in enumerate(floor_weights):
+            cumulative += weight
+            if rand_val <= cumulative:
+                return floor
+        
+        return config['num_floors'] - 1  # Fallback
+    
+    def _is_main_distribution_panel(self, node_id: str) -> bool:
+        """Determine if a panelboard is a main distribution panel."""
+        # First few panelboards are considered main distribution
+        node_num = int(node_id.split('_')[1])
+        return node_num <= 3  # First 3 panelboards are main distribution
+    
     def _add_transformer_node(self, G: nx.DiGraph, node_id: str, transformer_type: str, position_id: int):
         """Add a transformer node with realistic attributes."""
-        x, y, z = self._generate_position(position_id)
+        x, y, z = self._generate_position(position_id, node_id)
+        room_code = self._assign_room_to_equipment(node_id, position_id, x, y, z)
         
         if transformer_type == 'main':
             upstream_voltage = self.selected_high_voltage  # Use the selected high voltage for this graph
@@ -184,6 +461,7 @@ class MEPGraphGenerator:
         attrs = {
             'type': self.component_types['transformer'],
             'x': x, 'y': y, 'z': z,
+            'room': room_code,
             'Identifier': f"Transformer-{position_id:03d}",
             'Manufacturer': random.choice(self.manufacturers),
             'Nominal_performance': performance,
@@ -211,13 +489,15 @@ class MEPGraphGenerator:
     
     def _add_switchboard_node(self, G: nx.DiGraph, node_id: str, position_id: int):
         """Add a switchboard node with realistic attributes."""
-        x, y, z = self._generate_position(position_id)
+        x, y, z = self._generate_position(position_id, node_id)
+        room_code = self._assign_room_to_equipment(node_id, position_id, x, y, z)
         # Switchboards will have voltage set later based on upstream transformer
         voltage = 480.0  # Default medium voltage, will be updated in connections
         
         attrs = {
             'type': self.component_types['switchboard'],
             'x': x, 'y': y, 'z': z,
+            'room': room_code,
             'Identifier': f"Switchboard-{position_id:03d}",
             'Manufacturer': random.choice(self.manufacturers),
             'Operating_company_department': 'Facilities',
@@ -246,13 +526,15 @@ class MEPGraphGenerator:
     
     def _add_panelboard_node(self, G: nx.DiGraph, node_id: str, position_id: int):
         """Add a panelboard node with realistic attributes."""
-        x, y, z = self._generate_position(position_id)
+        x, y, z = self._generate_position(position_id, node_id)
+        room_code = self._assign_room_to_equipment(node_id, position_id, x, y, z)
         # Panelboards will have voltage set later based on upstream equipment
         voltage = 208.0  # Default voltage, will be updated in connections
         
         attrs = {
             'type': self.component_types['panelboard'],
             'x': x, 'y': y, 'z': z,
+            'room': room_code,
             'Identifier': f"Panelboard-{position_id:03d}",
             'Manufacturer': random.choice(self.manufacturers),
             'Masked_yes_no': random.choice([True, False]),
@@ -283,13 +565,15 @@ class MEPGraphGenerator:
     
     def _add_load_node(self, G: nx.DiGraph, node_id: str, position_id: int):
         """Add a load node with realistic attributes."""
-        x, y, z = self._generate_position(position_id)
+        x, y, z = self._generate_position(position_id, node_id)
+        room_code = self._assign_room_to_equipment(node_id, position_id, x, y, z)
         # Loads will have voltage set later based on upstream panelboard
         voltage = 120.0  # Default low voltage, will be updated in connections
         
         attrs = {
             'type': self.component_types['load'],
             'x': x, 'y': y, 'z': z,
+            'room': room_code,
             'Identifier': f"Load-{position_id:03d}",
             'Manufacturer': random.choice(self.manufacturers),
             'Nominal_current': round(random.uniform(5.0, 50.0), 1),
@@ -308,8 +592,74 @@ class MEPGraphGenerator:
         
         G.add_node(node_id, **attrs)
     
-    def _generate_position(self, position_id: int) -> Tuple[float, float, float]:
-        """Generate realistic 3D position for a component."""
+    def _generate_position(self, position_id: int, node_id: str = None) -> Tuple[float, float, float]:
+        """Generate realistic 3D position for a component based on equipment type."""
+        if node_id:
+            return self._generate_position_by_type(node_id, position_id)
+        else:
+            # Fallback to original method for backward compatibility
+            return self._generate_position_original(position_id)
+    
+    def _generate_position_by_type(self, node_id: str, position_id: int) -> Tuple[float, float, float]:
+        """Generate realistic position based on equipment type and building zones."""
+        zones = self._define_equipment_zones()
+        config = self.building_config
+        
+        if 'transformer' in node_id and 'transformer_001' in node_id:
+            # Main transformer - basement or ground floor electrical room
+            zone = zones['main_electrical']
+            x = random.uniform(*zone['x_range'])
+            y = random.uniform(*zone['y_range'])
+            z = random.uniform(config['basement_depth'], 0.5)  # Prefer basement
+            
+        elif 'transformer' in node_id:
+            # Secondary transformers - distributed in electrical rooms on floors
+            zone = zones['floor_electrical_rooms']
+            floor = self._assign_floor_for_equipment(position_id, 'secondary_transformer')
+            x = random.uniform(*zone['x_range'])
+            y = random.uniform(*zone['y_range'])
+            z = floor * config['floor_height'] + random.uniform(0.0, 0.5)
+            
+        elif 'switchboard' in node_id:
+            # Main switchboards - main electrical room
+            zone = zones['main_electrical']
+            x = random.uniform(*zone['x_range'])
+            y = random.uniform(*zone['y_range'])
+            z = random.uniform(0.0, config['floor_height'])
+            
+        elif 'panelboard' in node_id:
+            # Distribution strategy based on building hierarchy
+            if self._is_main_distribution_panel(node_id):
+                # Main distribution panels - electrical rooms
+                zone = zones['floor_electrical_rooms']
+                floor = self._assign_floor_for_equipment(position_id, 'main_panelboard')
+                x = random.uniform(*zone['x_range'])
+                y = random.uniform(*zone['y_range'])
+                z = floor * config['floor_height'] + random.uniform(0.0, 0.5)
+            else:
+                # Sub-distribution panels - corridor locations
+                zone = zones['corridor_locations']
+                floor = self._assign_floor_for_equipment(position_id, 'panelboard')
+                x = random.uniform(*zone['x_range'])
+                y = random.uniform(*zone['y_range'])
+                z = floor * config['floor_height'] + random.uniform(1.0, 2.5)  # Wall mounted height
+                
+        elif 'load' in node_id:
+            # End loads - distributed throughout building
+            zone = zones['end_use_areas']
+            floor = self._assign_floor_for_load(position_id)
+            x = random.uniform(*zone['x_range'])
+            y = random.uniform(*zone['y_range'])
+            z = floor * config['floor_height'] + random.uniform(0.0, 3.0)
+            
+        else:
+            # Fallback to original method
+            return self._generate_position_original(position_id)
+        
+        return round(x, 1), round(y, 1), round(z, 1)
+    
+    def _generate_position_original(self, position_id: int) -> Tuple[float, float, float]:
+        """Original position generation method (fallback)."""
         # Create a rough grid layout with some randomness
         grid_size = math.ceil(math.sqrt(position_id))
         base_x = (position_id % grid_size) * 20.0
@@ -333,76 +683,141 @@ class MEPGraphGenerator:
         return round(random.uniform(100.0, 1000.0), 1)
     
     def _create_connections(self, G: nx.DiGraph, level_nodes: Dict[int, List[str]]):
-        """Create logical connections between nodes."""
+        """Create logical connections between nodes with distance considerations."""
         edge_id = 1
         
         # Level 1 to Level 2: Transformers to Switchboards
         for transformer in level_nodes[1]:
-            for switchboard in level_nodes[2]:
-                self._add_connection(G, f"connection_{edge_id:03d}", transformer, switchboard, 'Main Distribution')
+            closest_switchboard = self._find_closest_equipment(G, transformer, level_nodes[2])
+            if closest_switchboard:
+                self._add_connection(G, f"connection_{edge_id:03d}", transformer, closest_switchboard, 'Main Distribution')
                 edge_id += 1
-                break  # Each transformer connects to one main switchboard
         
         # Level 2 to Level 3: Switchboards to Secondary Transformers
         if level_nodes[3]:  # If there are secondary transformers
-            for i, transformer in enumerate(level_nodes[3]):
-                switchboard = level_nodes[2][i % len(level_nodes[2])]
-                self._add_connection(G, f"connection_{edge_id:03d}", switchboard, transformer, 'Secondary Distribution')
-                edge_id += 1
-        
-        # Connect transformers to panelboards (1:1 relationship - each transformer powers exactly one panelboard)
-        connected_panelboards = set()
-        
-        # First, connect secondary transformers to panelboards (1:1 relationship)
-        if level_nodes[3]:  # If there are secondary transformers
-            for i, transformer in enumerate(level_nodes[3]):
-                if i < len(level_nodes[4]):  # Ensure we have panelboards available
-                    panelboard = level_nodes[4][i]
-                    load_type = random.choice(self.load_types)
-                    self._add_connection(G, f"connection_{edge_id:03d}", transformer, panelboard, load_type)
-                    connected_panelboards.add(panelboard)
+            for transformer in level_nodes[3]:
+                closest_switchboard = self._find_closest_equipment(G, transformer, level_nodes[2])
+                if closest_switchboard:
+                    self._add_connection(G, f"connection_{edge_id:03d}", closest_switchboard, transformer, 'Secondary Distribution')
                     edge_id += 1
         
-        # Connect remaining panelboards in a tree structure
+        # Connect transformers to panelboards with proximity-based logic
+        connected_panelboards = set()
+        
+        # First, connect secondary transformers to panelboards (proximity-based)
+        if level_nodes[3]:  # If there are secondary transformers
+            for transformer in level_nodes[3]:
+                available_panelboards = [pb for pb in level_nodes[4] if pb not in connected_panelboards]
+                if available_panelboards:
+                    closest_panelboard = self._find_closest_equipment(G, transformer, available_panelboards)
+                    if closest_panelboard:
+                        load_type = random.choice(self.load_types)
+                        self._add_connection(G, f"connection_{edge_id:03d}", transformer, closest_panelboard, load_type)
+                        connected_panelboards.add(closest_panelboard)
+                        edge_id += 1
+        
+        # Connect remaining panelboards to switchboards and other panelboards
         remaining_panelboards = [pb for pb in level_nodes[4] if pb not in connected_panelboards]
         
         if remaining_panelboards:
-            # Connect one panelboard directly to each switchboard
-            num_switchboard_connections = min(len(remaining_panelboards), len(level_nodes[2]))
+            # Connect main distribution panelboards directly to switchboards
+            main_dist_panels = [pb for pb in remaining_panelboards if self._is_main_distribution_panel(pb)]
             
-            for i in range(num_switchboard_connections):
-                panelboard = remaining_panelboards[i]
-                switchboard = level_nodes[2][i % len(level_nodes[2])]
-                load_type = random.choice(self.load_types)
-                self._add_connection(G, f"connection_{edge_id:03d}", switchboard, panelboard, load_type)
-                connected_panelboards.add(panelboard)
-                edge_id += 1
-            
-            # Connect remaining panelboards to already connected panelboards (creating sub-distribution)
-            # This allows multiple panelboards to be powered from a single panelboard
-            available_sources = list(connected_panelboards)
-            for panelboard in remaining_panelboards[num_switchboard_connections:]:
-                if available_sources:
-                    source_panelboard = random.choice(available_sources)
-                    load_type = random.choice(['Lighting', 'General Power', 'Sub-Distribution'])
-                    self._add_connection(G, f"connection_{edge_id:03d}", source_panelboard, panelboard, load_type)
+            for panelboard in main_dist_panels:
+                closest_switchboard = self._find_closest_equipment(G, panelboard, level_nodes[2])
+                if closest_switchboard:
+                    load_type = random.choice(self.load_types)
+                    self._add_connection(G, f"connection_{edge_id:03d}", closest_switchboard, panelboard, load_type)
                     connected_panelboards.add(panelboard)
-                    # Add this panelboard as a potential source for future connections
-                    available_sources.append(panelboard)
                     edge_id += 1
+            
+            # Connect remaining panelboards to already connected equipment
+            remaining_panelboards = [pb for pb in level_nodes[4] if pb not in connected_panelboards]
+            available_sources = list(connected_panelboards) + level_nodes[2]  # Include switchboards as sources
+            
+            for panelboard in remaining_panelboards:
+                if available_sources:
+                    closest_source = self._find_closest_equipment(G, panelboard, available_sources)
+                    if closest_source:
+                        load_type = random.choice(['Lighting', 'General Power', 'Sub-Distribution'])
+                        self._add_connection(G, f"connection_{edge_id:03d}", closest_source, panelboard, load_type)
+                        connected_panelboards.add(panelboard)
+                        available_sources.append(panelboard)
+                        edge_id += 1
         
-        # Level 4 to Level 5: Panelboards to Loads
+        # Level 4 to Level 5: Panelboards to Loads (proximity-based)
         if level_nodes[5]:  # If there are load nodes
-            for i, load in enumerate(level_nodes[5]):
-                panelboard = level_nodes[4][i % len(level_nodes[4])]
-                load_type = random.choice(['Lighting', 'General Power', 'Motor Loads'])
-                self._add_connection(G, f"connection_{edge_id:03d}", panelboard, load, load_type)
-                edge_id += 1
+            for load in level_nodes[5]:
+                closest_panelboard = self._find_closest_equipment(G, load, level_nodes[4])
+                if closest_panelboard:
+                    load_type = random.choice(['Lighting', 'General Power', 'Motor Loads'])
+                    self._add_connection(G, f"connection_{edge_id:03d}", closest_panelboard, load, load_type)
+                    edge_id += 1
+    
+    def _find_closest_equipment(self, G: nx.DiGraph, source_node: str, target_candidates: List[str]) -> str:
+        """Find the closest equipment from a list of candidates."""
+        if not target_candidates:
+            return None
+        
+        source_attrs = G.nodes[source_node]
+        min_distance = float('inf')
+        closest_node = None
+        
+        for candidate in target_candidates:
+            distance = self._calculate_distance(G, source_node, candidate)
+            if distance < min_distance and self._is_reasonable_distance(distance, source_node, candidate):
+                min_distance = distance
+                closest_node = candidate
+        
+        # If no candidates meet distance criteria, return the closest one anyway
+        if closest_node is None and target_candidates:
+            closest_node = min(target_candidates, 
+                             key=lambda x: self._calculate_distance(G, source_node, x))
+        
+        return closest_node
+    
+    def _calculate_distance(self, G: nx.DiGraph, node1: str, node2: str) -> float:
+        """Calculate 3D distance between two nodes."""
+        attrs1 = G.nodes[node1]
+        attrs2 = G.nodes[node2]
+        
+        dx = attrs1['x'] - attrs2['x']
+        dy = attrs1['y'] - attrs2['y']
+        dz = attrs1['z'] - attrs2['z']
+        
+        return math.sqrt(dx*dx + dy*dy + dz*dz)
+    
+    def _is_reasonable_distance(self, distance: float, source_node: str, target_node: str) -> bool:
+        """Check if connection distance is realistic for cable routing."""
+        max_distances = {
+            ('transformer', 'switchboard'): 50.0,
+            ('switchboard', 'transformer'): 100.0,
+            ('switchboard', 'panelboard'): 150.0,
+            ('transformer', 'panelboard'): 80.0,
+            ('panelboard', 'panelboard'): 100.0,
+            ('panelboard', 'load'): 50.0
+        }
+        
+        source_type = 'transformer' if 'transformer' in source_node else \
+                     'switchboard' if 'switchboard' in source_node else \
+                     'panelboard' if 'panelboard' in source_node else 'load'
+        
+        target_type = 'transformer' if 'transformer' in target_node else \
+                     'switchboard' if 'switchboard' in target_node else \
+                     'panelboard' if 'panelboard' in target_node else 'load'
+        
+        key = (source_type, target_type)
+        max_dist = max_distances.get(key, 200.0)  # Default max distance
+        
+        return distance <= max_dist
     
     def _add_connection(self, G: nx.DiGraph, edge_id: str, source: str, target: str, load_classification: str):
         """Add a connection (edge) between two nodes."""
         source_attrs = G.nodes[source]
         target_attrs = G.nodes[target]
+        
+        # Calculate actual cable distance
+        cable_distance = self._calculate_distance(G, source, target)
         
         # Determine voltage based on source downstream voltage
         voltage = source_attrs.get('distribution_downstream_voltage', 480.0)
@@ -414,8 +829,8 @@ class MEPGraphGenerator:
         # Calculate apparent current (typically less than rating)
         apparent_current = round(current_rating * random.uniform(0.7, 0.95), 1)
         
-        # Calculate voltage drop (realistic values)
-        voltage_drop = round(random.uniform(1.0, 8.0), 1)
+        # Calculate voltage drop based on actual distance and current
+        voltage_drop = self._calculate_realistic_voltage_drop(cable_distance, current_rating, voltage)
         
         edge_attrs = {
             'connection_type': 'Power',
@@ -425,10 +840,25 @@ class MEPGraphGenerator:
             'frequency': 60.0,
             'apparent_current': apparent_current,
             'voltage_drop': voltage_drop,
-            'load_classification': load_classification
+            'load_classification': load_classification,
+            'cable_distance': round(cable_distance, 1)  # Add actual cable distance
         }
         
         G.add_edge(source, target, id=edge_id, **edge_attrs)
+    
+    def _calculate_realistic_voltage_drop(self, distance: float, current: float, voltage: float) -> float:
+        """Calculate realistic voltage drop based on distance, current, and voltage."""
+        # Simplified voltage drop calculation: V_drop = I × R × L
+        # Where R is approximately 0.02 ohms per 100m for typical cable
+        resistance_per_100m = 0.02  # ohms per 100m
+        resistance = (distance / 100.0) * resistance_per_100m
+        voltage_drop = current * resistance
+        
+        # Cap at reasonable values (1-8% of voltage)
+        max_drop = voltage * 0.08
+        min_drop = voltage * 0.01
+        
+        return round(max(min_drop, min(voltage_drop, max_drop)), 1)
     
     def save_graph(self, graph: nx.DiGraph, filename: str = None, node_count: int = None, seed: int = None) -> str:
         """
@@ -523,6 +953,10 @@ def main():
     parser.add_argument('node_count', type=int, help='Number of nodes in the generated graph')
     parser.add_argument('--filename', '-f', type=str, help='Output filename (optional)')
     parser.add_argument('--seed', '-s', type=int, help='Random seed for reproducible results')
+    parser.add_argument('--building-length', type=float, default=80.0, help='Building length in meters')
+    parser.add_argument('--building-width', type=float, default=60.0, help='Building width in meters')
+    parser.add_argument('--num-floors', type=int, default=8, help='Number of floors')
+    parser.add_argument('--floor-height', type=float, default=3.5, help='Floor height in meters')
     
     args = parser.parse_args()
     
@@ -530,11 +964,27 @@ def main():
         print("Error: Node count must be at least 3 for a meaningful electrical system")
         return
     
+    # Create building configuration
+    building_config = {
+        'length': args.building_length,
+        'width': args.building_width,
+        'floor_height': args.floor_height,
+        'num_floors': args.num_floors,
+        'basement_depth': -3.0,
+        'electrical_core': {
+            'x_center': args.building_length / 2,
+            'y_center': args.building_width / 2,
+            'width': 12.0,
+            'depth': 8.0
+        }
+    }
+    
     # Create generator
-    generator = MEPGraphGenerator(seed=args.seed)
+    generator = MEPGraphGenerator(seed=args.seed, building_config=building_config)
     
     # Generate graph
     print(f"Generating electrical system graph with {args.node_count} nodes...")
+    print(f"Building: {args.building_length}m × {args.building_width}m, {args.num_floors} floors")
     graph = generator.generate_graph(args.node_count)
     
     # Save graph
@@ -554,6 +1004,52 @@ def main():
     print(f"  Node Types:")
     for node_type, count in node_types.items():
         print(f"    {node_type}: {count}")
+    
+    # Print position statistics
+    print(f"\nPosition Statistics:")
+    x_coords = [attrs['x'] for _, attrs in graph.nodes(data=True)]
+    y_coords = [attrs['y'] for _, attrs in graph.nodes(data=True)]
+    z_coords = [attrs['z'] for _, attrs in graph.nodes(data=True)]
+    
+    print(f"  X range: {min(x_coords):.1f} to {max(x_coords):.1f} m")
+    print(f"  Y range: {min(y_coords):.1f} to {max(y_coords):.1f} m")
+    print(f"  Z range: {min(z_coords):.1f} to {max(z_coords):.1f} m")
+    
+    # Print cable distance statistics
+    cable_distances = []
+    for _, _, attrs in graph.edges(data=True):
+        if 'cable_distance' in attrs:
+            cable_distances.append(attrs['cable_distance'])
+    
+    if cable_distances:
+        print(f"\nCable Distance Statistics:")
+        print(f"  Average distance: {sum(cable_distances)/len(cable_distances):.1f} m")
+        print(f"  Max distance: {max(cable_distances):.1f} m")
+        print(f"  Min distance: {min(cable_distances):.1f} m")
+    
+    # Print room assignment statistics
+    print(f"\nRoom Assignment Statistics:")
+    room_assignments = {}
+    room_types = {}
+    for node, attrs in graph.nodes(data=True):
+        room = attrs.get('room', 'Unknown')
+        room_assignments[room] = room_assignments.get(room, 0) + 1
+        
+        # Extract room type from room code
+        if '-' in room:
+            room_type = room.split('-')[0]
+        else:
+            room_type = 'OTHER'
+        room_types[room_type] = room_types.get(room_type, 0) + 1
+    
+    print(f"  Room types:")
+    for room_type, count in sorted(room_types.items()):
+        print(f"    {room_type}: {count} equipment")
+    
+    print(f"  Sample room assignments:")
+    sample_rooms = list(room_assignments.items())[:8]  # Show first 8 rooms
+    for room, count in sample_rooms:
+        print(f"    {room}: {count} equipment")
 
 
 if __name__ == "__main__":
