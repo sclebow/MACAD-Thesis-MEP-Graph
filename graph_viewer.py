@@ -314,9 +314,53 @@ def visualize_graph_three_d(graph):
         ),
         hovertext=node_text  # Show all attributes on hover
     )
-    fig = go.Figure(data=[edge_trace, edge_marker_trace, node_trace],
+    # --- Add building bounds as a rectangular prism if metadata is present ---
+    building_length = graph.graph.get('building_length')
+    building_width = graph.graph.get('building_width')
+    num_floors = graph.graph.get('num_floors')
+    floor_height = graph.graph.get('floor_height')
+    prism_trace = None
+    if all(v is not None for v in [building_length, building_width, num_floors, floor_height]):
+        try:
+            # Convert to float for plotting
+            lx = float(building_length)
+            ly = float(building_width)
+            lz = float(num_floors) * float(floor_height)
+            # Prism corners (origin at 0,0,0)
+            x_corners = [0, lx, lx, 0, 0, lx, lx, 0]
+            y_corners = [0, 0, ly, ly, 0, 0, ly, ly]
+            z_corners = [0, 0, 0, 0, lz, lz, lz, lz]
+            # 12 lines for the box edges
+            prism_lines = [
+                [0,1],[1,2],[2,3],[3,0], # bottom
+                [4,5],[5,6],[6,7],[7,4], # top
+                [0,4],[1,5],[2,6],[3,7]  # verticals
+            ]
+            prism_x = []
+            prism_y = []
+            prism_z = []
+            for a, b in prism_lines:
+                prism_x += [x_corners[a], x_corners[b], None]
+                prism_y += [y_corners[a], y_corners[b], None]
+                prism_z += [z_corners[a], z_corners[b], None]
+            prism_trace = go.Scatter3d(
+                x=prism_x, y=prism_y, z=prism_z,
+                mode='lines',
+                line=dict(color='rgba(0,200,0,0.7)', width=4),
+                name='Building Bounds',
+                hoverinfo='skip',
+                showlegend=True
+            )
+        except Exception as e:
+            print(f"Error drawing building bounds: {e}")
+            prism_trace = None
+    # Compose figure data
+    fig_data = [edge_trace, edge_marker_trace, node_trace]
+    if prism_trace:
+        fig_data.append(prism_trace)
+    fig = go.Figure(data=fig_data,
                     layout=go.Layout(
-                        showlegend=False,
+                        showlegend=True,
                         hovermode='closest',
                         margin=dict(b=20,l=5,r=5,t=40),
                         scene=dict(

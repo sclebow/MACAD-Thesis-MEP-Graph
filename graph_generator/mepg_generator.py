@@ -658,7 +658,7 @@ def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[fl
     G.graph['total_load'] = building_attrs['total_load']
     G.graph['voltage_level'] = voltage_info['voltage_level']
     G.graph['timestamp'] = datetime.datetime.now().isoformat()
-    # G.graph['seed'] = str(random.getstate())  # Optionally store as string, or remove entirely
+    G.graph['seed'] = str(random.getstate())  # Optionally store as string, or remove entirely
     G.graph['description'] = "Randomly generated MEP electrical system graph"
 
     return G
