@@ -35,6 +35,7 @@ class NodeDecision:
     floor: int
     location: Tuple[float, float, float]
     serves_requirements: List[ElectricalRequirement]
+    core_id: str = 'A'  # Electrical core identifier
     electrical_characteristics: Dict = None
     decision_id: int = 0  # Unique identifier for hashing
     
@@ -555,32 +556,78 @@ class MEPGraphGenerator:
         """Generate logical decisions about what nodes to create based on requirements."""
         decisions = []
         
+        # Get the core strategy for this building
+        core_strategy = self._determine_electrical_core_strategy()
+        
         # Step 1: Analyze total load to determine main service requirements
         total_load = sum(req.load_kw for req in requirements)
         main_service_req = next((req for req in requirements if req.load_type == 'main_service'), None)
         
         if main_service_req and total_load > 100:  # Lowered threshold to 100kW for testing
-            decisions.append(NodeDecision(
-                node_type='transformer',
-                subtype='main',
-                reason=f"Main service transformer for {total_load:.0f}kW building load",
-                capacity_kw=total_load * 1.25,  # 25% safety factor
-                floor=-1,
-                location=main_service_req.location,
-                serves_requirements=[main_service_req]
-            ))
+            # Create main service equipment based on core strategy
+            if core_strategy['type'] == 'single_core':
+                # Single main transformer and switchboard
+                decisions.append(NodeDecision(
+                    node_type='transformer',
+                    subtype='main',
+                    reason=f"Main service transformer for {total_load:.0f}kW building load (single core)",
+                    capacity_kw=total_load * 1.25,  # 25% safety factor
+                    floor=-1,
+                    location=main_service_req.location,
+                    serves_requirements=[main_service_req],
+                    core_id='A'
+                ))
+                
+                decisions.append(NodeDecision(
+                    node_type='switchboard',
+                    subtype='main',
+                    reason="Main service switchboard for distribution (single core)",
+                    capacity_kw=total_load * 1.2,
+                    floor=-1,
+                    location=main_service_req.location,
+                    serves_requirements=[main_service_req],
+                    core_id='A'
+                ))
             
-            decisions.append(NodeDecision(
-                node_type='switchboard',
-                subtype='main',
-                reason="Main service switchboard for distribution",
-                capacity_kw=total_load * 1.2,
-                floor=-1,
-                location=main_service_req.location,
-                serves_requirements=[main_service_req]
-            ))
+            else:
+                # Multi-core strategy: main transformer + main switchboard + core switchboards
+                decisions.append(NodeDecision(
+                    node_type='transformer',
+                    subtype='main',
+                    reason=f"Main service transformer for {total_load:.0f}kW building load (multi-core)",
+                    capacity_kw=total_load * 1.25,
+                    floor=-1,
+                    location=main_service_req.location,
+                    serves_requirements=[main_service_req],
+                    core_id='MAIN'
+                ))
+                
+                decisions.append(NodeDecision(
+                    node_type='switchboard',
+                    subtype='main',
+                    reason="Main service switchboard for multi-core distribution",
+                    capacity_kw=total_load * 1.2,
+                    floor=-1,
+                    location=main_service_req.location,
+                    serves_requirements=[main_service_req],
+                    core_id='MAIN'
+                ))
+                
+                # Create core switchboards for distribution to each core
+                load_per_core = total_load / core_strategy['num_cores']
+                for core_pos in core_strategy['core_positions']:
+                    decisions.append(NodeDecision(
+                        node_type='switchboard',
+                        subtype='core_distribution',
+                        reason=f"Core {core_pos['core_id']} distribution switchboard for {load_per_core:.0f}kW",
+                        capacity_kw=load_per_core * 1.2,
+                        floor=-1,
+                        location=(core_pos['x_center'], core_pos['y_center'], self.floor_levels[-1]['z_center']),
+                        serves_requirements=[],
+                        core_id=core_pos['core_id']
+                    ))
         
-        # Step 2: Group requirements by floor and voltage for distribution planning
+        # Step 2: Group requirements by floor, voltage, and assign to cores
         floor_groups = {}
         for req in requirements:
             if req.floor not in floor_groups:
@@ -589,63 +636,84 @@ class MEPGraphGenerator:
             voltage_key = req.voltage_level if req.voltage_level in ['medium', 'low'] else 'medium'
             floor_groups[req.floor][voltage_key].append(req)
         
-        # Step 3: Create distribution equipment decisions
+        # Assign loads to cores based on strategy and building layout
+        core_load_assignments = self._assign_loads_to_cores(floor_groups, core_strategy)
+        
+        # Step 3: Create distribution equipment decisions based on core assignments
         for floor, voltage_groups in floor_groups.items():
             if floor == -1:  # Skip basement, already handled
                 continue
+            
+            # Get core assignments for this floor
+            floor_core_assignments = core_load_assignments.get(floor, {})
+            
+            # Process each core's loads on this floor
+            for core_id, core_loads in floor_core_assignments.items():
+                if not core_loads:
+                    continue
                 
-            # Medium voltage loads (HVAC, large equipment)
-            medium_loads = voltage_groups.get('medium', [])
-            if medium_loads:
-                total_medium_load = sum(req.load_kw for req in medium_loads)
+                core_pos = next((pos for pos in core_strategy['core_positions'] if pos['core_id'] == core_id), 
+                               core_strategy['core_positions'][0])
                 
-                if total_medium_load > 75:  # Needs secondary transformer
+                # Medium voltage loads (HVAC, large equipment) for this core
+                medium_loads = [load for load in core_loads if load in voltage_groups.get('medium', [])]
+                if medium_loads:
+                    total_medium_load = sum(req.load_kw for req in medium_loads)
+                    
+                    if total_medium_load > 75:  # Needs secondary transformer
+                        decisions.append(NodeDecision(
+                            node_type='transformer',
+                            subtype='secondary',
+                            reason=f"Secondary transformer for {total_medium_load:.0f}kW medium voltage loads on floor {floor}, core {core_id}",
+                            capacity_kw=total_medium_load * 1.3,
+                            floor=floor,
+                            location=self._get_core_electrical_closet_location(floor, core_pos),
+                            serves_requirements=medium_loads,
+                            core_id=core_id
+                        ))
+                    
                     decisions.append(NodeDecision(
-                        node_type='transformer',
-                        subtype='secondary',
-                        reason=f"Secondary transformer for {total_medium_load:.0f}kW medium voltage loads on floor {floor}",
-                        capacity_kw=total_medium_load * 1.3,
+                        node_type='panelboard',
+                        subtype='distribution',
+                        reason=f"Distribution panel for medium voltage loads on floor {floor}, core {core_id}",
+                        capacity_kw=total_medium_load * 1.2,
                         floor=floor,
-                        location=self._get_electrical_closet_location(floor),
-                        serves_requirements=medium_loads
+                        location=self._get_core_electrical_closet_location(floor, core_pos),
+                        serves_requirements=medium_loads,
+                        core_id=core_id
                     ))
                 
-                decisions.append(NodeDecision(
-                    node_type='panelboard',
-                    subtype='distribution',
-                    reason=f"Distribution panel for medium voltage loads on floor {floor}",
-                    capacity_kw=total_medium_load * 1.2,
-                    floor=floor,
-                    location=self._get_electrical_closet_location(floor),
-                    serves_requirements=medium_loads
-                ))
-            
-            # Low voltage loads (lighting, power)
-            low_loads = voltage_groups.get('low', [])
-            if low_loads:
-                total_low_load = sum(req.load_kw for req in low_loads)
-                
-                # Determine number of panelboards needed based on load and layout
-                num_panels = max(1, min(3, int(total_low_load / 40)))  # 40kW per panel max
-                
-                load_per_panel = total_low_load / num_panels
-                loads_per_panel = [low_loads[i::num_panels] for i in range(num_panels)]
-                
-                for i, panel_loads in enumerate(loads_per_panel):
-                    if panel_loads:  # Only create panel if it has loads
-                        decisions.append(NodeDecision(
-                            node_type='panelboard',
-                            subtype='lighting' if any(req.load_type == 'lighting' for req in panel_loads) else 'power',
-                            reason=f"Panel {i+1} for {load_per_panel:.0f}kW low voltage loads on floor {floor}",
-                            capacity_kw=load_per_panel * 1.25,
-                            floor=floor,
-                            location=self._get_electrical_closet_location(floor, i),
-                            serves_requirements=panel_loads
-                        ))
+                # Low voltage loads (lighting, power) for this core
+                low_loads = [load for load in core_loads if load in voltage_groups.get('low', [])]
+                if low_loads:
+                    total_low_load = sum(req.load_kw for req in low_loads)
+                    
+                    # Determine number of panelboards needed based on load and core capacity
+                    max_load_per_panel = 40.0  # 40kW per panel max
+                    num_panels = max(1, min(3, int(total_low_load / max_load_per_panel)))
+                    
+                    load_per_panel = total_low_load / num_panels
+                    loads_per_panel = [low_loads[i::num_panels] for i in range(num_panels)]
+                    
+                    for i, panel_loads in enumerate(loads_per_panel):
+                        if panel_loads:  # Only create panel if it has loads
+                            decisions.append(NodeDecision(
+                                node_type='panelboard',
+                                subtype='lighting' if any(req.load_type == 'lighting' for req in panel_loads) else 'power',
+                                reason=f"Panel {i+1} for {load_per_panel:.0f}kW low voltage loads on floor {floor}, core {core_id}",
+                                capacity_kw=load_per_panel * 1.25,
+                                floor=floor,
+                                location=self._get_core_electrical_closet_location(floor, core_pos, i),
+                                serves_requirements=panel_loads,
+                                core_id=core_id
+                            ))
         
-        # Step 4: Create individual load decisions
+        # Step 4: Create individual load decisions with core assignments
         for req in requirements:
             if req.load_type not in ['main_service']:  # Skip service requirements, already handled
+                # Determine which core this load should be assigned to
+                load_core_id = self._determine_load_core_assignment(req, core_strategy)
+                
                 decisions.append(NodeDecision(
                     node_type='load',
                     subtype=req.load_type,
@@ -653,7 +721,8 @@ class MEPGraphGenerator:
                     capacity_kw=req.load_kw,
                     floor=req.floor,
                     location=req.location,
-                    serves_requirements=[req]
+                    serves_requirements=[req],
+                    core_id=load_core_id
                 ))
         
         # Step 5: Adjust decisions to meet target node count
@@ -728,7 +797,8 @@ class MEPGraphGenerator:
             'distribution_downstream_frequency': 60.0,
             'AIC_rating': round(random.uniform(22.0, 65.0), 1),
             'generation_reason': decision.reason,
-            'serves_load_kw': decision.capacity_kw
+            'serves_load_kw': decision.capacity_kw,
+            'core_id': getattr(decision, 'core_id', 'A')
         }
         
         G.add_node(node_id, **attrs)
@@ -766,7 +836,8 @@ class MEPGraphGenerator:
             'distribution_downstream_frequency': 60.0,
             'AIC_rating': round(random.uniform(42.0, 65.0), 1),
             'generation_reason': decision.reason,
-            'serves_load_kw': decision.capacity_kw
+            'serves_load_kw': decision.capacity_kw,
+            'core_id': getattr(decision, 'core_id', 'A')
         }
         
         G.add_node(node_id, **attrs)
@@ -807,7 +878,8 @@ class MEPGraphGenerator:
             'AIC_rating': round(random.uniform(10.0, 25.0), 1),
             'generation_reason': decision.reason,
             'serves_load_kw': decision.capacity_kw,
-            'panel_type': decision.subtype
+            'panel_type': decision.subtype,
+            'core_id': getattr(decision, 'core_id', 'A')
         }
         
         G.add_node(node_id, **attrs)
@@ -838,14 +910,15 @@ class MEPGraphGenerator:
             'distribution_upstream_frequency': 60.0,
             'generation_reason': decision.reason,
             'load_kw': decision.capacity_kw,
-            'load_type': decision.subtype
+            'load_type': decision.subtype,
+            'core_id': getattr(decision, 'core_id', 'A')
         }
         
         G.add_node(node_id, **attrs)
     
     def _create_logical_connections_from_decisions(self, G: nx.DiGraph, decisions: List[NodeDecision], 
                                                  decision_to_node_id: Dict[NodeDecision, str]):
-        """Create logical connections between nodes based on electrical hierarchy."""
+        """Create logical connections between nodes based on electrical hierarchy and core strategy."""
         
         # Group decisions by type and hierarchy
         transformers = [d for d in decisions if d.node_type == 'transformer']
@@ -855,7 +928,7 @@ class MEPGraphGenerator:
         
         edge_id = 1
         
-        # Step 1: Connect transformers to switchboards
+        # Step 1: Connect main transformer to main switchboard
         main_transformer = next((t for t in transformers if t.subtype == 'main'), None)
         main_switchboard = next((s for s in switchboards if s.subtype == 'main'), None)
         
@@ -866,53 +939,92 @@ class MEPGraphGenerator:
                                'Main Distribution')
             edge_id += 1
         
-        # Step 2: Connect main switchboard to secondary transformers on other floors
-        if main_switchboard:
-            secondary_transformers = [t for t in transformers if t.subtype == 'secondary']
-            for transformer in secondary_transformers:
+        # Step 2: Connect main switchboard to core distribution switchboards (multi-core strategy)
+        core_switchboards = [s for s in switchboards if s.subtype == 'core_distribution']
+        if main_switchboard and core_switchboards:
+            for core_switchboard in core_switchboards:
                 self._add_connection(G, f"connection_{edge_id:03d}", 
                                    decision_to_node_id[main_switchboard], 
-                                   decision_to_node_id[transformer], 
-                                   'Floor Distribution')
+                                   decision_to_node_id[core_switchboard], 
+                                   f'Core {core_switchboard.core_id} Distribution')
                 edge_id += 1
         
-        # Step 3: Connect transformers to panelboards on same floor
+        # Step 3: Connect distribution switchboards to secondary transformers and panelboards
+        # Determine the feeding source for floor equipment based on core strategy
         for transformer in transformers:
             if transformer.subtype == 'secondary':
-                # Connect to panelboards on same floor
-                floor_panelboards = [p for p in panelboards if p.floor == transformer.floor]
-                for panelboard in floor_panelboards:
+                # Find the appropriate feeding switchboard (core or main)
+                feeding_switchboard = self._find_feeding_switchboard_for_core(
+                    transformer.core_id, switchboards, main_switchboard)
+                
+                if feeding_switchboard:
+                    self._add_connection(G, f"connection_{edge_id:03d}", 
+                                       decision_to_node_id[feeding_switchboard], 
+                                       decision_to_node_id[transformer], 
+                                       f'Floor {transformer.floor} Core {transformer.core_id} Feed')
+                    edge_id += 1
+        
+        # Step 4: Connect transformers to panelboards on same floor and core
+        for transformer in transformers:
+            if transformer.subtype == 'secondary':
+                # Connect to panelboards on same floor and core
+                floor_core_panelboards = [p for p in panelboards 
+                                        if p.floor == transformer.floor and p.core_id == transformer.core_id]
+                for panelboard in floor_core_panelboards:
                     self._add_connection(G, f"connection_{edge_id:03d}", 
                                        decision_to_node_id[transformer], 
                                        decision_to_node_id[panelboard], 
-                                       'Secondary Distribution')
+                                       f'Secondary Distribution Core {transformer.core_id}')
                     edge_id += 1
         
-        # Step 4: Connect main switchboard directly to panelboards on floors without transformers
-        if main_switchboard:
-            transformer_floors = set(t.floor for t in transformers if t.subtype == 'secondary')
+        # Step 5: Connect switchboards directly to panelboards on floors without transformers
+        for panelboard in panelboards:
+            # Check if this panelboard's floor/core has a transformer
+            has_transformer = any(t.subtype == 'secondary' and 
+                                t.floor == panelboard.floor and 
+                                t.core_id == panelboard.core_id 
+                                for t in transformers)
             
-            for panelboard in panelboards:
-                if panelboard.floor not in transformer_floors and panelboard.floor != -1:
+            if not has_transformer:
+                # Find appropriate feeding switchboard
+                feeding_switchboard = self._find_feeding_switchboard_for_core(
+                    panelboard.core_id, switchboards, main_switchboard)
+                
+                if feeding_switchboard:
                     self._add_connection(G, f"connection_{edge_id:03d}", 
-                                       decision_to_node_id[main_switchboard], 
+                                       decision_to_node_id[feeding_switchboard], 
                                        decision_to_node_id[panelboard], 
-                                       'Direct Distribution')
+                                       f'Direct Core {panelboard.core_id} Distribution')
                     edge_id += 1
         
-        # Step 5: Connect loads to distribution equipment (panelboards/switchboards) with floor-level priority (ensure each load has only one connection)
+        # Step 6: Connect loads to distribution equipment with core affinity
         connected_loads = set()  # Track which loads have been connected
         max_same_floor_distance = 30.0  # Maximum distance to consider same-floor equipment (meters)
         
-        # Combine panelboards and switchboards as potential feeding equipment for loads
-        feeding_equipment = panelboards + switchboards
+        # Group feeding equipment by core for better load assignment
+        feeding_equipment_by_core = {}
+        for equipment in panelboards + switchboards:
+            core_id = getattr(equipment, 'core_id', 'A')
+            if core_id not in feeding_equipment_by_core:
+                feeding_equipment_by_core[core_id] = []
+            feeding_equipment_by_core[core_id].append(equipment)
         
         for load in loads:
             if load in connected_loads:
                 continue  # Skip if already connected
-                
-            if feeding_equipment:
-                best_equipment = self._find_best_feeding_equipment_for_load(load, feeding_equipment, max_same_floor_distance)
+            
+            # First try to find equipment in the same core
+            load_core_id = getattr(load, 'core_id', 'A')
+            preferred_equipment = feeding_equipment_by_core.get(load_core_id, [])
+            
+            if preferred_equipment:
+                best_equipment = self._find_best_feeding_equipment_for_load(load, preferred_equipment, max_same_floor_distance)
+            else:
+                # Fallback to any available equipment
+                all_equipment = panelboards + switchboards
+                best_equipment = self._find_best_feeding_equipment_for_load(load, all_equipment, max_same_floor_distance)
+            
+            if best_equipment:
                 load_type = load.subtype.replace('_', ' ').title()
                 self._add_connection(G, f"connection_{edge_id:03d}", 
                                    decision_to_node_id[best_equipment], 
@@ -920,6 +1032,19 @@ class MEPGraphGenerator:
                                    load_type)
                 edge_id += 1
                 connected_loads.add(load)
+    
+    def _find_feeding_switchboard_for_core(self, core_id: str, switchboards: List[NodeDecision], 
+                                          main_switchboard: NodeDecision) -> NodeDecision:
+        """Find the appropriate feeding switchboard for a given core."""
+        # First try to find core-specific distribution switchboard
+        core_switchboard = next((s for s in switchboards 
+                               if s.subtype == 'core_distribution' and s.core_id == core_id), None)
+        
+        if core_switchboard:
+            return core_switchboard
+        
+        # Fallback to main switchboard
+        return main_switchboard
 
     def _find_best_feeding_equipment_for_load(self, load_decision: NodeDecision, feeding_equipment: List[NodeDecision], 
                                              max_same_floor_distance: float) -> NodeDecision:
@@ -1100,6 +1225,86 @@ class MEPGraphGenerator:
             return f'EC-{floor:02d}A'
         else:
             return f'ELEC-{floor:02d}'
+    
+    def _assign_loads_to_cores(self, floor_groups: Dict, core_strategy: Dict) -> Dict:
+        """Assign loads to electrical cores based on building layout and strategy."""
+        core_assignments = {}
+        
+        for floor, voltage_groups in floor_groups.items():
+            if floor == -1:  # Skip basement
+                continue
+                
+            core_assignments[floor] = {}
+            all_floor_loads = voltage_groups.get('medium', []) + voltage_groups.get('low', [])
+            
+            if core_strategy['type'] == 'single_core':
+                # All loads go to the single core
+                core_assignments[floor]['A'] = all_floor_loads
+            else:
+                # Distribute loads among cores based on proximity and load balancing
+                for core_pos in core_strategy['core_positions']:
+                    core_id = core_pos['core_id']
+                    core_assignments[floor][core_id] = []
+                
+                # Assign loads to nearest core based on location
+                for load in all_floor_loads:
+                    load_x, load_y, load_z = load.location
+                    best_core = None
+                    min_distance = float('inf')
+                    
+                    for core_pos in core_strategy['core_positions']:
+                        core_x = core_pos['x_center']
+                        core_y = core_pos['y_center']
+                        distance = ((load_x - core_x)**2 + (load_y - core_y)**2)**0.5
+                        
+                        if distance < min_distance:
+                            min_distance = distance
+                            best_core = core_pos['core_id']
+                    
+                    if best_core:
+                        core_assignments[floor][best_core].append(load)
+        
+        return core_assignments
+    
+    def _get_core_electrical_closet_location(self, floor: int, core_pos: Dict, closet_number: int = 0) -> Tuple[float, float, float]:
+        """Get electrical closet location for a specific core."""
+        # Base location from core position
+        base_x = core_pos['x_center']
+        base_y = core_pos['y_center']
+        
+        if closet_number == 0:
+            # Primary closet close to core center
+            x = base_x + random.uniform(-2, 2)
+            y = base_y + random.uniform(-2, 2)
+        else:
+            # Secondary closets offset from core center
+            offset_angle = (closet_number - 1) * (2 * 3.14159 / 3)  # 120-degree spacing
+            offset_distance = 8.0
+            x = base_x + offset_distance * math.cos(offset_angle)
+            y = base_y + offset_distance * math.sin(offset_angle)
+        
+        return (x, y, self.floor_levels[floor]['z_center'])
+    
+    def _determine_load_core_assignment(self, req: ElectricalRequirement, core_strategy: Dict) -> str:
+        """Determine which core a load should be assigned to based on its location."""
+        if core_strategy['type'] == 'single_core':
+            return 'A'
+        
+        # For multi-core, assign based on proximity to core centers
+        load_x, load_y, load_z = req.location
+        best_core = 'A'  # Default fallback
+        min_distance = float('inf')
+        
+        for core_pos in core_strategy['core_positions']:
+            core_x = core_pos['x_center']
+            core_y = core_pos['y_center']
+            distance = ((load_x - core_x)**2 + (load_y - core_y)**2)**0.5
+            
+            if distance < min_distance:
+                min_distance = distance
+                best_core = core_pos['core_id']
+        
+        return best_core
     
     def _adjust_decisions_to_target_count(self, decisions: List[NodeDecision], 
                                         target_count: int) -> List[NodeDecision]:
