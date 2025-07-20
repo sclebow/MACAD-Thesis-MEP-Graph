@@ -646,6 +646,17 @@ def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[fl
     # 9. Size the equipment based on the calculated amperage
     size_equipment(G)
 
+    # 10. Add metadata about the building and graph
+    G.graph['building_length'] = building_attrs['building_length']
+    G.graph['building_width'] = building_attrs['building_width']
+    G.graph['num_floors'] = building_attrs['num_floors']
+    G.graph['floor_height'] = building_attrs['floor_height']
+    G.graph['total_load'] = building_attrs['total_load']
+    G.graph['voltage_level'] = voltage_info['voltage_level']
+    G.graph['timestamp'] = datetime.datetime.now().isoformat()
+    G.graph['seed'] = random.getstate()  # Store the random seed state for reproducibility
+    G.graph['description'] = "Randomly generated MEP electrical system graph"
+
     return G
 
 # --- Placeholder functions for graph construction ---
