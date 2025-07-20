@@ -132,6 +132,7 @@ def main():
     parser.add_argument('--building-width', type=float, default=20.0, help='Building width in meters')
     parser.add_argument('--num-floors', type=int, default=4, help='Number of floors')
     parser.add_argument('--floor-height', type=float, default=3.5, help='Floor height in meters')
+    parser.add_argument('--cluster-strength', type=float, default=0.95, help='Strength of clustering (0.0 = no clustering, 1.0 = full clustering)')
     
     args = parser.parse_args()
 
@@ -156,7 +157,8 @@ def main():
     floor_loads, end_loads = distribute_loads(building_attrs, voltage_info)
     riser_floor_attributes = determine_riser_attributes(building_attrs, riser_locations, floor_loads, end_loads, voltage_info)
     distribution_equipment = place_distribution_equipment(building_attrs, riser_floor_attributes, voltage_info)
-    graph = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info)
+    cluster_strength = args.cluster_strength
+    graph = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info, end_loads, cluster_strength)
 
     # --- Reporting ---
     print("\n--- BUILDING MEP GRAPH REPORT ---")
@@ -612,7 +614,7 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
             equipment[floor][riser_idx] = riser_equipment
     return equipment
 
-def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[float, float]], distribution_equipment: Dict, voltage_info: Dict[str, Any]) -> nx.DiGraph:
+def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[float, float]], distribution_equipment: Dict, voltage_info: Dict[str, Any], end_loads: list, cluster_strength: float = 1.0) -> nx.DiGraph:
     """
     Step 8: Connect all nodes to form the final graph.
     Framework only: placeholder functions for each connection step.
@@ -635,7 +637,7 @@ def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[fl
     connect_equipment_hierarchy(G, distribution_equipment)
 
     # 6. Add end load nodes and connect them to the appropriate equipment
-    add_and_connect_end_loads(G, distribution_equipment, building_attrs)
+    add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loads, cluster_strength)
 
     # 7. Propagate the power loads through the graph from the end loads to the utility transformer
     propagate_power_loads(G, distribution_equipment)
@@ -654,7 +656,7 @@ def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[fl
     G.graph['total_load'] = building_attrs['total_load']
     G.graph['voltage_level'] = voltage_info['voltage_level']
     G.graph['timestamp'] = datetime.datetime.now().isoformat()
-    G.graph['seed'] = random.getstate()  # Store the random seed state for reproducibility
+    # G.graph['seed'] = str(random.getstate())  # Optionally store as string, or remove entirely
     G.graph['description'] = "Randomly generated MEP electrical system graph"
 
     return G
@@ -847,21 +849,51 @@ def connect_equipment_hierarchy(G, distribution_equipment):
                     parent_id = node_id_map[parent_key]
                     G.add_edge(parent_id, node_id, description=f'{parent_key} to {eq_type}')
 
-def add_and_connect_end_loads(G, distribution_equipment, building_attrs):
-    """Add end load nodes and connect them to the appropriate equipment."""
-    # To add end loads, we need to reconstruct the end loads per riser/floor/type/voltage
-    # We'll use the same logic as in determine_riser_attributes, but for each riser/floor/type/voltage, add N end loads
+def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loads, cluster_strength=1.0):
+    """Add end load nodes and connect them to the appropriate equipment, with clustering control."""
+    import math
+    from collections import defaultdict
     num_floors = building_attrs['num_floors']
     floor_height = building_attrs['floor_height']
     building_length = building_attrs['building_length']
     building_width = building_attrs['building_width']
+
+    # Build a mapping: (floor, riser, load_type, voltage) -> list of end loads
+    # To assign end loads to risers, use the same logic as determine_riser_attributes
+    riser_locations = []
+    for floor, risers in distribution_equipment.items():
+        for riser_idx in risers.keys():
+            if len(riser_locations) <= riser_idx:
+                riser_locations.extend([None] * (riser_idx - len(riser_locations) + 1))
+    # Try to get riser_locations from the first main_panel/sub_panel node
+    for risers in distribution_equipment.values():
+        for riser_idx, eq_list in risers.items():
+            for eq in eq_list:
+                if eq.get('x') is not None and eq.get('y') is not None:
+                    riser_locations[riser_idx] = (eq['x'], eq['y'])
+                    break
+
+    def nearest_riser_idx(x, y):
+        dists = [math.hypot(x - rx, y - ry) if rx is not None and ry is not None else float('inf') for rx, ry in riser_locations]
+        return dists.index(min(dists))
+
+    group_map = defaultdict(list)
+    for end_load in end_loads:
+        floor = end_load['floor']
+        length = building_attrs['building_length']
+        width = building_attrs['building_width']
+        x = random.uniform(0, length)
+        y = random.uniform(0, width)
+        riser_idx = nearest_riser_idx(x, y)
+        t = end_load['type']
+        v = end_load['voltage']
+        group_map[(floor, riser_idx, t, v)].append({'power': end_load['power'], 'x': x, 'y': y})
+
     for floor, risers in distribution_equipment.items():
         for riser_idx, equipment_list in risers.items():
             sub_panel_map = {}
             main_panel_id = None
             created_nodes = set()
-            # Map for transformer nodes (load_type, voltage) → node_id
-            transformer_map = {}
             for eq in equipment_list:
                 eq_type = eq.get('type')
                 voltage = eq.get('voltage', '')
@@ -873,36 +905,67 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs):
                         created_nodes.add(node_id)
                 elif eq_type == 'main_panel':
                     main_panel_id = f"main_panel_f{floor}_r{riser_idx}"
-                elif eq_type == 'transformer':
-                    node_id = f"transformer_f{floor}_r{riser_idx}_{eq.get('to_voltage','')}_{load_type}"
-                    transformer_map[(load_type, eq.get('to_voltage',''))] = node_id
-            # For each sub-panel, add a single end load for its type/voltage with total power
+
+            # For each sub-panel, add clustered end loads for its type/voltage
             for (load_type, voltage), sub_panel_id in sub_panel_map.items():
-                power = 0.0
-                for eq in equipment_list:
-                    if eq.get('type') == 'sub_panel' and eq.get('load_type','') == load_type and str(eq.get('voltage','')) == str(voltage):
-                        power = eq.get('power', 0.0)
-                        break
-                x = random.uniform(0, building_length)
-                y = random.uniform(0, building_width)
-                z = floor * floor_height
-                end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{voltage}"
-                if end_load_id not in created_nodes:
-                    G.add_node(
-                        end_load_id,
-                        type='end_load',
-                        floor=floor,
-                        riser=riser_idx,
-                        load_type=load_type,
-                        voltage=voltage,
-                        x=x,
-                        y=y,
-                        z=z,
-                        power=round(power, 2)
-                    )
-                    created_nodes.add(end_load_id)
-                G.add_edge(sub_panel_id, end_load_id, description='Sub-panel to end load')
-            # If no sub-panels, connect a single end load directly to main panel (for main voltage)
+                group = group_map.get((floor, riser_idx, load_type, voltage), [])
+                N = len(group)
+                if N == 0:
+                    continue
+                num_clusters = max(1, int(round((1 - cluster_strength) * N + cluster_strength * 1)))
+                # Split group into clusters
+                if num_clusters == 1:
+                    total_power = sum(e['power'] for e in group)
+                    x = random.uniform(0, building_length)
+                    y = random.uniform(0, building_width)
+                    z = floor * floor_height
+                    end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{voltage}"
+                    if end_load_id not in created_nodes:
+                        G.add_node(
+                            end_load_id,
+                            type='end_load',
+                            floor=floor,
+                            riser=riser_idx,
+                            load_type=load_type,
+                            voltage=voltage,
+                            x=x,
+                            y=y,
+                            z=z,
+                            power=round(total_power, 2)
+                        )
+                        created_nodes.add(end_load_id)
+                    G.add_edge(sub_panel_id, end_load_id, description='Sub-panel to end load')
+                else:
+                    # Shuffle group for random clusters
+                    random.shuffle(group)
+                    cluster_size = int(math.ceil(N / num_clusters))
+                    for i in range(num_clusters):
+                        cluster = group[i*cluster_size:(i+1)*cluster_size]
+                        if not cluster:
+                            continue
+                        total_power = sum(e['power'] for e in cluster)
+                        # Use mean x/y for cluster
+                        x = sum(e['x'] for e in cluster) / len(cluster)
+                        y = sum(e['y'] for e in cluster) / len(cluster)
+                        z = floor * floor_height
+                        end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{voltage}_c{i}"
+                        if end_load_id not in created_nodes:
+                            G.add_node(
+                                end_load_id,
+                                type='end_load',
+                                floor=floor,
+                                riser=riser_idx,
+                                load_type=load_type,
+                                voltage=voltage,
+                                x=x,
+                                y=y,
+                                z=z,
+                                power=round(total_power, 2)
+                            )
+                            created_nodes.add(end_load_id)
+                        G.add_edge(sub_panel_id, end_load_id, description='Sub-panel to end load')
+
+            # If no sub-panels, connect clustered end loads directly to main panel (for main voltage)
             if not sub_panel_map and main_panel_id:
                 main_voltage = None
                 main_loads = None
@@ -913,12 +976,44 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs):
                         break
                 if main_loads:
                     for load_type, vdict in main_loads.items():
-                        for voltage, power in vdict.items():
-                            if str(voltage) == str(main_voltage):
-                                x = random.uniform(0, building_length)
-                                y = random.uniform(0, building_width)
+                        group = group_map.get((floor, riser_idx, load_type, main_voltage), [])
+                        N = len(group)
+                        if N == 0:
+                            continue
+                        num_clusters = max(1, int(round((1 - cluster_strength) * N + cluster_strength * 1)))
+                        if num_clusters == 1:
+                            total_power = sum(e['power'] for e in group)
+                            x = random.uniform(0, building_length)
+                            y = random.uniform(0, building_width)
+                            z = floor * floor_height
+                            end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{main_voltage}"
+                            if end_load_id not in created_nodes:
+                                G.add_node(
+                                    end_load_id,
+                                    type='end_load',
+                                    floor=floor,
+                                    riser=riser_idx,
+                                    load_type=load_type,
+                                    voltage=main_voltage,
+                                    x=x,
+                                    y=y,
+                                    z=z,
+                                    power=round(total_power, 2)
+                                )
+                                created_nodes.add(end_load_id)
+                            G.add_edge(main_panel_id, end_load_id, description='Main panel to end load')
+                        else:
+                            random.shuffle(group)
+                            cluster_size = int(math.ceil(N / num_clusters))
+                            for i in range(num_clusters):
+                                cluster = group[i*cluster_size:(i+1)*cluster_size]
+                                if not cluster:
+                                    continue
+                                total_power = sum(e['power'] for e in cluster)
+                                x = sum(e['x'] for e in cluster) / len(cluster)
+                                y = sum(e['y'] for e in cluster) / len(cluster)
                                 z = floor * floor_height
-                                end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{voltage}"
+                                end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{main_voltage}_c{i}"
                                 if end_load_id not in created_nodes:
                                     G.add_node(
                                         end_load_id,
@@ -926,11 +1021,11 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs):
                                         floor=floor,
                                         riser=riser_idx,
                                         load_type=load_type,
-                                        voltage=voltage,
+                                        voltage=main_voltage,
                                         x=x,
                                         y=y,
                                         z=z,
-                                        power=round(power, 2)
+                                        power=round(total_power, 2)
                                     )
                                     created_nodes.add(end_load_id)
                                 G.add_edge(main_panel_id, end_load_id, description='Main panel to end load')
