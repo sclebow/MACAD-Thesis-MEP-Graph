@@ -156,22 +156,29 @@ class MEPGraphGenerator:
         
         return G
     def _align_transformer_positions(self, G: nx.DiGraph):
-        """Set transformer node positions to match either their upstream or downstream node."""
+        """Set transformer node positions to match either their upstream or downstream node, with randomization."""
         for node_id, attrs in G.nodes(data=True):
             if 'transformer' in node_id:
-                # Try to align with upstream node if exists, else downstream
                 predecessors = list(G.predecessors(node_id))
                 successors = list(G.successors(node_id))
                 ref_node = None
-                if predecessors:
+                # 90% chance to use downstream, 10% upstream (if available)
+                use_downstream = random.random() < 0.9 and successors
+                if use_downstream:
+                    ref_node = successors[0]
+                elif predecessors:
                     ref_node = predecessors[0]
                 elif successors:
                     ref_node = successors[0]
                 if ref_node:
                     ref_attrs = G.nodes[ref_node]
-                    attrs['x'] = ref_attrs.get('x', attrs.get('x', 0.0))
-                    attrs['y'] = ref_attrs.get('y', attrs.get('y', 0.0))
-                    attrs['z'] = ref_attrs.get('z', attrs.get('z', 0.0))
+                    # Add a small random offset (within +/- 0.5m)
+                    offset_x = random.uniform(-0.5, 0.5)
+                    offset_y = random.uniform(-0.5, 0.5)
+                    offset_z = random.uniform(-0.2, 0.2)
+                    attrs['x'] = round(ref_attrs.get('x', attrs.get('x', 0.0)) + offset_x, 2)
+                    attrs['y'] = round(ref_attrs.get('y', attrs.get('y', 0.0)) + offset_y, 2)
+                    attrs['z'] = round(ref_attrs.get('z', attrs.get('z', 0.0)) + offset_z, 2)
     
     def _calculate_component_distribution(self, node_count: int) -> Dict[str, int]:
         """Calculate logical distribution of component types."""
@@ -758,22 +765,30 @@ class MEPGraphGenerator:
         """Find the closest equipment from a list of candidates."""
         if not target_candidates:
             return None
-        
+
         source_attrs = G.nodes[source_node]
+        source_z = source_attrs.get('z', 0.0)
         min_distance = float('inf')
         closest_node = None
-        
-        for candidate in target_candidates:
+
+        # Prefer only candidates at a higher elevation (z)
+        higher_candidates = [c for c in target_candidates if G.nodes[c].get('z', 0.0) > source_z]
+        candidates_to_check = higher_candidates if higher_candidates else target_candidates
+
+        for candidate in candidates_to_check:
+            candidate_z = G.nodes[candidate].get('z', 0.0)
+            # If possible, only allow connections from lower to higher z
+            if higher_candidates and candidate_z <= source_z:
+                continue
             distance = self._calculate_distance(G, source_node, candidate)
             if distance < min_distance and self._is_reasonable_distance(distance, source_node, candidate):
                 min_distance = distance
                 closest_node = candidate
-        
-        # If no candidates meet distance criteria, return the closest one anyway
-        if closest_node is None and target_candidates:
-            closest_node = min(target_candidates, 
-                             key=lambda x: self._calculate_distance(G, source_node, x))
-        
+
+        # If no candidates meet distance criteria, return the closest one anyway (from higher_candidates if possible)
+        if closest_node is None and candidates_to_check:
+            closest_node = min(candidates_to_check, key=lambda x: self._calculate_distance(G, source_node, x))
+
         return closest_node
     
     def _calculate_distance(self, G: nx.DiGraph, node1: str, node2: str) -> float:
