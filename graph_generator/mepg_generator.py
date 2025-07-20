@@ -145,66 +145,247 @@ class MEPGraphGenerator:
         return floor_levels
     
     def _define_electrical_rooms_by_floor(self) -> Dict[int, List[Dict]]:
-        """Define electrical rooms on each floor with specific x,y bounds."""
+        """Define electrical rooms on each floor with adaptive multi-core strategy."""
         config = self.building_config
         electrical_rooms = {}
         
-        # Basement electrical room (main service)
-        electrical_rooms[-1] = [{
-            'id': 'MER-B01',
-            'description': 'Main Electrical Room',
-            'x_min': config['electrical_core']['x_center'] - config['electrical_core']['width'] / 2,
-            'x_max': config['electrical_core']['x_center'] + config['electrical_core']['width'] / 2,
-            'y_min': config['electrical_core']['y_center'] - config['electrical_core']['depth'] / 2,
-            'y_max': config['electrical_core']['y_center'] + config['electrical_core']['depth'] / 2,
-            'equipment_types': ['main_transformer', 'main_switchboard'],
-            'capacity': 4  # Max equipment pieces
-        }]
+        # Determine electrical core strategy based on building characteristics
+        core_strategy = self._determine_electrical_core_strategy()
         
-        # Electrical rooms on each floor
+        # Basement electrical room(s) - main service
+        electrical_rooms[-1] = self._create_basement_electrical_rooms(core_strategy)
+        
+        # Electrical rooms on each floor based on strategy
         for floor in range(config['num_floors']):
-            rooms = []
+            electrical_rooms[floor] = self._create_floor_electrical_rooms(floor, core_strategy)
+        
+        return electrical_rooms
+    
+    def _determine_electrical_core_strategy(self) -> Dict[str, any]:
+        """Determine electrical core strategy based on building characteristics."""
+        config = self.building_config
+        
+        # Calculate building aspect ratio and total floor area
+        aspect_ratio = max(config['length'], config['width']) / min(config['length'], config['width'])
+        floor_area = config['length'] * config['width']
+        total_area = floor_area * config['num_floors']
+        height = config['num_floors'] * config['floor_height']
+        
+        # Strategy decision criteria:
+        # - Single core: Tall/compact buildings (height > 30m OR aspect_ratio < 2.0)
+        # - Dual core: Medium buildings (height 15-30m AND aspect_ratio 2.0-3.5)
+        # - Multi core: Low/wide buildings (height < 15m OR aspect_ratio > 3.5)
+        
+        if height > 30.0 or (aspect_ratio < 2.0 and config['num_floors'] > 6):
+            strategy_type = 'single_core'
+            num_cores = 1
+        elif height >= 15.0 and aspect_ratio <= 3.5:
+            strategy_type = 'dual_core'
+            num_cores = 2
+        else:
+            strategy_type = 'multi_core'
+            # For multi-core, base number on floor area (1 core per 1000-1500 sqm)
+            num_cores = max(2, min(4, int(floor_area / 1200)))
+        
+        return {
+            'type': strategy_type,
+            'num_cores': num_cores,
+            'core_positions': self._calculate_core_positions(num_cores),
+            'aspect_ratio': aspect_ratio,
+            'floor_area': floor_area,
+            'building_height': height
+        }
+    
+    def _calculate_core_positions(self, num_cores: int) -> List[Dict[str, float]]:
+        """Calculate optimal positions for electrical cores."""
+        config = self.building_config
+        positions = []
+        
+        if num_cores == 1:
+            # Single central core
+            positions.append({
+                'x_center': config['length'] / 2,
+                'y_center': config['width'] / 2,
+                'core_id': 'A'
+            })
+        
+        elif num_cores == 2:
+            # Two cores along the longer dimension
+            if config['length'] > config['width']:
+                # Split along length
+                positions.extend([
+                    {
+                        'x_center': config['length'] * 0.3,
+                        'y_center': config['width'] / 2,
+                        'core_id': 'A'
+                    },
+                    {
+                        'x_center': config['length'] * 0.7,
+                        'y_center': config['width'] / 2,
+                        'core_id': 'B'
+                    }
+                ])
+            else:
+                # Split along width
+                positions.extend([
+                    {
+                        'x_center': config['length'] / 2,
+                        'y_center': config['width'] * 0.3,
+                        'core_id': 'A'
+                    },
+                    {
+                        'x_center': config['length'] / 2,
+                        'y_center': config['width'] * 0.7,
+                        'core_id': 'B'
+                    }
+                ])
+        
+        elif num_cores == 3:
+            # Three cores in triangular arrangement
+            positions.extend([
+                {
+                    'x_center': config['length'] * 0.25,
+                    'y_center': config['width'] * 0.3,
+                    'core_id': 'A'
+                },
+                {
+                    'x_center': config['length'] * 0.75,
+                    'y_center': config['width'] * 0.3,
+                    'core_id': 'B'
+                },
+                {
+                    'x_center': config['length'] * 0.5,
+                    'y_center': config['width'] * 0.7,
+                    'core_id': 'C'
+                }
+            ])
+        
+        else:  # 4 or more cores
+            # Four cores in quadrant arrangement
+            positions.extend([
+                {
+                    'x_center': config['length'] * 0.25,
+                    'y_center': config['width'] * 0.25,
+                    'core_id': 'A'
+                },
+                {
+                    'x_center': config['length'] * 0.75,
+                    'y_center': config['width'] * 0.25,
+                    'core_id': 'B'
+                },
+                {
+                    'x_center': config['length'] * 0.25,
+                    'y_center': config['width'] * 0.75,
+                    'core_id': 'C'
+                },
+                {
+                    'x_center': config['length'] * 0.75,
+                    'y_center': config['width'] * 0.75,
+                    'core_id': 'D'
+                }
+            ])
+        
+        return positions
+    
+    def _create_basement_electrical_rooms(self, core_strategy: Dict) -> List[Dict]:
+        """Create basement electrical rooms based on core strategy."""
+        config = self.building_config
+        basement_rooms = []
+        
+        if core_strategy['num_cores'] == 1:
+            # Single large main electrical room
+            core_pos = core_strategy['core_positions'][0]
+            basement_rooms.append({
+                'id': 'MER-B01',
+                'description': 'Main Electrical Room',
+                'core_id': core_pos['core_id'],
+                'x_min': core_pos['x_center'] - config['electrical_core']['width'] / 2,
+                'x_max': core_pos['x_center'] + config['electrical_core']['width'] / 2,
+                'y_min': core_pos['y_center'] - config['electrical_core']['depth'] / 2,
+                'y_max': core_pos['y_center'] + config['electrical_core']['depth'] / 2,
+                'equipment_types': ['main_transformer', 'main_switchboard'],
+                'capacity': 6
+            })
+        
+        else:
+            # Multiple electrical rooms for multi-core strategy
+            for i, core_pos in enumerate(core_strategy['core_positions']):
+                room_size_factor = 0.8  # Smaller rooms for multi-core
+                basement_rooms.append({
+                    'id': f'MER-B0{i+1}',
+                    'description': f'Main Electrical Room {core_pos["core_id"]}',
+                    'core_id': core_pos['core_id'],
+                    'x_min': core_pos['x_center'] - (config['electrical_core']['width'] * room_size_factor) / 2,
+                    'x_max': core_pos['x_center'] + (config['electrical_core']['width'] * room_size_factor) / 2,
+                    'y_min': core_pos['y_center'] - (config['electrical_core']['depth'] * room_size_factor) / 2,
+                    'y_max': core_pos['y_center'] + (config['electrical_core']['depth'] * room_size_factor) / 2,
+                    'equipment_types': ['main_transformer', 'main_switchboard'],
+                    'capacity': 4
+                })
+        
+        return basement_rooms
+    
+    def _create_floor_electrical_rooms(self, floor: int, core_strategy: Dict) -> List[Dict]:
+        """Create electrical rooms for a specific floor based on core strategy."""
+        config = self.building_config
+        rooms = []
+        
+        for i, core_pos in enumerate(core_strategy['core_positions']):
+            core_id = core_pos['core_id']
             
-            # Primary electrical closet (center core)
+            # Primary electrical closet for each core
             rooms.append({
-                'id': f'EC-{floor:02d}A',
-                'description': f'Electrical Closet A - Floor {floor}',
-                'x_min': config['electrical_core']['x_center'] - 6.0,
-                'x_max': config['electrical_core']['x_center'] + 2.0,
-                'y_min': config['electrical_core']['y_center'] - 4.0,
-                'y_max': config['electrical_core']['y_center'] + 4.0,
+                'id': f'EC-{floor:02d}{core_id}',
+                'description': f'Electrical Closet {core_id} - Floor {floor}',
+                'core_id': core_id,
+                'x_min': core_pos['x_center'] - 4.0,
+                'x_max': core_pos['x_center'] + 4.0,
+                'y_min': core_pos['y_center'] - 3.0,
+                'y_max': core_pos['y_center'] + 3.0,
                 'equipment_types': ['secondary_transformer', 'main_panelboard'],
                 'capacity': 3
             })
             
-            # Secondary electrical closet (offset core)
+            # Secondary electrical closet (offset from core)
+            offset_x = 6.0 if i % 2 == 0 else -6.0
+            offset_y = 4.0 if i < 2 else -4.0
+            
             rooms.append({
-                'id': f'EC-{floor:02d}B',
-                'description': f'Electrical Closet B - Floor {floor}',
-                'x_min': config['electrical_core']['x_center'] + 2.0,
-                'x_max': config['electrical_core']['x_center'] + 10.0,
-                'y_min': config['electrical_core']['y_center'] - 2.0,
-                'y_max': config['electrical_core']['y_center'] + 6.0,
+                'id': f'EC-{floor:02d}{core_id}-2',
+                'description': f'Secondary Electrical Closet {core_id} - Floor {floor}',
+                'core_id': core_id,
+                'x_min': core_pos['x_center'] + offset_x - 2.0,
+                'x_max': core_pos['x_center'] + offset_x + 2.0,
+                'y_min': core_pos['y_center'] + offset_y - 2.0,
+                'y_max': core_pos['y_center'] + offset_y + 2.0,
                 'equipment_types': ['panelboard'],
                 'capacity': 2
             })
+        
+        # Add IDF rooms for floors above ground level
+        if floor > 0 and core_strategy['num_cores'] >= 2:
+            # Distribute IDF rooms based on available cores
+            idf_positions = [
+                {'x': config['length'] * 0.1, 'y': config['width'] * 0.1},
+                {'x': config['length'] * 0.9, 'y': config['width'] * 0.1},
+                {'x': config['length'] * 0.1, 'y': config['width'] * 0.9},
+                {'x': config['length'] * 0.9, 'y': config['width'] * 0.9}
+            ]
             
-            # IDF rooms (distributed)
-            if floor > 0:  # Not on ground floor
+            for j, idf_pos in enumerate(idf_positions[:min(2, core_strategy['num_cores'])]):
                 rooms.append({
-                    'id': f'IDF-{floor:02d}',
-                    'description': f'IDF Room - Floor {floor}',
-                    'x_min': config['length'] * 0.8,
-                    'x_max': config['length'] * 0.95,
-                    'y_min': config['width'] * 0.1,
-                    'y_max': config['width'] * 0.3,
+                    'id': f'IDF-{floor:02d}-{j+1}',
+                    'description': f'IDF Room {j+1} - Floor {floor}',
+                    'core_id': f'IDF{j+1}',
+                    'x_min': idf_pos['x'] - 2.0,
+                    'x_max': idf_pos['x'] + 2.0,
+                    'y_min': idf_pos['y'] - 2.0,
+                    'y_max': idf_pos['y'] + 2.0,
                     'equipment_types': ['panelboard'],
                     'capacity': 2
                 })
-            
-            electrical_rooms[floor] = rooms
         
-        return electrical_rooms
+        return rooms
     
     def generate_graph(self, node_count: int) -> nx.DiGraph:
         """
@@ -240,6 +421,9 @@ class MEPGraphGenerator:
         
         # Step 5: Validate electrical constraints
         self._validate_electrical_constraints(G)
+        
+        # Step 5.5: Validate load connections (ensure each load has exactly one feeding panelboard)
+        self._validate_load_connections(G)
 
         # Step 6: Align transformer positions with upstream or downstream node
         self._align_transformer_positions(G)
@@ -717,35 +901,35 @@ class MEPGraphGenerator:
                                        'Direct Distribution')
                     edge_id += 1
         
-        # Step 5: Connect panelboards to loads on same floor
-        for panelboard in panelboards:
-            floor_loads = [l for l in loads if l.floor == panelboard.floor]
-            
-            # Distribute loads among panelboards on same floor
-            panelboards_on_floor = [p for p in panelboards if p.floor == panelboard.floor]
-            
-            if panelboards_on_floor:
-                panel_index = panelboards_on_floor.index(panelboard)
+        # Step 5: Connect loads to closest panelboards (ensure each load has only one connection)
+        connected_loads = set()  # Track which loads have been connected
+        
+        for load in loads:
+            if load in connected_loads:
+                continue  # Skip if already connected
                 
-                # Assign loads to this panelboard based on load type and panel type
-                for i, load in enumerate(floor_loads):
-                    should_connect = False
-                    
-                    # Distribute loads round-robin among panels, with some preference for matching types
-                    if panelboard.subtype == 'lighting' and load.subtype == 'lighting':
-                        should_connect = True
-                    elif panelboard.subtype in ['power', 'distribution'] and load.subtype in ['general_power', 'kitchen', 'data_center', 'hvac']:
-                        should_connect = True
-                    elif i % len(panelboards_on_floor) == panel_index:
-                        should_connect = True
-                    
-                    if should_connect:
-                        load_type = load.subtype.replace('_', ' ').title()
-                        self._add_connection(G, f"connection_{edge_id:03d}", 
-                                           decision_to_node_id[panelboard], 
-                                           decision_to_node_id[load], 
-                                           load_type)
-                        edge_id += 1
+            # Find the closest panelboard regardless of floor
+            if panelboards:
+                closest_panelboard = min(panelboards, 
+                                       key=lambda p: self._calculate_decision_distance(load, p))
+                load_type = load.subtype.replace('_', ' ').title()
+                self._add_connection(G, f"connection_{edge_id:03d}", 
+                                   decision_to_node_id[closest_panelboard], 
+                                   decision_to_node_id[load], 
+                                   load_type)
+                edge_id += 1
+                connected_loads.add(load)
+
+    def _calculate_decision_distance(self, load_decision: NodeDecision, panel_decision: NodeDecision) -> float:
+        """Calculate distance between two node decisions based on their locations."""
+        load_x, load_y, load_z = load_decision.location
+        panel_x, panel_y, panel_z = panel_decision.location
+        
+        dx = load_x - panel_x
+        dy = load_y - panel_y
+        dz = load_z - panel_z
+        
+        return (dx*dx + dy*dy + dz*dz)**0.5
     
     # Helper methods for the logical generation
     def _estimate_total_building_load(self, floor_area: float, num_floors: int) -> float:
@@ -1242,8 +1426,12 @@ class MEPGraphGenerator:
                         self._add_connection(G, f"connection_{edge_id:03d}", closest_source, panelboard, load_type)
                         edge_id += 1
             
-            # Connect loads to panelboards on same floor
+            # Connect loads to closest panelboards on same floor (ensure single connection per load)
             for load in floor_loads:
+                # Check if load is already connected (avoid multiple connections)
+                if G.in_degree(load) > 0:
+                    continue  # Skip if already connected
+                    
                 if floor_panelboards:
                     closest_panelboard = self._find_closest_equipment(G, load, floor_panelboards)
                     if closest_panelboard:
@@ -1255,26 +1443,23 @@ class MEPGraphGenerator:
             feeding_equipment.extend(floor_panelboards)
     
     def _define_equipment_zones(self) -> Dict[str, Dict]:
-        """Define realistic zones for different equipment types."""
+        """Define realistic zones for different equipment types based on multi-core strategy."""
         config = self.building_config
+        
+        # Get the core strategy to determine zones dynamically
+        core_strategy = self._determine_electrical_core_strategy()
         
         zones = {
             'main_electrical': {
-                'description': 'Main electrical room (basement/ground floor)',
-                'x_range': (config['electrical_core']['x_center'] - config['electrical_core']['width']/2,
-                           config['electrical_core']['x_center'] + config['electrical_core']['width']/2),
-                'y_range': (config['electrical_core']['y_center'] - config['electrical_core']['depth']/2,
-                           config['electrical_core']['y_center'] + config['electrical_core']['depth']/2),
+                'description': 'Main electrical rooms (basement/ground floor)',
+                'cores': [],  # Will be populated with core-specific ranges
                 'z_range': (config['basement_depth'], config['floor_height']),
                 'equipment': ['main_transformer', 'main_switchboard']
             },
             
             'floor_electrical_rooms': {
                 'description': 'Electrical closets on each floor',
-                'x_range': (config['electrical_core']['x_center'] - 6.0,
-                           config['electrical_core']['x_center'] + 6.0),
-                'y_range': (config['electrical_core']['y_center'] - 4.0,
-                           config['electrical_core']['y_center'] + 4.0),
+                'cores': [],  # Will be populated with core-specific ranges
                 'z_range': (0.0, config['num_floors'] * config['floor_height']),
                 'equipment': ['secondary_transformer', 'distribution_panelboard']
             },
@@ -1295,6 +1480,24 @@ class MEPGraphGenerator:
                 'equipment': ['load']
             }
         }
+        
+        # Populate core-specific ranges for main electrical and floor electrical rooms
+        for core_pos in core_strategy['core_positions']:
+            # Main electrical zones (basement)
+            zones['main_electrical']['cores'].append({
+                'core_id': core_pos['core_id'],
+                'x_range': (core_pos['x_center'] - config['electrical_core']['width']/2,
+                           core_pos['x_center'] + config['electrical_core']['width']/2),
+                'y_range': (core_pos['y_center'] - config['electrical_core']['depth']/2,
+                           core_pos['y_center'] + config['electrical_core']['depth']/2)
+            })
+            
+            # Floor electrical zones
+            zones['floor_electrical_rooms']['cores'].append({
+                'core_id': core_pos['core_id'],
+                'x_range': (core_pos['x_center'] - 6.0, core_pos['x_center'] + 6.0),
+                'y_range': (core_pos['y_center'] - 4.0, core_pos['y_center'] + 4.0)
+            })
         
         return zones
     
@@ -1655,30 +1858,33 @@ class MEPGraphGenerator:
             return self._generate_position_original(position_id)
     
     def _generate_position_by_type(self, node_id: str, position_id: int) -> Tuple[float, float, float]:
-        """Generate realistic position based on equipment type and building zones."""
+        """Generate realistic position based on equipment type and multi-core building zones."""
         zones = self._define_equipment_zones()
         config = self.building_config
         
         if 'transformer' in node_id and 'transformer_001' in node_id:
-            # Main transformer - basement or ground floor electrical room
+            # Main transformer - basement electrical room (select appropriate core)
             zone = zones['main_electrical']
-            x = random.uniform(*zone['x_range'])
-            y = random.uniform(*zone['y_range'])
+            selected_core = self._select_core_for_equipment(node_id, position_id, zone['cores'])
+            x = random.uniform(*selected_core['x_range'])
+            y = random.uniform(*selected_core['y_range'])
             z = random.uniform(config['basement_depth'], 0.5)  # Prefer basement
             
         elif 'transformer' in node_id:
             # Secondary transformers - distributed in electrical rooms on floors
             zone = zones['floor_electrical_rooms']
             floor = self._assign_floor_for_equipment(position_id, 'secondary_transformer')
-            x = random.uniform(*zone['x_range'])
-            y = random.uniform(*zone['y_range'])
+            selected_core = self._select_core_for_equipment(node_id, position_id, zone['cores'])
+            x = random.uniform(*selected_core['x_range'])
+            y = random.uniform(*selected_core['y_range'])
             z = floor * config['floor_height'] + random.uniform(0.0, 0.5)
             
         elif 'switchboard' in node_id:
             # Main switchboards - main electrical room
             zone = zones['main_electrical']
-            x = random.uniform(*zone['x_range'])
-            y = random.uniform(*zone['y_range'])
+            selected_core = self._select_core_for_equipment(node_id, position_id, zone['cores'])
+            x = random.uniform(*selected_core['x_range'])
+            y = random.uniform(*selected_core['y_range'])
             z = random.uniform(0.0, config['floor_height'])
             
         elif 'panelboard' in node_id:
@@ -1687,8 +1893,9 @@ class MEPGraphGenerator:
                 # Main distribution panels - electrical rooms
                 zone = zones['floor_electrical_rooms']
                 floor = self._assign_floor_for_equipment(position_id, 'main_panelboard')
-                x = random.uniform(*zone['x_range'])
-                y = random.uniform(*zone['y_range'])
+                selected_core = self._select_core_for_equipment(node_id, position_id, zone['cores'])
+                x = random.uniform(*selected_core['x_range'])
+                y = random.uniform(*selected_core['y_range'])
                 z = floor * config['floor_height'] + random.uniform(0.0, 0.5)
             else:
                 # Sub-distribution panels - corridor locations
@@ -1711,6 +1918,28 @@ class MEPGraphGenerator:
             return self._generate_position_original(position_id)
         
         return round(x, 1), round(y, 1), round(z, 1)
+    
+    def _select_core_for_equipment(self, node_id: str, position_id: int, available_cores: List[Dict]) -> Dict:
+        """Select appropriate electrical core for equipment placement."""
+        if not available_cores:
+            # Fallback if no cores available
+            config = self.building_config
+            return {
+                'x_range': (config['length'] * 0.4, config['length'] * 0.6),
+                'y_range': (config['width'] * 0.4, config['width'] * 0.6)
+            }
+        
+        # For main equipment (transformers, switchboards), distribute across cores
+        if 'transformer' in node_id or 'switchboard' in node_id:
+            # Use position_id to deterministically assign to cores
+            core_index = position_id % len(available_cores)
+            return available_cores[core_index]
+        
+        # For panelboards, prefer load balancing across cores
+        else:
+            # Rotate through cores based on position_id
+            core_index = position_id % len(available_cores)
+            return available_cores[core_index]
     
     def _generate_position_original(self, position_id: int) -> Tuple[float, float, float]:
         """Original position generation method (fallback)."""
@@ -1805,9 +2034,13 @@ class MEPGraphGenerator:
                         available_sources.append(panelboard)
                         edge_id += 1
         
-        # Level 4 to Level 5: Panelboards to Loads (proximity-based)
+        # Level 4 to Level 5: Panelboards to Loads (proximity-based, single connection per load)
         if level_nodes[5]:  # If there are load nodes
             for load in level_nodes[5]:
+                # Check if load is already connected (avoid multiple connections)
+                if G.in_degree(load) > 0:
+                    continue  # Skip if already connected
+                    
                 closest_panelboard = self._find_closest_equipment(G, load, level_nodes[4])
                 if closest_panelboard:
                     load_type = random.choice(['Lighting', 'General Power', 'Motor Loads'])
@@ -2187,6 +2420,69 @@ class MEPGraphGenerator:
             print("Electrical constraint violations found and fixed:")
             for violation in violations:
                 print(f"  {violation}")
+    
+    def _validate_load_connections(self, G: nx.DiGraph):
+        """Validate that each load has exactly one feeding panelboard connection."""
+        violations = []
+        fixes = []
+        
+        for node_id, attrs in G.nodes(data=True):
+            if 'load' in node_id:
+                predecessors = list(G.predecessors(node_id))
+                
+                if len(predecessors) == 0:
+                    # Load with no feeding connection
+                    violations.append(f"Load {node_id}: No feeding connection")
+                    
+                    # Fix: Connect to closest panelboard
+                    panelboards = [n for n in G.nodes() if 'panelboard' in n]
+                    if panelboards:
+                        closest_panelboard = self._find_closest_equipment(G, node_id, panelboards)
+                        if closest_panelboard:
+                            # Create new edge ID
+                            existing_edge_count = G.number_of_edges()
+                            edge_id = f"connection_{existing_edge_count + 1:03d}"
+                            self._add_connection(G, edge_id, closest_panelboard, node_id, 'General Power')
+                            fixes.append(f"  Fixed: Connected {node_id} to closest panelboard {closest_panelboard}")
+                
+                elif len(predecessors) > 1:
+                    # Load with multiple feeding connections
+                    violations.append(f"Load {node_id}: Multiple feeding connections from {predecessors}")
+                    
+                    # Fix: Remove all but the closest panelboard connection
+                    panelboard_predecessors = [p for p in predecessors if 'panelboard' in p]
+                    if panelboard_predecessors:
+                        # Keep the closest panelboard, remove others
+                        closest_panelboard = self._find_closest_equipment(G, node_id, panelboard_predecessors)
+                        
+                        for pred in predecessors:
+                            if pred != closest_panelboard:
+                                G.remove_edge(pred, node_id)
+                                fixes.append(f"  Fixed: Removed connection from {pred} to {node_id}")
+                
+                else:
+                    # Single predecessor - check if it's a panelboard
+                    feeder = predecessors[0]
+                    if 'panelboard' not in feeder:
+                        violations.append(f"Load {node_id}: Fed by non-panelboard {feeder}")
+                        
+                        # Fix: Replace with connection to closest panelboard
+                        panelboards = [n for n in G.nodes() if 'panelboard' in n]
+                        if panelboards:
+                            closest_panelboard = self._find_closest_equipment(G, node_id, panelboards)
+                            if closest_panelboard and closest_panelboard != feeder:
+                                G.remove_edge(feeder, node_id)
+                                existing_edge_count = G.number_of_edges()
+                                edge_id = f"connection_{existing_edge_count + 1:03d}"
+                                self._add_connection(G, edge_id, closest_panelboard, node_id, 'General Power')
+                                fixes.append(f"  Fixed: Replaced connection from {feeder} to {closest_panelboard} for {node_id}")
+        
+        if violations:
+            print("Load connection violations found and fixed:")
+            for violation in violations:
+                print(f"  {violation}")
+            for fix in fixes:
+                print(fix)
     
 
 def main():
