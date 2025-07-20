@@ -46,11 +46,19 @@ def apply_risk_scores_to_graph(graph):
     Parameters:
     graph (networkx.DiGraph): The input directed graph.
     """
-    if not isinstance(graph, nx.DiGraph):
-        raise ValueError("The graph must be a directed graph.")
+    try:
+        if not isinstance(graph, nx.DiGraph):
+            raise ValueError("The graph must be a directed graph.")
 
-    risk_scores = calculate_risk_scores(graph)
-    for node, score in risk_scores.items():
-        graph.nodes[node]['risk_score'] = score
+        risk_scores = calculate_risk_scores(graph)
+        for node, score in risk_scores.items():
+            graph.nodes[node]['risk_score'] = score
+
+    except Exception as e:
+        # Apply a default risk score if calculation fails
+        print(f"Error calculating risk scores: {e}")
+        default_score = 0
+        for node in graph.nodes:
+            graph.nodes[node]['risk_score'] = default_score
 
     return graph
