@@ -74,6 +74,34 @@ import networkx as nx
 from typing import List, Dict, Tuple, Any, Optional
 from dataclasses import dataclass
 
+# --- Constants ---
+# Standard equipment sizes in Amps for distribution panels and switchboards.
+STANDARD_EQUIPMENT_SIZES = [
+    60,
+    100,
+    150,
+    200,
+    225,
+    300,
+    400,
+    500,
+    600,
+    800,
+    1000,
+    1200,
+    1600,
+    2000,
+    2500,
+    3000,
+    4000,
+    5000,
+    6000,
+    8000,
+    10000,
+]
+
+MAXIMUM_PANEL_SIZE = 800 # Any larger than this is considered a switchboard
+
 def main():
     """Main function for command-line usage."""
     import argparse
@@ -704,33 +732,36 @@ def connect_utility_to_main_panel(G, distribution_equipment, riser_locations):
 
 def connect_main_panels_vertically(G, distribution_equipment):
     """Connect main panels vertically in each riser."""
-    # For each riser, connect main panels from top floor down to ground floor
+    # For each riser, connect all main panels on upper floors to the main panel on the first (ground) floor
     # Assumes node ids are 'main_panel_f{floor}_r{riser_idx}'
-    # Get all floors and risers
     if not distribution_equipment:
         return
-    floors = sorted(distribution_equipment.keys(), reverse=True)  # top to bottom
+    floors = sorted(distribution_equipment.keys())  # ascending: 0 (ground) up
     if not floors:
         return
     riser_indices = set()
     for risers in distribution_equipment.values():
         riser_indices.update(risers.keys())
     for riser_idx in riser_indices:
-        # Collect all main panel node ids for this riser, sorted by floor descending
-        main_panels = []
+        # Find the main panel node id for the ground floor (floor 0)
+        ground_floor = 0
+        ground_panel_id = None
+        eq_list = distribution_equipment.get(ground_floor, {}).get(riser_idx, [])
+        for eq in eq_list:
+            if eq.get('type') == 'main_panel':
+                ground_panel_id = f"main_panel_f{ground_floor}_r{riser_idx}"
+                break
+        if not ground_panel_id:
+            continue
+        # For all upper floors, connect their main panels to the ground floor main panel
         for floor in floors:
+            if floor == ground_floor:
+                continue
             eq_list = distribution_equipment.get(floor, {}).get(riser_idx, [])
             for eq in eq_list:
                 if eq.get('type') == 'main_panel':
-                    node_id = f"main_panel_f{floor}_r{riser_idx}"
-                    main_panels.append((floor, node_id))
-        # Sort by floor descending (top to bottom)
-        main_panels.sort(reverse=True)
-        # Connect each main panel to the one below
-        for i in range(len(main_panels) - 1):
-            upper_node = main_panels[i][1]
-            lower_node = main_panels[i + 1][1]
-            G.add_edge(lower_node, upper_node, description='Vertical main panel connection')
+                    upper_panel_id = f"main_panel_f{floor}_r{riser_idx}"
+                    G.add_edge(ground_panel_id, upper_panel_id, description='Main panel feed from ground floor')
 
 def connect_equipment_hierarchy(G, distribution_equipment):
     """Connect equipment within each riser/floor (main panel → transformer → sub-panel, etc.)."""
