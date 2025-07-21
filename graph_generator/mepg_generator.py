@@ -401,45 +401,56 @@ def distribute_loads(building_attrs: Dict[str, Any], voltage_info: Dict[str, Any
     scale = total_load / sum(floor_loads)
     floor_loads = [fl * scale for fl in floor_loads]
 
+    print(f"Distributed floor loads: {floor_loads} (scaled to match total load {total_load})")
+
+    # Set bounds for end load type percentages of total floor load
+    minimum_end_load_percentage = 0.05  # Minimum 5% of floor load
+    maximum_end_load_percentage = 0.5  # Maximum 50% of floor load
+
     # 2. Assign end loads to each floor
     end_loads = []
     for floor_idx, floor_load in enumerate(floor_loads):
-        remaining = floor_load
-        floor_end_loads = []
         type_loads = {t["type"]: 0.0 for t in end_load_types}
         
-        # Assign loads in chunks until all floor load is distributed
-        while remaining > 0.01:  # Use a very small threshold to ensure all load is assigned
-            # Pick a random end load type
-            t = random.choice(end_load_types)
-            t_name = t["type"]
-            t_power = t["power"]
+        # Determine a breakdown of end loads for this floor
+        load_type_count = len(end_load_types)
+        percent_left = 1.0
+
+        # Assume all load types are present on each floor
+        for index, end_load_type in enumerate(end_load_types):
+            # Randomly determine how much of the floor load this type will take
+            if index == load_type_count - 1:  # Last type takes all remaining load
+                load_percentage = percent_left
+            else:
+                # Ensure we don't exceed the maximum percentage for remaining load types
+                max_percentage = min(maximum_end_load_percentage, 
+                                   percent_left - (load_type_count - index - 1) * minimum_end_load_percentage)
+                load_percentage = random.uniform(minimum_end_load_percentage, max_percentage)
             
-            # Adjust power to not exceed remaining load
-            if t_power > remaining:
-                t_power = remaining
+            load_power = floor_load * load_percentage
+            percent_left -= load_percentage
+
+            # Create end load entries - split the total power for this type across multiple individual loads
+            # Each individual load has the base power rating from end_load_types
+            individual_load_power = end_load_type["power"]
+            num_individual_loads = max(1, int(round(load_power / individual_load_power)))
+            actual_individual_power = load_power / num_individual_loads
             
-            # Assign voltage level for this end load from available voltages
-            available_voltages = voltage_info['available_voltages']
-            voltage = random.choice(available_voltages)
+            for load_idx in range(num_individual_loads):
+                end_load_entry = {
+                    "floor": floor_idx,
+                    "type": end_load_type["type"],
+                    "power": actual_individual_power,
+                    "voltage": random.choice(voltage_info['available_voltages'])  # Randomly assign voltage from available voltages
+                }
+                end_loads.append(end_load_entry)
             
-            # Create end load dict
-            end_load = {
-                "floor": floor_idx,
-                "type": t_name,
-                "power": t_power,
-                "voltage": voltage
-            }
-            floor_end_loads.append(end_load)
-            type_loads[t_name] += t_power
-            remaining -= t_power
+            type_loads[end_load_type["type"]] += load_power
             
-        # If there's any tiny remaining load due to floating point precision, 
-        # add it to the last end load
-        if remaining > 0 and floor_end_loads:
-            floor_end_loads[-1]["power"] += remaining
-            
-        end_loads.extend(floor_end_loads)
+        # Ensure total load matches floor load (within tolerance)
+        total_type_load = sum(type_loads.values())
+        if abs(total_type_load - floor_load) > 0.01:
+            raise ValueError(f"Total end load power for floor {floor_idx} does not match floor load: {total_type_load:.3f} != {floor_load:.3f}")
 
     return floor_loads, end_loads
 
@@ -859,6 +870,16 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
         dists = [math.hypot(x - rx, y - ry) if rx is not None and ry is not None else float('inf') for rx, ry in riser_locations]
         return dists.index(min(dists))
 
+    # Helper function to map load voltage to panel voltage
+    def get_panel_voltage_for_load(load_voltage):
+        """Map load voltage to the appropriate panel voltage that can serve it."""
+        if load_voltage == 120:
+            return 208  # 120V loads connect to 208V panels
+        elif load_voltage == 277:
+            return 480  # 277V loads connect to 480V panels
+        else:
+            return load_voltage  # 208V and 480V loads connect to panels of same voltage
+
     group_map = defaultdict(list)
     for end_load in end_loads:
         floor = end_load['floor']
@@ -869,7 +890,9 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
         riser_idx = nearest_riser_idx(x, y)
         t = end_load['type']
         v = end_load['voltage']
-        group_map[(floor, riser_idx, t, v)].append({'power': end_load['power'], 'x': x, 'y': y})
+        # Map load voltage to the panel voltage that can serve it
+        panel_voltage = get_panel_voltage_for_load(v)
+        group_map[(floor, riser_idx, t, panel_voltage)].append({'power': end_load['power'], 'x': x, 'y': y, 'load_voltage': v})
 
     for floor, risers in distribution_equipment.items():
         for riser_idx, equipment_list in risers.items():
@@ -888,9 +911,9 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                 elif eq_type == 'main_panel':
                     main_panel_id = f"main_panel_f{floor}_r{riser_idx}"
 
-            # For each sub-panel, add clustered end loads for its type/voltage
-            for (load_type, voltage), sub_panel_id in sub_panel_map.items():
-                group = group_map.get((floor, riser_idx, load_type, voltage), [])
+            # For each sub-panel, add clustered end loads for its type/panel_voltage
+            for (load_type, panel_voltage), sub_panel_id in sub_panel_map.items():
+                group = group_map.get((floor, riser_idx, load_type, panel_voltage), [])
                 N = len(group)
                 if N == 0:
                     continue
@@ -898,10 +921,12 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                 # Split group into clusters
                 if num_clusters == 1:
                     total_power = sum(e['power'] for e in group)
+                    # Use the original load voltage (not panel voltage) for the end load node
+                    load_voltage = group[0]['load_voltage'] if group else panel_voltage
                     x = random.uniform(0, building_length)
                     y = random.uniform(0, building_width)
                     z = floor * floor_height
-                    end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{voltage}"
+                    end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{load_voltage}"
                     if end_load_id not in created_nodes:
                         G.add_node(
                             end_load_id,
@@ -909,7 +934,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                             floor=floor,
                             riser=riser_idx,
                             load_type=load_type,
-                            voltage=voltage,
+                            voltage=load_voltage,  # Use original load voltage
                             x=x,
                             y=y,
                             z=z,
@@ -926,11 +951,13 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                         if not cluster:
                             continue
                         total_power = sum(e['power'] for e in cluster)
+                        # Use the original load voltage from the first item in cluster
+                        load_voltage = cluster[0]['load_voltage']
                         # Use mean x/y for cluster
                         x = sum(e['x'] for e in cluster) / len(cluster)
                         y = sum(e['y'] for e in cluster) / len(cluster)
                         z = floor * floor_height
-                        end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{voltage}_c{i}"
+                        end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{load_voltage}_c{i}"
                         if end_load_id not in created_nodes:
                             G.add_node(
                                 end_load_id,
@@ -938,7 +965,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                                 floor=floor,
                                 riser=riser_idx,
                                 load_type=load_type,
-                                voltage=voltage,
+                                voltage=load_voltage,  # Use original load voltage
                                 x=x,
                                 y=y,
                                 z=z,
@@ -958,6 +985,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                         break
                 if main_loads:
                     for load_type, vdict in main_loads.items():
+                        # Check if main panel voltage can serve any loads for this load type
                         group = group_map.get((floor, riser_idx, load_type, main_voltage), [])
                         N = len(group)
                         if N == 0:
@@ -965,10 +993,12 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                         num_clusters = max(1, int(round((1 - cluster_strength) * N + cluster_strength * 1)))
                         if num_clusters == 1:
                             total_power = sum(e['power'] for e in group)
+                            # Use the original load voltage (not main panel voltage) for the end load node
+                            load_voltage = group[0]['load_voltage'] if group else main_voltage
                             x = random.uniform(0, building_length)
                             y = random.uniform(0, building_width)
                             z = floor * floor_height
-                            end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{main_voltage}"
+                            end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{load_voltage}"
                             if end_load_id not in created_nodes:
                                 G.add_node(
                                     end_load_id,
@@ -976,7 +1006,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                                     floor=floor,
                                     riser=riser_idx,
                                     load_type=load_type,
-                                    voltage=main_voltage,
+                                    voltage=load_voltage,  # Use original load voltage
                                     x=x,
                                     y=y,
                                     z=z,
@@ -992,10 +1022,12 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                                 if not cluster:
                                     continue
                                 total_power = sum(e['power'] for e in cluster)
+                                # Use the original load voltage from the first item in cluster
+                                load_voltage = cluster[0]['load_voltage']
                                 x = sum(e['x'] for e in cluster) / len(cluster)
                                 y = sum(e['y'] for e in cluster) / len(cluster)
                                 z = floor * floor_height
-                                end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{main_voltage}_c{i}"
+                                end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{load_voltage}_c{i}"
                                 if end_load_id not in created_nodes:
                                     G.add_node(
                                         end_load_id,
@@ -1003,7 +1035,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                                         floor=floor,
                                         riser=riser_idx,
                                         load_type=load_type,
-                                        voltage=main_voltage,
+                                        voltage=load_voltage,  # Use original load voltage
                                         x=x,
                                         y=y,
                                         z=z,
