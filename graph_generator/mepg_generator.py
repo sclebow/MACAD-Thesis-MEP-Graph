@@ -258,7 +258,7 @@ def generate_mep_graph(building_attributes: Dict[str, Any]) -> nx.DiGraph:
     distribution_equipment = place_distribution_equipment(building_attrs, riser_floor_attributes, voltage_info)
 
     # 8. Connect the nodes
-    graph = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info)
+    graph = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info, end_loads, 1.0)
 
     return graph
 
@@ -344,21 +344,41 @@ def locate_risers(building_attrs: Dict[str, Any], num_risers: int) -> List[Tuple
 
 def determine_voltage_level(building_attrs: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Step 4: Determine voltage level based on total load.
+    Step 4: Determine the complete voltage system for the building based on load.
+    Returns voltage system information including available voltages for end loads.
     """
     total_load = building_attrs['total_load']
+    
     if total_load <= 288.872:
-        return {'voltage_3phase': 208, 'voltage_1phase': 120, 'voltage_level': '120/208V'}
+        return {
+            'voltage_3phase': 208,
+            'voltage_1phase': 120,
+            'voltage_level': '120/208V',
+            'primary_voltage': 208,
+            'available_voltages': [208, 120],  # End loads can use these voltages
+            'high_voltages': [],  # No high voltage in 208V system
+            'low_voltages': [208, 120],  # Both are considered "low" voltage
+            'needs_step_down': False
+        }
     else:
-        return {'voltage_3phase': 480, 'voltage_1phase': 277, 'voltage_level': '277/480V'}
+        return {
+            'voltage_3phase': 480,
+            'voltage_1phase': 277,
+            'voltage_level': '277/480V',
+            'primary_voltage': 480,
+            'available_voltages': [480, 277, 208, 120],  # End loads can use any of these
+            'high_voltages': [480, 277],  # High voltage side of system
+            'low_voltages': [208, 120],   # Low voltage side (requires step-down)
+            'needs_step_down': True
+        }
 
 def distribute_loads(building_attrs: Dict[str, Any], voltage_info: Dict[str, Any], variation: float = 0.1) -> Tuple[List[float], List[Dict[str, Any]]]:
     """
     Step 5: Distribute loads across floors and assign end loads.
     - Split total load across floors with ±variation (default 10%), sum matches total.
-    - Assign end loads (lighting, receptacles, hvac, kitchen, specialty) to each floor.
+    - Assign end loads (lighting, receptacles, hvac) to each floor.
     - Each end load type has a power rating.
-    - No more than 50% of a floor's load can be a single end load type.
+    - All floor load is distributed among end loads to ensure total matches exactly.
     Returns: (floor_loads, end_loads)
     """
     total_load = building_attrs['total_load']
@@ -386,26 +406,23 @@ def distribute_loads(building_attrs: Dict[str, Any], voltage_info: Dict[str, Any
     for floor_idx, floor_load in enumerate(floor_loads):
         remaining = floor_load
         floor_end_loads = []
-        # To avoid >50% of a type, set max for each type
-        max_type_load = 0.5 * floor_load
         type_loads = {t["type"]: 0.0 for t in end_load_types}
-        while remaining > 0.2:  # stop when remaining load is very small
+        
+        # Assign loads in chunks until all floor load is distributed
+        while remaining > 0.01:  # Use a very small threshold to ensure all load is assigned
             # Pick a random end load type
             t = random.choice(end_load_types)
             t_name = t["type"]
             t_power = t["power"]
-            # Don't exceed max for this type
-            if type_loads[t_name] + t_power > max_type_load:
-                continue
-            # Don't exceed remaining load
+            
+            # Adjust power to not exceed remaining load
             if t_power > remaining:
                 t_power = remaining
-            # Assign voltage level for this end load
-            if voltage_info['voltage_level'] == '120/208V':
-                possible_voltages = [208, 120]
-            else:
-                possible_voltages = [480, 277, 208, 120]
-            voltage = random.choice(possible_voltages)
+            
+            # Assign voltage level for this end load from available voltages
+            available_voltages = voltage_info['available_voltages']
+            voltage = random.choice(available_voltages)
+            
             # Create end load dict
             end_load = {
                 "floor": floor_idx,
@@ -416,6 +433,12 @@ def distribute_loads(building_attrs: Dict[str, Any], voltage_info: Dict[str, Any
             floor_end_loads.append(end_load)
             type_loads[t_name] += t_power
             remaining -= t_power
+            
+        # If there's any tiny remaining load due to floating point precision, 
+        # add it to the last end load
+        if remaining > 0 and floor_end_loads:
+            floor_end_loads[-1]["power"] += remaining
+            
         end_loads.extend(floor_end_loads)
 
     return floor_loads, end_loads
@@ -472,13 +495,14 @@ def determine_riser_attributes(building_attrs: Dict[str, Any], riser_locations: 
 def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_attributes: Dict, voltage_info: Dict[str, Any]) -> Dict:
     """
     Step 7: Place distribution equipment in each riser on each floor.
-    For each riser on each floor, determine what equipment is needed based on the load types and voltages.
-    Returns a dict: {floor: {riser_idx: [equipment_dict, ...]}}
+    Uses the voltage system information to determine equipment placement strategy.
     """
     RISER_EQUIPMENT_AREA_SIZE = 6.0  # meters (should match value in determine_riser_attributes)
     equipment = {}
-    main_voltage = voltage_info['voltage_3phase']
-    is_480_building = (main_voltage == 480)
+    primary_voltage = voltage_info['primary_voltage']
+    needs_step_down = voltage_info['needs_step_down']
+    high_voltages = voltage_info['high_voltages']
+    low_voltages = voltage_info['low_voltages']
     riser_bounds = riser_floor_attributes.get('_riser_bounds', None)
     half_area = RISER_EQUIPMENT_AREA_SIZE / 2.0
 
@@ -530,38 +554,43 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
         for riser_idx, load_types in risers.items():
             riser_equipment = []
             used_positions = set()
-            # Always add a main distribution panel at the building's main voltage
+            # Always add a main distribution panel at the building's primary voltage
             x, y = unique_xy(riser_idx, used_positions)
             riser_equipment.append({
                 "type": "main_panel",
-                "voltage": main_voltage,
+                "voltage": primary_voltage,
                 "loads": load_types,
                 "x": x,
                 "y": y
             })
 
-            for t, vdict in load_types.items():
-                if is_480_building:
-                    high_v_power = sum(p for v, p in vdict.items() if v in [480, 277])
-                    low_v_power = sum(p for v, p in vdict.items() if v in [208, 120])
+            # Use flexible logic based on voltage system
+            for load_type, vdict in load_types.items():
+                if needs_step_down:
+                    # For systems that need step-down (like 480V systems)
+                    high_v_power = sum(p for v, p in vdict.items() if v in high_voltages)
+                    low_v_power = sum(p for v, p in vdict.items() if v in low_voltages)
+                    
                     if high_v_power > 0 and low_v_power > 0:
-                        # 480V sub-panel (parent: main_panel)
-                        add_panel(riser_equipment, "sub_panel", 480, t, high_v_power, "main_panel", riser_idx, used_positions)
-                        # transformer (parent: sub_panel_480_{t})
-                        add_transformer(riser_equipment, 480, 208, t, low_v_power, f"sub_panel_480_{t}", riser_idx, used_positions)
-                        # 208V sub-panel (parent: transformer_208_{t})
-                        add_panel(riser_equipment, "sub_panel", 208, t, low_v_power, f"transformer_208_{t}", riser_idx, used_positions)
+                        # Need both high voltage sub-panel and step-down for low voltage
+                        add_panel(riser_equipment, "sub_panel", primary_voltage, load_type, high_v_power, "main_panel", riser_idx, used_positions)
+                        add_transformer(riser_equipment, primary_voltage, low_voltages[0], load_type, low_v_power, f"sub_panel_{primary_voltage}_{load_type}", riser_idx, used_positions)
+                        add_panel(riser_equipment, "sub_panel", low_voltages[0], load_type, low_v_power, f"transformer_{low_voltages[0]}_{load_type}", riser_idx, used_positions)
                     elif high_v_power > 0:
-                        add_panel(riser_equipment, "sub_panel", 480, t, high_v_power, "main_panel", riser_idx, used_positions)
+                        # Only high voltage loads
+                        add_panel(riser_equipment, "sub_panel", primary_voltage, load_type, high_v_power, "main_panel", riser_idx, used_positions)
                     elif low_v_power > 0:
-                        add_transformer(riser_equipment, 480, 208, t, low_v_power, "main_panel", riser_idx, used_positions)
-                        add_panel(riser_equipment, "sub_panel", 208, t, low_v_power, f"transformer_208_{t}", riser_idx, used_positions)
+                        # Only low voltage loads, need step-down from main
+                        add_transformer(riser_equipment, primary_voltage, low_voltages[0], load_type, low_v_power, "main_panel", riser_idx, used_positions)
+                        add_panel(riser_equipment, "sub_panel", low_voltages[0], load_type, low_v_power, f"transformer_{low_voltages[0]}_{load_type}", riser_idx, used_positions)
                 else:
-                    # For 208/120V building, only add sub-panels for 208 or 480V (not 120V)
+                    # For systems that don't need step-down (like 208V systems)
+                    # Only add sub-panels for voltages that aren't the primary and aren't single-phase low voltage
                     for v, total_power in vdict.items():
-                        if v == main_voltage or v not in [208, 480]:
-                            continue
-                        add_panel(riser_equipment, "sub_panel", v, t, total_power, "main_panel", riser_idx, used_positions)
+                        if v == primary_voltage or v == voltage_info['voltage_1phase']:
+                            continue  # Skip primary voltage and single-phase (served directly by main panel)
+                        add_panel(riser_equipment, "sub_panel", v, load_type, total_power, "main_panel", riser_idx, used_positions)
+            
             equipment[floor][riser_idx] = riser_equipment
     return equipment
 
@@ -1016,8 +1045,8 @@ def calculate_amperage(G: nx.DiGraph, voltage_info: Dict[str, Any]) -> None:
     import math
 
     def is_three_phase(voltage):
-        # 3-phase voltages are 480 and 208
-        return str(voltage) in ["480", "208", 480, 208]
+        # Three-phase voltage is the primary 3-phase voltage of the system
+        return voltage == voltage_info['voltage_3phase']
 
     def calc_amperage(power_kw, voltage):
         if not voltage or voltage == 0:
