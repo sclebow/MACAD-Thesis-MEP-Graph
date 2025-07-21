@@ -585,11 +585,13 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
                         add_panel(riser_equipment, "sub_panel", low_voltages[0], load_type, low_v_power, f"transformer_{low_voltages[0]}_{load_type}", riser_idx, used_positions)
                 else:
                     # For systems that don't need step-down (like 208V systems)
-                    # Only add sub-panels for voltages that aren't the primary and aren't single-phase low voltage
-                    for v, total_power in vdict.items():
-                        if v == primary_voltage or v == voltage_info['voltage_1phase']:
-                            continue  # Skip primary voltage and single-phase (served directly by main panel)
-                        add_panel(riser_equipment, "sub_panel", v, load_type, total_power, "main_panel", riser_idx, used_positions)
+                    # Create sub-panels for each load type, using the appropriate voltage for that load type
+                    total_power = sum(vdict.values())
+                    if total_power > 0:
+                        # Determine the voltage to use for this load type's sub-panel
+                        # Use the highest voltage available for this load type
+                        load_voltage = max(vdict.keys())
+                        add_panel(riser_equipment, "sub_panel", load_voltage, load_type, total_power, "main_panel", riser_idx, used_positions)
             
             equipment[floor][riser_idx] = riser_equipment
     return equipment
