@@ -120,6 +120,62 @@ STANDARD_TRANSFORMER_SIZES = [
     500,
 ]
 
+# --- Node ID Abbreviation Functions ---
+def abbreviate_equipment_type(eq_type):
+    """Convert equipment type to abbreviated form."""
+    abbreviations = {
+        'main_panel': 'MP',
+        'sub_panel': 'SP',
+        'transformer': 'TR',
+        'end_load': 'EL',
+        'utility_transformer': 'UT',
+        'panel': 'P',
+        'switchboard': 'SB'
+    }
+    return abbreviations.get(eq_type, eq_type)
+
+def abbreviate_load_type(load_type):
+    """Convert load type to abbreviated form."""
+    abbreviations = {
+        'lighting': 'L',
+        'receptacles': 'R',
+        'hvac': 'H',
+        'kitchen': 'K',
+        'specialty': 'S'
+    }
+    return abbreviations.get(load_type, load_type)
+
+def create_abbreviated_node_id(eq_type, floor=None, riser=None, voltage=None, load_type=None, to_voltage=None, cluster_id=None):
+    """Create abbreviated node ID using compact notation."""
+    type_abbrev = abbreviate_equipment_type(eq_type)
+    
+    if eq_type == 'utility_transformer':
+        return 'UT'
+    
+    # Base ID with floor and riser
+    base_id = f"{type_abbrev}{floor}.{riser}"
+    
+    # Add voltage and load type for specific equipment
+    if eq_type == 'transformer':
+        load_abbrev = abbreviate_load_type(load_type) if load_type else ''
+        return f"{base_id}.{to_voltage}.{load_abbrev}" if to_voltage and load_abbrev else base_id
+    elif eq_type in ['sub_panel', 'panel', 'switchboard']:
+        load_abbrev = abbreviate_load_type(load_type) if load_type else ''
+        if voltage and load_abbrev:
+            return f"{base_id}.{voltage}.{load_abbrev}"
+        elif voltage:
+            return f"{base_id}.{voltage}"
+        else:
+            return base_id
+    elif eq_type == 'end_load':
+        load_abbrev = abbreviate_load_type(load_type) if load_type else ''
+        if cluster_id is not None:
+            return f"{base_id}.{voltage}.{load_abbrev}.c{cluster_id}" if voltage and load_abbrev else f"{base_id}.c{cluster_id}"
+        else:
+            return f"{base_id}.{voltage}.{load_abbrev}" if voltage and load_abbrev else base_id
+    else:
+        return base_id
+
 def main():
     """Main function for command-line usage."""
     import argparse
@@ -665,8 +721,9 @@ def add_utility_transformer(G, building_attrs):
     x = -5.0
     y = width / 2.0
     z = 0.0
+    node_id = create_abbreviated_node_id('utility_transformer')
     G.add_node(
-        "utility_transformer",
+        node_id,
         type="utility_transformer",
         x=x,
         y=y,
@@ -683,14 +740,17 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
             for eq_idx, eq in enumerate(equipment_list):
                 eq_type = eq.get('type', 'equipment')
                 voltage = eq.get('voltage', '')
-                node_id = f"{eq_type}_f{floor}_r{riser_idx}"
+                load_type = eq.get('load_type', '')
+                
                 # Use x/y from equipment dict if present, else fallback
                 x = eq.get('x', None)
                 y = eq.get('y', None)
                 if x is None or y is None:
                     x, y = riser_locations[riser_idx]
+                
                 if eq_type == 'transformer':
-                    node_id += f"_{eq.get('to_voltage','')}_{eq.get('load_type','')}"
+                    to_voltage = eq.get('to_voltage', '')
+                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, to_voltage)
                     # Add all transformer attributes
                     G.add_node(
                         node_id,
@@ -698,8 +758,8 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
                         floor=floor,
                         riser=riser_idx,
                         from_voltage=eq.get('from_voltage',''),
-                        to_voltage=eq.get('to_voltage',''),
-                        load_type=eq.get('load_type',''),
+                        to_voltage=to_voltage,
+                        load_type=load_type,
                         power=eq.get('power',0.0),
                         parent=eq.get('parent',''),
                         x=x,
@@ -707,14 +767,14 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
                         z=z
                     )
                 elif eq_type == 'sub_panel':
-                    node_id += f"_{voltage}_{eq.get('load_type','')}"
+                    node_id = create_abbreviated_node_id('sub_panel', floor, riser_idx, voltage, load_type)
                     G.add_node(
                         node_id,
                         type=eq_type,
                         floor=floor,
                         riser=riser_idx,
                         voltage=voltage,
-                        load_type=eq.get('load_type',''),
+                        load_type=load_type,
                         power=eq.get('power',0.0),
                         parent=eq.get('parent',''),
                         x=x,
@@ -722,6 +782,7 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
                         z=z
                     )
                 else:
+                    node_id = create_abbreviated_node_id(eq_type, floor, riser_idx, voltage, load_type)
                     # Remove x/y from eq dict to avoid duplicate keys
                     eq_clean = {k: v for k, v in eq.items() if k not in ['type', 'voltage', 'loads', 'load_type', 'x', 'y']}
                     G.add_node(
@@ -744,13 +805,14 @@ def connect_utility_to_main_panel(G, distribution_equipment, riser_locations):
     for riser_idx, equipment_list in distribution_equipment.get(ground_floor, {}).items():
         for eq in equipment_list:
             if eq.get('type') == 'main_panel':
-                node_id = f"main_panel_f{ground_floor}_r{riser_idx}"
+                node_id = create_abbreviated_node_id('main_panel', ground_floor, riser_idx, eq.get('voltage', ''))
                 main_panel_nodes.append((node_id, riser_idx))
     if not main_panel_nodes:
         return
     # Get utility transformer coordinates
-    util_x = G.nodes['utility_transformer']['x']
-    util_y = G.nodes['utility_transformer']['y']
+    util_node_id = create_abbreviated_node_id('utility_transformer')
+    util_x = G.nodes[util_node_id]['x']
+    util_y = G.nodes[util_node_id]['y']
     # Find nearest main panel
     min_dist = float('inf')
     nearest_node = None
@@ -761,12 +823,11 @@ def connect_utility_to_main_panel(G, distribution_equipment, riser_locations):
             min_dist = dist
             nearest_node = node_id
     if nearest_node:
-        G.add_edge('utility_transformer', nearest_node, description='Utility to main panel connection')
+        G.add_edge(util_node_id, nearest_node, description='Utility to main panel connection')
 
 def connect_main_panels_vertically(G, distribution_equipment):
     """Connect main panels vertically in each riser."""
     # For each riser, connect all main panels on upper floors to the main panel on the first (ground) floor
-    # Assumes node ids are 'main_panel_f{floor}_r{riser_idx}'
     if not distribution_equipment:
         return
     floors = sorted(distribution_equipment.keys())  # ascending: 0 (ground) up
@@ -782,7 +843,7 @@ def connect_main_panels_vertically(G, distribution_equipment):
         eq_list = distribution_equipment.get(ground_floor, {}).get(riser_idx, [])
         for eq in eq_list:
             if eq.get('type') == 'main_panel':
-                ground_panel_id = f"main_panel_f{ground_floor}_r{riser_idx}"
+                ground_panel_id = create_abbreviated_node_id('main_panel', ground_floor, riser_idx, eq.get('voltage', ''))
                 break
         if not ground_panel_id:
             continue
@@ -793,7 +854,7 @@ def connect_main_panels_vertically(G, distribution_equipment):
             eq_list = distribution_equipment.get(floor, {}).get(riser_idx, [])
             for eq in eq_list:
                 if eq.get('type') == 'main_panel':
-                    upper_panel_id = f"main_panel_f{floor}_r{riser_idx}"
+                    upper_panel_id = create_abbreviated_node_id('main_panel', floor, riser_idx, eq.get('voltage', ''))
                     G.add_edge(ground_panel_id, upper_panel_id, description='Main panel feed from ground floor')
 
 def connect_equipment_hierarchy(G, distribution_equipment):
@@ -807,36 +868,40 @@ def connect_equipment_hierarchy(G, distribution_equipment):
                 eq_type = eq.get('type')
                 voltage = eq.get('voltage', '')
                 load_type = eq.get('load_type', '')
+                to_voltage = eq.get('to_voltage', '')
+                
                 if eq_type == 'main_panel':
-                    node_id = f"main_panel_f{floor}_r{riser_idx}"
+                    node_id = create_abbreviated_node_id('main_panel', floor, riser_idx, voltage)
                     node_id_map['main_panel'] = node_id
                 elif eq_type == 'sub_panel':
-                    node_id = f"sub_panel_f{floor}_r{riser_idx}_{voltage}_{load_type}"
+                    node_id = create_abbreviated_node_id('sub_panel', floor, riser_idx, voltage, load_type)
                     if voltage == 480:
                         node_id_map[f"sub_panel_480_{load_type}"] = node_id
                     elif voltage == 208:
                         node_id_map[f"sub_panel_208_{load_type}"] = node_id
                     # Add for other voltages if needed
                 elif eq_type == 'transformer':
-                    to_voltage = eq.get('to_voltage', '')
-                    node_id = f"transformer_f{floor}_r{riser_idx}_{to_voltage}_{load_type}"
+                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, to_voltage)
                     node_id_map[f"transformer_{to_voltage}_{load_type}"] = node_id
+            
             # Now connect each node to its parent using the parent field
             for eq in equipment_list:
                 eq_type = eq.get('type')
                 voltage = eq.get('voltage', '')
                 load_type = eq.get('load_type', '')
+                to_voltage = eq.get('to_voltage', '')
                 parent_key = eq.get('parent', None)
+                
                 # Determine this node's ID
                 if eq_type == 'main_panel':
-                    node_id = f"main_panel_f{floor}_r{riser_idx}"
+                    node_id = create_abbreviated_node_id('main_panel', floor, riser_idx, voltage)
                 elif eq_type == 'sub_panel':
-                    node_id = f"sub_panel_f{floor}_r{riser_idx}_{voltage}_{load_type}"
+                    node_id = create_abbreviated_node_id('sub_panel', floor, riser_idx, voltage, load_type)
                 elif eq_type == 'transformer':
-                    to_voltage = eq.get('to_voltage', '')
-                    node_id = f"transformer_f{floor}_r{riser_idx}_{to_voltage}_{load_type}"
+                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, to_voltage)
                 else:
                     continue
+                
                 # Connect to parent if parent_key is in map
                 if parent_key and parent_key in node_id_map:
                     parent_id = node_id_map[parent_key]
@@ -904,12 +969,12 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                 voltage = eq.get('voltage', '')
                 load_type = eq.get('load_type','')
                 if eq_type == 'sub_panel':
-                    node_id = f"sub_panel_f{floor}_r{riser_idx}_{voltage}_{load_type}"
+                    node_id = create_abbreviated_node_id('sub_panel', floor, riser_idx, voltage, load_type)
                     if node_id not in created_nodes:
                         sub_panel_map[(load_type, voltage)] = node_id
                         created_nodes.add(node_id)
                 elif eq_type == 'main_panel':
-                    main_panel_id = f"main_panel_f{floor}_r{riser_idx}"
+                    main_panel_id = create_abbreviated_node_id('main_panel', floor, riser_idx, voltage)
 
             # For each sub-panel, add clustered end loads for its type/panel_voltage
             for (load_type, panel_voltage), sub_panel_id in sub_panel_map.items():
@@ -926,7 +991,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                     x = random.uniform(0, building_length)
                     y = random.uniform(0, building_width)
                     z = floor * floor_height
-                    end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{load_voltage}"
+                    end_load_id = create_abbreviated_node_id('end_load', floor, riser_idx, load_voltage, load_type)
                     if end_load_id not in created_nodes:
                         G.add_node(
                             end_load_id,
@@ -957,7 +1022,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                         x = sum(e['x'] for e in cluster) / len(cluster)
                         y = sum(e['y'] for e in cluster) / len(cluster)
                         z = floor * floor_height
-                        end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{load_voltage}_c{i}"
+                        end_load_id = create_abbreviated_node_id('end_load', floor, riser_idx, load_voltage, load_type, cluster_id=i)
                         if end_load_id not in created_nodes:
                             G.add_node(
                                 end_load_id,
@@ -998,7 +1063,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                             x = random.uniform(0, building_length)
                             y = random.uniform(0, building_width)
                             z = floor * floor_height
-                            end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{load_voltage}"
+                            end_load_id = create_abbreviated_node_id('end_load', floor, riser_idx, load_voltage, load_type)
                             if end_load_id not in created_nodes:
                                 G.add_node(
                                     end_load_id,
@@ -1027,7 +1092,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                                 x = sum(e['x'] for e in cluster) / len(cluster)
                                 y = sum(e['y'] for e in cluster) / len(cluster)
                                 z = floor * floor_height
-                                end_load_id = f"end_load_f{floor}_r{riser_idx}_{load_type}_{load_voltage}_c{i}"
+                                end_load_id = create_abbreviated_node_id('end_load', floor, riser_idx, load_voltage, load_type, cluster_id=i)
                                 if end_load_id not in created_nodes:
                                     G.add_node(
                                         end_load_id,
