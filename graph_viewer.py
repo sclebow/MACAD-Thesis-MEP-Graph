@@ -10,9 +10,12 @@ import os
 import pandas as pd
 import random
 import math
+import datetime
 
 # Import helper files
 from helpers.node_risk import *
+# Import MEP graph generator
+from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes
 
 pn.extension('plotly')
 pn.extension('jsoneditor')
@@ -82,7 +85,7 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
             
     return _hierarchy_pos(G, root, width, vert_gap, vert_loc, xcenter)
 
-def visualize_graph_two_d(graph):
+def visualize_graph_two_d(graph, use_full_names=False):
     try:
         # Select a valid root node (first node in the graph)
         if len(graph.nodes) == 0:
@@ -120,7 +123,9 @@ def visualize_graph_two_d(graph):
         edge_x += [x0, x1, None]
         edge_y += [y0, y1, None]
         # Create hover text for edges with all edge attributes
-        hover_text = f"{edge[0]} - {edge[1]}"
+        edge_0_name = graph.nodes[edge[0]].get('full_name', edge[0]) if use_full_names else edge[0]
+        edge_1_name = graph.nodes[edge[1]].get('full_name', edge[1]) if use_full_names else edge[1]
+        hover_text = f"{edge_0_name} - {edge_1_name}"
         edge_attrs = graph.edges[edge]
         if edge_attrs:
             hover_text += "<br>" + "<br>".join([f"{k}: {v}" for k, v in edge_attrs.items()])
@@ -156,10 +161,12 @@ def visualize_graph_two_d(graph):
         x, y = pos[node]
         node_x.append(x)
         node_y.append(y)
-        names.append(node)
+        # Use full name or short name based on toggle
+        display_name = attrs.get('full_name', node) if use_full_names else node
+        names.append(display_name)
         node_type = attrs.get('type', 'Unknown')
         node_type_list.append(node_type)
-        hover = f"{node}<br>Type: {node_type}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items() if k != 'type'])
+        hover = f"{display_name}<br>Type: {node_type}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items() if k not in ['type', 'full_name']])
         node_text.append(hover)
 
     # Use propagated_power to scale node size
@@ -209,7 +216,7 @@ def visualize_graph_two_d(graph):
                     ))
     return fig
 
-def visualize_graph_three_d(graph):
+def visualize_graph_three_d(graph, use_full_names=False):
     """
     Visualizes a NetworkX graph in 3D using Plotly.
     Uses the x, y, z coordinates of nodes for 3D positioning.
@@ -241,10 +248,12 @@ def visualize_graph_three_d(graph):
         node_x.append(x)
         node_y.append(y)
         node_z.append(z)
-        names.append(node)
+        # Use full name or short name based on toggle
+        display_name = attrs.get('full_name', node) if use_full_names else node
+        names.append(display_name)
         node_type = attrs.get('type', 'Unknown')
         node_type_list.append(node_type)
-        hover = f"{node}<br>Type: {node_type}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items() if k != 'type'])
+        hover = f"{display_name}<br>Type: {node_type}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items() if k not in ['type', 'full_name']])
         node_text.append(hover)
 
     # Set axis ranges to ensure equal scale
@@ -288,7 +297,10 @@ def visualize_graph_three_d(graph):
         edge_marker_x.extend([(x0 + x1) / 2, bend_x, bend_x])
         edge_marker_y.extend([(y0 + y1) / 2, bend_y, bend_y])
         edge_marker_z.extend([z0, bend_z, mid_z])
-        hover_text = f"{edge[0]} - {edge[1]}"
+        # Create hover text for edges using display names
+        edge_0_name = graph.nodes[edge[0]].get('full_name', edge[0]) if use_full_names else edge[0]
+        edge_1_name = graph.nodes[edge[1]].get('full_name', edge[1]) if use_full_names else edge[1]
+        hover_text = f"{edge_0_name} - {edge_1_name}"
         edge_attrs = graph.edges[edge]
         if edge_attrs:
             hover_text += "<br>" + "<br>".join([f"{k}: {v}" for k, v in edge_attrs.items()])
@@ -497,12 +509,15 @@ def file_input_callback(event):
             G = nx.read_graphml(file_bytes)
             # Add risk scores to the graph
             G = add_risk_scores(G)
-            fig = visualize_graph_two_d(G)
+            fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
             plot_pane.object = fig
+            three_d_fig = visualize_graph_three_d(G, use_full_names=name_toggle.value)
+            three_d_pane.object = three_d_fig
             current_graph[0] = G
             update_dropdowns(G)
         except Exception as e:
             plot_pane.object = None
+            three_d_pane.object = None
             node_dropdown.options = []
             edge_dropdown.options = []
             node_info_pane.object = "Failed to load graph."
@@ -531,9 +546,9 @@ def autoload_example_graph():
                 # Check if the graph is a directed graph
                 if not isinstance(G, nx.DiGraph):
                     raise ValueError("The example graph must be a directed graph.")
-                fig = visualize_graph_two_d(G)
+                fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
                 plot_pane.object = fig
-                three_d_fig = visualize_graph_three_d(G)
+                three_d_fig = visualize_graph_three_d(G, use_full_names=name_toggle.value)
                 three_d_pane.object = three_d_fig
                 current_graph[0] = G
 
@@ -563,11 +578,141 @@ This application allows you to visualize and interact with MEP system graphs.
 # File upload widget
 file_input = pn.widgets.FileInput(accept='.mepg')
 file_input.param.watch(file_input_callback, 'value')
-app.append(pn.Column(
-    "### Load MEP Graph File",
-    file_input,
+
+# Name display toggle
+name_toggle = pn.widgets.Toggle(name="Use Full Names", value=False)
+
+def name_toggle_callback(event):
+    if current_graph[0] is not None:
+        # Refresh both plots with new name setting
+        plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=event.new)
+        three_d_pane.object = visualize_graph_three_d(current_graph[0], use_full_names=event.new)
+
+name_toggle.param.watch(name_toggle_callback, 'value')
+
+# --- Graph Generator Panel ---
+def generate_graph_callback(event):
+    try:
+        # Collect parameters from widgets
+        building_attributes = {
+            "total_load": int(total_load_slider.value),
+            "building_length": building_length_slider.value,
+            "building_width": building_width_slider.value,
+            "num_floors": int(num_floors_slider.value),
+            "floor_height": floor_height_slider.value,
+            "construction_year": int(construction_year_slider.value)
+        }
+        
+        # Set seed if provided
+        if seed_input.value:
+            random.seed(int(seed_input.value))
+        
+        # Generate the graph using the same process as main()
+        building_attrs = define_building_characteristics(building_attributes)
+        num_risers = determine_number_of_risers(building_attrs)
+        riser_locations = locate_risers(building_attrs, num_risers)
+        voltage_info = determine_voltage_level(building_attrs)
+        floor_loads, end_loads = distribute_loads(building_attrs, voltage_info)
+        riser_floor_attributes = determine_riser_attributes(building_attrs, riser_locations, floor_loads, end_loads, voltage_info)
+        distribution_equipment = place_distribution_equipment(building_attrs, riser_floor_attributes, voltage_info)
+        cluster_strength = cluster_strength_slider.value
+        G = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info, end_loads, cluster_strength)
+        
+        # Add risk scores to the generated graph
+        G = add_risk_scores(G)
+        
+        # Update visualizations
+        fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
+        plot_pane.object = fig
+        three_d_fig = visualize_graph_three_d(G, use_full_names=name_toggle.value)
+        three_d_pane.object = three_d_fig
+        current_graph[0] = G
+        update_dropdowns(G)
+        
+        generator_status.object = "**Graph generated successfully!**"
+        generator_status.visible = True
+        
+    except Exception as e:
+        generator_status.object = f"**Error generating graph:** {e}"
+        generator_status.visible = True
+        pn.state.notifications.error(f"Failed to generate graph: {e}")
+
+# Generator input widgets with help text
+total_load_slider = pn.widgets.IntSlider(
+    name="Total Load (kW)", 
+    start=50, end=5000, step=50, value=1000
+)
+total_load_help = pn.pane.Markdown("*Total electrical load for the entire building. Higher loads result in more complex distribution systems with transformers and multiple voltage levels.*", margin=(0, 5))
+
+building_length_slider = pn.widgets.FloatSlider(
+    name="Building Length (m)", 
+    start=5.0, end=100.0, step=1.0, value=20.0
+)
+building_length_help = pn.pane.Markdown("*Length of the building in meters. Affects the placement and number of electrical risers needed for distribution.*", margin=(0, 5))
+
+building_width_slider = pn.widgets.FloatSlider(
+    name="Building Width (m)", 
+    start=5.0, end=100.0, step=1.0, value=20.0
+)
+building_width_help = pn.pane.Markdown("*Width of the building in meters. Combined with length, determines the building footprint and riser distribution strategy.*", margin=(0, 5))
+
+num_floors_slider = pn.widgets.IntSlider(
+    name="Number of Floors", 
+    start=1, end=20, step=1, value=4
+)
+num_floors_help = pn.pane.Markdown("*Number of floors in the building. More floors create taller electrical distribution systems with vertical risers.*", margin=(0, 5))
+
+floor_height_slider = pn.widgets.FloatSlider(
+    name="Floor Height (m)", 
+    start=2.0, end=6.0, step=0.1, value=3.5
+)
+floor_height_help = pn.pane.Markdown("*Height of each floor in meters. Affects the total building height and cable run lengths in the 3D visualization.*", margin=(0, 5))
+
+cluster_strength_slider = pn.widgets.FloatSlider(
+    name="Cluster Strength", 
+    start=0.0, end=1.0, step=0.05, value=0.95
+)
+cluster_strength_help = pn.pane.Markdown(
+    "*Controls how loads are grouped together as nodes.  Does not affect load distribution, but rather how the graph visualizes loads by grouping nearby, similar loads together as single nodes.*",
+    margin=(0, 5))
+
+construction_year_slider = pn.widgets.IntSlider(
+    name="Construction Year", 
+    start=1950, end=2030, step=1, value=datetime.datetime.now().year
+)
+construction_year_help = pn.pane.Markdown("*Year the building was constructed. This affects the baseline aging and maintenance attributes of all electrical equipment in the building.*", margin=(0, 5))
+
+seed_input = pn.widgets.TextInput(
+    name="Seed (optional)", 
+    placeholder="Enter number for reproducible results"
+)
+seed_help = pn.pane.Markdown("*Random seed for reproducible graph generation. Use the same seed to generate identical graphs with the same parameters.*", margin=(0, 5))
+
+generate_button = pn.widgets.Button(name="Generate Graph", button_type="primary")
+generate_button.on_click(generate_graph_callback)
+
+generator_status = pn.pane.Markdown(visible=False)
+
+generator_panel = pn.Column(
+    "### Generate New MEP Graph",
+    pn.Row(total_load_slider, total_load_help),
+    pn.Row(num_floors_slider, num_floors_help),
+    pn.Row(building_length_slider, building_length_help),
+    pn.Row(building_width_slider, building_width_help),
+    pn.Row(floor_height_slider, floor_height_help),
+    pn.Row(cluster_strength_slider, cluster_strength_help),
+    pn.Row(construction_year_slider, construction_year_help),
+    pn.Row(seed_input, seed_help),
+    generate_button,
+    generator_status,
     sizing_mode='stretch_width'
-))
+)
+
+generator_accordion = pn.Accordion(
+    ("Generate a New MEP Graph", generator_panel),
+    # active=0,
+    sizing_mode='stretch_width'
+)
 
 # Node selection dropdown and info
 selection_table_height = 400
@@ -606,8 +751,8 @@ def node_attr_df_callback(event):
             else:
                 current_graph[0].nodes[node][k] = v
         # Refresh visualizations after node attribute edit
-        plot_pane.object = visualize_graph_two_d(current_graph[0])
-        three_d_pane.object = visualize_graph_three_d(current_graph[0])
+        plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=name_toggle.value)
+        three_d_pane.object = visualize_graph_three_d(current_graph[0], use_full_names=name_toggle.value)
 node_attr_df.param.watch(node_attr_df_callback, 'value')
 node_dropdown.param.watch(node_dropdown_callback, 'value')
 
@@ -635,9 +780,18 @@ def edge_attr_df_callback(event):
             for k, v in attrs.items():
                 current_graph[0].edges[edge_tuple][k] = v
             # Refresh visualizations after edge attribute edit
-            plot_pane.object = visualize_graph_two_d(current_graph[0])
-            three_d_pane.object = visualize_graph_three_d(current_graph[0])
+            plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=name_toggle.value)
+            three_d_pane.object = visualize_graph_three_d(current_graph[0], use_full_names=name_toggle.value)
 edge_attr_df.param.watch(edge_attr_df_callback, 'value')
+
+app.append(generator_accordion)
+
+app.append(pn.Column(
+    "### Load MEP Graph File",
+    file_input,
+    pn.Row("### Display Options", name_toggle),
+    sizing_mode='stretch_width'
+))
 
 # Placeholder for the plot
 two_d_column = pn.Column()

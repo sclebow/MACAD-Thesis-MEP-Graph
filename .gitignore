@@ -119,7 +119,7 @@ ehthumbs.db
 Thumbs.db
 
 # Project specific
-data/
+# data/
 logs/
 temp/
 graph_outputs/
