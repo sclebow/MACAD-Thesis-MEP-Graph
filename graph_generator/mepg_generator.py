@@ -184,7 +184,7 @@ def abbreviate_load_type(load_type):
     }
     return abbreviations.get(load_type, load_type)
 
-def create_abbreviated_node_id(eq_type, floor=None, riser=None, voltage=None, load_type=None, to_voltage=None, cluster_id=None):
+def create_abbreviated_node_id(eq_type, floor=None, riser=None, voltage=None, load_type=None, secondary_voltage=None, cluster_id=None):
     """Create abbreviated node ID using compact notation."""
     type_abbrev = abbreviate_equipment_type(eq_type)
     
@@ -197,7 +197,7 @@ def create_abbreviated_node_id(eq_type, floor=None, riser=None, voltage=None, lo
     # Add voltage and load type for specific equipment
     if eq_type == 'transformer':
         load_abbrev = abbreviate_load_type(load_type) if load_type else ''
-        return f"{base_id}.{to_voltage}.{load_abbrev}" if to_voltage and load_abbrev else base_id
+        return f"{base_id}.{secondary_voltage}.{load_abbrev}" if secondary_voltage and load_abbrev else base_id
     elif eq_type in ['sub_panel', 'panel', 'switchboard']:
         load_abbrev = abbreviate_load_type(load_type) if load_type else ''
         if voltage and load_abbrev:
@@ -215,7 +215,7 @@ def create_abbreviated_node_id(eq_type, floor=None, riser=None, voltage=None, lo
     else:
         return base_id
 
-def create_full_node_id(eq_type, floor=None, riser=None, voltage=None, load_type=None, to_voltage=None, cluster_id=None):
+def create_full_node_id(eq_type, floor=None, riser=None, voltage=None, load_type=None, secondary_voltage=None, cluster_id=None):
     """Create full (original) node ID for storage as an attribute."""
     if eq_type == 'utility_transformer':
         return 'utility_transformer'
@@ -225,7 +225,7 @@ def create_full_node_id(eq_type, floor=None, riser=None, voltage=None, load_type
     
     # Add voltage and load type for specific equipment
     if eq_type == 'transformer':
-        return f"{base_id}_{to_voltage}_{load_type}" if to_voltage and load_type else base_id
+        return f"{base_id}_{secondary_voltage}_{load_type}" if secondary_voltage and load_type else base_id
     elif eq_type in ['sub_panel', 'panel', 'switchboard']:
         if voltage and load_type:
             return f"{base_id}_{voltage}_{load_type}"
@@ -370,6 +370,21 @@ def main():
     print(f"Generated MEP graph with {graph.number_of_nodes()} nodes and {graph.number_of_edges()} edges.")
 
     output_dir = "graph_outputs/"
+
+    # If output_dir doesn't exist, create it
+    import os
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Sanitize graph: replace None attributes with empty string before saving
+    for n, attrs in graph.nodes(data=True):
+        for k, v in list(attrs.items()):
+            if v is None:
+                graph.nodes[n][k] = ""
+    for u, v, attrs in graph.edges(data=True):
+        for k, val in list(attrs.items()):
+            if val is None:
+                graph.edges[u, v][k] = ""
 
     # Save the graph in graphml format
     nx.write_graphml(graph, f"{output_dir}{filename}")
@@ -688,12 +703,12 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
         }
         equipment_list.append(panel)
 
-    def add_transformer(equipment_list, from_voltage, to_voltage, load_type, power, parent, riser_idx, used_positions):
+    def add_transformer(equipment_list, primary_voltage, secondary_voltage, load_type, power, parent, riser_idx, used_positions):
         x, y = unique_xy(riser_idx, used_positions)
         transformer = {
             "type": "transformer",
-            "from_voltage": from_voltage,
-            "to_voltage": to_voltage,
+            "primary_voltage": primary_voltage,
+            "secondary_voltage": secondary_voltage,
             "load_type": load_type,
             "power": power,
             "parent": parent,
@@ -853,9 +868,9 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
                 baseline_attrs = get_baseline_attributes(eq_type, construction_year)
                 
                 if eq_type == 'transformer':
-                    to_voltage = eq.get('to_voltage', '')
-                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, to_voltage)
-                    full_name = create_full_node_id('transformer', floor, riser_idx, voltage, load_type, to_voltage)
+                    secondary_voltage = eq.get('secondary_voltage', '')
+                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, secondary_voltage)
+                    full_name = create_full_node_id('transformer', floor, riser_idx, voltage, load_type, secondary_voltage)
                     # Add all transformer attributes
                     G.add_node(
                         node_id,
@@ -863,8 +878,8 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
                         full_name=full_name,
                         floor=floor,
                         riser=riser_idx,
-                        from_voltage=eq.get('from_voltage',''),
-                        to_voltage=to_voltage,
+                        primary_voltage=eq.get('primary_voltage',''),
+                        secondary_voltage=secondary_voltage,
                         load_type=load_type,
                         power=eq.get('power',0.0),
                         parent=eq.get('parent',''),
@@ -981,7 +996,7 @@ def connect_equipment_hierarchy(G, distribution_equipment):
                 eq_type = eq.get('type')
                 voltage = eq.get('voltage', '')
                 load_type = eq.get('load_type', '')
-                to_voltage = eq.get('to_voltage', '')
+                secondary_voltage = eq.get('secondary_voltage', '')
                 
                 if eq_type == 'main_panel':
                     node_id = create_abbreviated_node_id('main_panel', floor, riser_idx, voltage)
@@ -994,15 +1009,15 @@ def connect_equipment_hierarchy(G, distribution_equipment):
                         node_id_map[f"sub_panel_208_{load_type}"] = node_id
                     # Add for other voltages if needed
                 elif eq_type == 'transformer':
-                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, to_voltage)
-                    node_id_map[f"transformer_{to_voltage}_{load_type}"] = node_id
+                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, secondary_voltage)
+                    node_id_map[f"transformer_{secondary_voltage}_{load_type}"] = node_id
             
             # Now connect each node to its parent using the parent field
             for eq in equipment_list:
                 eq_type = eq.get('type')
                 voltage = eq.get('voltage', '')
                 load_type = eq.get('load_type', '')
-                to_voltage = eq.get('to_voltage', '')
+                secondary_voltage = eq.get('secondary_voltage', '')
                 parent_key = eq.get('parent', None)
                 
                 # Determine this node's ID
@@ -1011,7 +1026,7 @@ def connect_equipment_hierarchy(G, distribution_equipment):
                 elif eq_type == 'sub_panel':
                     node_id = create_abbreviated_node_id('sub_panel', floor, riser_idx, voltage, load_type)
                 elif eq_type == 'transformer':
-                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, to_voltage)
+                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, secondary_voltage)
                 else:
                     continue
                 
@@ -1291,8 +1306,8 @@ def calculate_amperage(G: nx.DiGraph, voltage_info: Dict[str, Any]) -> None:
         # Transformers: calculate both primary and secondary amperage
         if d.get('type') == 'transformer':
             power = d.get('propagated_power', d.get('power', 0.0))
-            from_v = d.get('from_voltage', None)
-            to_v = d.get('to_voltage', None)
+            from_v = d.get('primary_voltage', None)
+            to_v = d.get('secondary_voltage', None)
             # Primary (upstream)
             if from_v:
                 G.nodes[n]['primary_amperage'] = calc_amperage(power, from_v)
