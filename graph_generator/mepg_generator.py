@@ -261,6 +261,21 @@ def get_baseline_attributes(equipment_type, construction_year):
     
     return attributes
 
+# Utility: Clean None values from graph attributes for GraphML compatibility
+def clean_graph_none_values(G):
+    """
+    Replace None values in node and edge attributes with empty strings for GraphML compatibility.
+    """
+    for n, attrs in G.nodes(data=True):
+        for k, v in list(attrs.items()):
+            if v is None:
+                G.nodes[n][k] = ""
+    for u, v, attrs in G.edges(data=True):
+        for k, val in list(attrs.items()):
+            if val is None:
+                G.edges[u, v][k] = ""
+    return G
+
 def main():
     """Main function for command-line usage."""
     import argparse
@@ -377,14 +392,7 @@ def main():
         os.makedirs(output_dir)
 
     # Sanitize graph: replace None attributes with empty string before saving
-    for n, attrs in graph.nodes(data=True):
-        for k, v in list(attrs.items()):
-            if v is None:
-                graph.nodes[n][k] = ""
-    for u, v, attrs in graph.edges(data=True):
-        for k, val in list(attrs.items()):
-            if val is None:
-                graph.edges[u, v][k] = ""
+    graph = clean_graph_none_values(graph)
 
     # Save the graph in graphml format
     nx.write_graphml(graph, f"{output_dir}{filename}")

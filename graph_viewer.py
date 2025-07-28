@@ -16,6 +16,7 @@ import datetime
 from helpers.node_risk import *
 # Import MEP graph generator
 from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes
+from graph_generator.mepg_generator import clean_graph_none_values
 
 pn.extension('plotly')
 pn.extension('jsoneditor')
@@ -631,11 +632,21 @@ def generate_graph_callback(event):
         
         generator_status.object = "**Graph generated successfully!**"
         generator_status.visible = True
-        
+
+        # Save the generated graph to the graph_output directory
+        output_dir = 'graph_outputs'
+        os.makedirs(output_dir, exist_ok=True)
+        current_date_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = os.path.join(output_dir, f"generated_graph_{current_date_str}.mepg")
+        # Clean None values before saving
+        G = clean_graph_none_values(G)
+        nx.write_graphml(G, output_path)
+
     except Exception as e:
+        print(f"Error generating graph: {e}")
         generator_status.object = f"**Error generating graph:** {e}"
         generator_status.visible = True
-        pn.state.notifications.error(f"Failed to generate graph: {e}")
+        # pn.state.notifications.error(f"Failed to generate graph: {e}")
 
 # Generator input widgets with help text
 total_load_slider = pn.widgets.IntSlider(
