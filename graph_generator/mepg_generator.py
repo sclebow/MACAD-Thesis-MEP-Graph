@@ -241,17 +241,20 @@ def create_full_node_id(eq_type, floor=None, riser=None, voltage=None, load_type
     else:
         return base_id
 
-def get_baseline_attributes(equipment_type, construction_year):
+def get_baseline_attributes(equipment_type, building_attrs):
     """Get baseline attributes for new equipment based on type and construction year."""
     import datetime
-    # If construction_year is None, blank, or invalid, use current year
-    if not construction_year or str(construction_year).strip() == '':
-        construction_year = datetime.datetime.now().year
+    construction_year = building_attrs.get('construction_year')
+    construction_date = building_attrs.get('construction_date')
+
     # Get baseline attributes for this equipment type
     baseline = EQUIPMENT_BASELINE_ATTRIBUTES.get(equipment_type)
     # Create attributes dictionary
+
+    # Assume installation_date is the current day
+
     attributes = {
-        'installation_date': construction_year,
+        'installation_date': construction_date,  # Use construction date as installation date
         'last_maintenance_date': construction_year,  # Assume commissioning counts as first maintenance
         'maintenance_frequency': baseline['maintenance_frequency'],
         'operating_hours': 0,  # Start at 0 for new equipment
@@ -291,6 +294,7 @@ def main():
     parser.add_argument('--floor_height', type=float, default=3.5, help='Floor height in meters')
     parser.add_argument('--cluster_strength', type=float, default=0.95, help='Strength of clustering (0.0 = no clustering, 1.0 = full clustering)')
     parser.add_argument('--construction_year', type=int, default=datetime.datetime.now().year, help='Year of building construction')
+    parser.add_argument('--construction_date', type=str, default=datetime.datetime.now().strftime("%Y-%m-%d"), help='Construction date in YYYY-MM-DD format (optional)')
 
     args = parser.parse_args()
 
@@ -303,7 +307,8 @@ def main():
         "building_width": args.building_width,
         "num_floors": args.num_floors,
         "floor_height": args.floor_height,
-        "construction_year": args.construction_year
+        "construction_year": args.construction_year,
+        "construction_date": args.construction_date
     }
 
 
@@ -785,7 +790,7 @@ def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[fl
     add_utility_transformer(G, building_attrs)
 
     # 2. Add all distribution equipment nodes (main panels, transformers, sub-panels, etc.)
-    add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
+    add_distribution_equipment_nodes(G, distribution_equipment, riser_locations, building_attrs)
 
     # 3. Connect utility transformer to the nearest main panel on the ground floor
     connect_utility_to_main_panel(G, distribution_equipment, riser_locations)
@@ -819,6 +824,7 @@ def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[fl
     G.graph['timestamp'] = datetime.datetime.now().isoformat()
     G.graph['seed'] = str(random.getstate())  # Optionally store as string, or remove entirely
     G.graph['description'] = "Randomly generated MEP electrical system graph"
+    G.graph['construction_date'] = building_attrs.get('construction_date')
 
     return G
 
@@ -830,6 +836,7 @@ def add_utility_transformer(G, building_attrs):
     floor_height = building_attrs['floor_height']
     num_floors = building_attrs['num_floors']
     construction_year = building_attrs.get('construction_year')
+    construction_date = building_attrs.get('construction_date')
     
     # Place transformer outside the building, near the main entrance (assume at x = -5, y = width/2, z = 0)
     x = -5.0
@@ -839,7 +846,7 @@ def add_utility_transformer(G, building_attrs):
     full_name = create_full_node_id('utility_transformer')
     
     # Get baseline attributes for new utility transformer
-    baseline_attrs = get_baseline_attributes('utility_transformer', construction_year)
+    baseline_attrs = get_baseline_attributes('utility_transformer', building_attrs)
     
     G.add_node(
         node_id,
@@ -852,11 +859,9 @@ def add_utility_transformer(G, building_attrs):
         **baseline_attrs
     )
 
-def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations):
+def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations, building_attrs):
     """Add all distribution equipment nodes to the graph with unique IDs and coordinates."""
-    # Get construction year from graph metadata or default
-    construction_year = G.graph.get('construction_year')
-    
+
     for floor, risers in distribution_equipment.items():
         for riser_idx, equipment_list in risers.items():
             # Use x/y from equipment dict if present, else fallback to riser_locations
@@ -873,7 +878,7 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
                     x, y = riser_locations[riser_idx]
                 
                 # Get baseline attributes for this equipment type
-                baseline_attrs = get_baseline_attributes(eq_type, construction_year)
+                baseline_attrs = get_baseline_attributes(eq_type, building_attrs)
                 
                 if eq_type == 'transformer':
                     secondary_voltage = eq.get('secondary_voltage', '')
@@ -1131,8 +1136,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                     full_name = create_full_node_id('end_load', floor, riser_idx, load_voltage, load_type)
                     if end_load_id not in created_nodes:
                         # Get baseline attributes for end load
-                        construction_year = building_attrs.get('construction_year')
-                        baseline_attrs = get_baseline_attributes('end_load', construction_year)
+                        baseline_attrs = get_baseline_attributes('end_load', building_attrs)
                         
                         G.add_node(
                             end_load_id,
@@ -1169,8 +1173,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                         full_name = create_full_node_id('end_load', floor, riser_idx, load_voltage, load_type, cluster_id=i)
                         if end_load_id not in created_nodes:
                             # Get baseline attributes for end load
-                            construction_year = building_attrs.get('construction_year')
-                            baseline_attrs = get_baseline_attributes('end_load', construction_year)
+                            baseline_attrs = get_baseline_attributes('end_load', building_attrs)
                             
                             G.add_node(
                                 end_load_id,
