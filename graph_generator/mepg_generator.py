@@ -244,10 +244,11 @@ def create_full_node_id(eq_type, floor=None, riser=None, voltage=None, load_type
 def get_baseline_attributes(equipment_type, construction_year):
     """Get baseline attributes for new equipment based on type and construction year."""
     import datetime
-    
+    # If construction_year is None, blank, or invalid, use current year
+    if not construction_year or str(construction_year).strip() == '':
+        construction_year = datetime.datetime.now().year
     # Get baseline attributes for this equipment type
     baseline = EQUIPMENT_BASELINE_ATTRIBUTES.get(equipment_type)
-    
     # Create attributes dictionary
     attributes = {
         'installation_date': construction_year,
@@ -258,7 +259,6 @@ def get_baseline_attributes(equipment_type, construction_year):
         'mean_time_to_failure': baseline['mean_time_to_failure'],
         'failure_count': baseline['failure_count']
     }
-    
     return attributes
 
 # Utility: Clean None values from graph attributes for GraphML compatibility
