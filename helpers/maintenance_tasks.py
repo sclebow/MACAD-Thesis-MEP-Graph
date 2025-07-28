@@ -81,10 +81,99 @@ def load_maintenance_tasks(csv_path: str) -> List[Dict[str, Any]]:
     return tasks
 
 # Placeholder: Generate maintenance tasks from a graph
-def generate_maintenance_tasks_from_graph(graph) -> List[Dict[str, Any]]:
-    """Generate a list of maintenance tasks for each equipment node in the graph, using the generic task templates for each equipment type."""
-    # TODO: Implement logic to create tasks for each equipment node using templates
-    ...
+def generate_maintenance_tasks_from_graph(graph, tasks) -> List[Dict[str, Any]]:
+    """
+    Generate a list of maintenance tasks for each equipment node in the graph, using the generic task templates for each equipment type.
+    Only include nodes whose 'type' matches a template 'equipment_type'.
+    task_instance_id = {task_id}-{node_id}
+    scheduled_date = installation_date + recommended_frequency_months (in months)
+    last_maintenance_date = installation_date
+    status = 'pending'
+    If any template field is None, raise ValueError.
+    """
+    import datetime
+    from dateutil.relativedelta import relativedelta
+
+    # Build a lookup for templates by equipment_type
+    template_by_type = {}
+    for t in tasks:
+        etype = t['equipment_type']
+        if etype not in template_by_type:
+            template_by_type[etype] = []
+        template_by_type[etype].append(t)
+
+    maintenance_tasks = []
+    for node_id, attrs in graph.nodes(data=True):
+        node_type = attrs.get('type')
+        if node_type not in template_by_type:
+            continue  # skip nodes with no matching template
+        for template in template_by_type[node_type]:
+            # Construct task_instance_id
+            task_id = template['task_id']
+            task_instance_id = f"{task_id}-{node_id}"
+            # Get installation_date from node (should be str or int year)
+            installation_date = attrs.get('installation_date')
+            # Parse installation_date to datetime
+            if isinstance(installation_date, int):
+                install_dt = datetime.date(installation_date, 1, 1)
+            elif isinstance(installation_date, str):
+                try:
+                    # Try YYYY-MM-DD
+                    install_dt = datetime.datetime.strptime(installation_date, "%Y-%m-%d").date()
+                except Exception:
+                    try:
+                        # Try YYYY
+                        install_dt = datetime.date(int(installation_date), 1, 1)
+                    except Exception:
+                        raise ValueError(f"Could not parse installation_date '{installation_date}' for node {node_id}")
+            else:
+                raise ValueError(f"Missing or invalid installation_date for node {node_id}")
+
+            # Determine frequency (months)
+            freq_months = template['recommended_frequency_months']
+            if freq_months == -1:
+                # Use node's expected_lifespan
+                node_lifespan = attrs.get('expected_lifespan')
+                if node_lifespan is None:
+                    raise ValueError(f"expected_lifespan missing for node {node_id} but required by template {task_id}")
+                freq_months = int(node_lifespan)
+            if freq_months > 0:
+                scheduled_dt = install_dt + relativedelta(months=int(freq_months))
+                scheduled_date = scheduled_dt.isoformat()
+            else:
+                scheduled_date = install_dt.isoformat()
+
+            # Determine money_cost
+            money_cost = template['money_cost']
+            if money_cost == -1:
+                node_replacement_cost = attrs.get('replacement_cost')
+                if node_replacement_cost is None:
+                    raise ValueError(f"replacement_cost missing for node {node_id} but required by template {task_id}")
+                money_cost = float(node_replacement_cost)
+
+            # last_maintenance_date is installation_date
+            last_maintenance_date = install_dt.isoformat()
+            # Build task dict
+            task = {
+                'task_instance_id': task_instance_id,
+                'equipment_id': node_id,
+                'equipment_type': node_type,
+                'task_type': template['task_type'],
+                'scheduled_date': scheduled_date,
+                'last_maintenance_date': last_maintenance_date,
+                'priority': template['default_priority'],
+                'time_cost': template['time_cost'],
+                'money_cost': money_cost,
+                'status': 'pending',
+                'notes': template.get('notes', ''),
+                'description': template.get('description', ''),
+            }
+            # Check for any None values in required fields
+            for k in ['recommended_frequency_months', 'default_priority', 'time_cost', 'money_cost']:
+                if task.get(k) is None:
+                    raise ValueError(f"Field '{k}' is None for task {task['task_instance_id']} (template {task_id}, node {node_id}). Please check template and node attributes.")
+            maintenance_tasks.append(task)
+    return maintenance_tasks
 
 # Placeholder: Prioritize maintenance tasks
 def prioritize_tasks(tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -105,3 +194,59 @@ def update_task_status(tasks: List[Dict[str, Any]], task_id: str, new_status: st
     ...
 
 # Additional helper functions can be added as needed
+
+# Simple test main function
+def main():
+    import networkx as nx
+    import sys
+    import os
+
+    # This is a helper script that lives in a subdirectory of the project.
+    # We need to adjust the directory to be the parent directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(current_dir)
+    os.chdir(parent_dir)
+
+    print("--- Maintenance Task List Helper Test ---")
+    # Example file paths (update as needed)
+    task_csv = "./tables/example_maintenance_list.csv"
+    graph_file = "./graph_outputs/generated_graph_20250727_220854.mepg"
+    try:
+        print(f"Loading task templates from: {task_csv}")
+        templates = load_maintenance_tasks(task_csv)
+        print(f"Loaded {len(templates)} templates.")
+    except Exception as e:
+        print(f"Error loading task templates: {e}")
+        sys.exit(1)
+    try:
+        print(f"Loading graph from: {graph_file}")
+        G = nx.read_graphml(graph_file)
+        print(f"Loaded graph with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
+    except Exception as e:
+        print(f"Error loading graph: {e}")
+        sys.exit(1)
+    try:
+        print("Generating maintenance tasks...")
+        tasks = generate_maintenance_tasks_from_graph(G, templates)
+        print(f"Generated {len(tasks)} maintenance tasks.")
+        # Print a sample
+        for t in tasks[:5]:
+            print(t)
+        if len(tasks) > 5:
+            print(f"... ({len(tasks)-5} more tasks)")
+
+        # Save to CSV
+        output_dir = "./maintenance_tasks/"
+        filenname = "example_detailed_maintenance_tasks.csv"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        output_path = os.path.join(output_dir, filenname)
+        print(f"Exporting tasks to: {output_path}")
+        export_tasks_to_csv(tasks, output_path)
+        print(f"Tasks exported successfully to {output_path}")
+    except Exception as e:
+        print(f"Error generating maintenance tasks: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
