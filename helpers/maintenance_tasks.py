@@ -61,9 +61,24 @@ from typing import List, Dict, Any
 
 # Placeholder: Load maintenance tasks from a CSV file
 def load_maintenance_tasks(csv_path: str) -> List[Dict[str, Any]]:
-    """Load generic maintenance task templates from a CSV file and return as a list of dicts. Each row represents a typical task for a given equipment type, not a specific instance."""
-    # TODO: Implement CSV reading logic
-    ...
+    """Load generic maintenance task templates from a CSV file and return as a list of dicts. If recommended_frequency_months or money_cost is -1, set to None to indicate it should be filled from the equipment node's attributes later."""
+    tasks = []
+    with open(csv_path, newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            # Convert numeric fields and handle -1 as None
+            for key in ['recommended_frequency_months', 'default_priority', 'time_cost', 'money_cost']:
+                if key in row:
+                    try:
+                        val = float(row[key]) if '.' in row[key] else int(row[key])
+                        if val == -1:
+                            row[key] = None
+                        else:
+                            row[key] = val
+                    except (ValueError, TypeError):
+                        row[key] = None
+            tasks.append(row)
+    return tasks
 
 # Placeholder: Generate maintenance tasks from a graph
 def generate_maintenance_tasks_from_graph(graph) -> List[Dict[str, Any]]:
