@@ -879,7 +879,7 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations,
                 
                 # Get baseline attributes for this equipment type
                 baseline_attrs = get_baseline_attributes(eq_type, building_attrs)
-                
+                # Compute full_name for all node types
                 if eq_type == 'transformer':
                     secondary_voltage = eq.get('secondary_voltage', '')
                     node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, secondary_voltage)
@@ -1219,6 +1219,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                             end_load_id = create_abbreviated_node_id('end_load', floor, riser_idx, load_voltage, load_type)
                             full_name = create_full_node_id('end_load', floor, riser_idx, load_voltage, load_type)
                             if end_load_id not in created_nodes:
+                                baseline_attrs = get_baseline_attributes('end_load', building_attrs)
                                 G.add_node(
                                     end_load_id,
                                     type='end_load',
@@ -1230,7 +1231,8 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                                     x=x,
                                     y=y,
                                     z=z,
-                                    power=round(total_power, 2)
+                                    power=round(total_power, 2),
+                                    **baseline_attrs
                                 )
                                 created_nodes.add(end_load_id)
                             G.add_edge(main_panel_id, end_load_id, description='Main panel to end load')
@@ -1250,6 +1252,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                                 end_load_id = create_abbreviated_node_id('end_load', floor, riser_idx, load_voltage, load_type, cluster_id=i)
                                 full_name = create_full_node_id('end_load', floor, riser_idx, load_voltage, load_type, cluster_id=i)
                                 if end_load_id not in created_nodes:
+                                    baseline_attrs = get_baseline_attributes('end_load', building_attrs)
                                     G.add_node(
                                         end_load_id,
                                         type='end_load',
@@ -1261,7 +1264,8 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                                         x=x,
                                         y=y,
                                         z=z,
-                                        power=round(total_power, 2)
+                                        power=round(total_power, 2),
+                                        **baseline_attrs
                                     )
                                     created_nodes.add(end_load_id)
                                 G.add_edge(main_panel_id, end_load_id, description='Main panel to end load')
