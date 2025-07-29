@@ -826,6 +826,15 @@ def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[fl
     G.graph['description'] = "Randomly generated MEP electrical system graph"
     G.graph['construction_date'] = building_attrs.get('construction_date')
 
+    # --- Update 'parent' attribute for all nodes ---
+    for node in G.nodes:
+        preds = list(G.predecessors(node))
+        if preds:
+            # If multiple parents, just take the first (can be adjusted if needed)
+            G.nodes[node]['parent'] = preds[0]
+        else:
+            G.nodes[node]['parent'] = ''
+
     return G
 
 # --- Placeholder functions for graph construction ---

@@ -1,28 +1,38 @@
 <?xml version='1.0' encoding='utf-8'?>
-<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d29" for="edge" attr.name="description" attr.type="string"/>
-<key id="d28" for="node" attr.name="power_rating" attr.type="double"/>
-<key id="d27" for="node" attr.name="secondary_amperage" attr.type="double"/>
-<key id="d26" for="node" attr.name="primary_amperage" attr.type="double"/>
-<key id="d25" for="node" attr.name="to_voltage" attr.type="long"/>
-<key id="d24" for="node" attr.name="from_voltage" attr.type="long"/>
-<key id="d23" for="node" attr.name="parent" attr.type="string"/>
-<key id="d22" for="node" attr.name="power" attr.type="double"/>
-<key id="d21" for="node" attr.name="load_type" attr.type="string"/>
-<key id="d20" for="node" attr.name="amperage_rating" attr.type="long"/>
-<key id="d19" for="node" attr.name="amperage" attr.type="double"/>
-<key id="d18" for="node" attr.name="voltage" attr.type="long"/>
-<key id="d17" for="node" attr.name="riser" attr.type="long"/>
-<key id="d16" for="node" attr.name="floor" attr.type="long"/>
-<key id="d15" for="node" attr.name="power_rating" attr.type="long"/>
-<key id="d14" for="node" attr.name="propagated_power" attr.type="double"/>
-<key id="d13" for="node" attr.name="description" attr.type="string"/>
-<key id="d12" for="node" attr.name="z" attr.type="double"/>
-<key id="d11" for="node" attr.name="y" attr.type="double"/>
-<key id="d10" for="node" attr.name="x" attr.type="double"/>
-<key id="d9" for="node" attr.name="type" attr.type="string"/>
-<key id="d8" for="graph" attr.name="description" attr.type="string"/>
-<key id="d7" for="graph" attr.name="seed" attr.type="string"/>
-<key id="d6" for="graph" attr.name="timestamp" attr.type="string"/>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d39" for="edge" attr.name="description" attr.type="string"/>
+<key id="d38" for="node" attr.name="power_rating" attr.type="double"/>
+<key id="d37" for="node" attr.name="secondary_amperage" attr.type="double"/>
+<key id="d36" for="node" attr.name="primary_amperage" attr.type="double"/>
+<key id="d35" for="node" attr.name="secondary_voltage" attr.type="long"/>
+<key id="d34" for="node" attr.name="primary_voltage" attr.type="long"/>
+<key id="d33" for="node" attr.name="power" attr.type="double"/>
+<key id="d32" for="node" attr.name="load_type" attr.type="string"/>
+<key id="d31" for="node" attr.name="amperage_rating" attr.type="long"/>
+<key id="d30" for="node" attr.name="amperage" attr.type="double"/>
+<key id="d29" for="node" attr.name="voltage" attr.type="long"/>
+<key id="d28" for="node" attr.name="riser" attr.type="long"/>
+<key id="d27" for="node" attr.name="floor" attr.type="long"/>
+<key id="d26" for="node" attr.name="parent" attr.type="string"/>
+<key id="d25" for="node" attr.name="power_rating" attr.type="long"/>
+<key id="d24" for="node" attr.name="propagated_power" attr.type="double"/>
+<key id="d23" for="node" attr.name="failure_count" attr.type="long"/>
+<key id="d22" for="node" attr.name="mean_time_to_failure" attr.type="long"/>
+<key id="d21" for="node" attr.name="expected_lifespan" attr.type="long"/>
+<key id="d20" for="node" attr.name="operating_hours" attr.type="long"/>
+<key id="d19" for="node" attr.name="maintenance_frequency" attr.type="long"/>
+<key id="d18" for="node" attr.name="last_maintenance_date" attr.type="long"/>
+<key id="d17" for="node" attr.name="installation_date" attr.type="string"/>
+<key id="d16" for="node" attr.name="description" attr.type="string"/>
+<key id="d15" for="node" attr.name="z" attr.type="double"/>
+<key id="d14" for="node" attr.name="y" attr.type="double"/>
+<key id="d13" for="node" attr.name="x" attr.type="double"/>
+<key id="d12" for="node" attr.name="full_name" attr.type="string"/>
+<key id="d11" for="node" attr.name="type" attr.type="string"/>
+<key id="d10" for="graph" attr.name="construction_date" attr.type="string"/>
+<key id="d9" for="graph" attr.name="description" attr.type="string"/>
+<key id="d8" for="graph" attr.name="seed" attr.type="string"/>
+<key id="d7" for="graph" attr.name="timestamp" attr.type="string"/>
+<key id="d6" for="graph" attr.name="construction_year" attr.type="long"/>
 <key id="d5" for="graph" attr.name="voltage_level" attr.type="string"/>
 <key id="d4" for="graph" attr.name="total_load" attr.type="long"/>
 <key id="d3" for="graph" attr.name="floor_height" attr.type="double"/>
@@ -35,1196 +45,2233 @@
 <data key="d3">3.5</data>
 <data key="d4">1000</data>
 <data key="d5">277/480V</data>
-<data key="d6">2025-07-20T17:44:35.486209</data>
-<data key="d7">(3, (2269371501, 1508286895, 568757411, 1490412883, 790858452, 204307081, 1633802813, 2551584004, 1683489387, 946308992, 2739852515, 3109106259, 282334464, 798225008, 3653633954, 928919052, 2031254069, 677104764, 533874468, 105487507, 2503640035, 1864744680, 2068048430, 3289823252, 1526926535, 1025689666, 4160637528, 4021905125, 3714542227, 2794420229, 3226630356, 2416940441, 3993143892, 2489343391, 1480485092, 1987152279, 2567138045, 1961817971, 2223745617, 2465264638, 1706529004, 4241535941, 2700247516, 4214684941, 2275394257, 3100171196, 988263345, 3777980776, 1516587451, 2559551698, 269227682, 1385401978, 2507440053, 1671649369, 978147164, 1767959949, 3564421518, 3158079381, 286728941, 1603342715, 3626911528, 1243682174, 3754998376, 777567041, 68788920, 1136238834, 677520706, 1783695000, 694870282, 2099432625, 1817056194, 229152070, 443843218, 1452989258, 1794442298, 3714385892, 2959784942, 2948789755, 3534568720, 1432079977, 2886852464, 349413576, 1979873874, 3262335608, 2611875667, 1422666695, 256545527, 3782065739, 2930871509, 516427140, 842172049, 2423376199, 1524415410, 3809967374, 2353441778, 498609081, 3654347969, 1320523183, 3132191583, 826684524, 3402629611, 2496612960, 764420175, 3173478403, 896231704, 1559839370, 2359408895, 573651046, 2840674138, 1850886287, 2559010437, 2017491100, 1545742626, 1718769803, 3485164249, 1326292443, 3313077288, 2306282941, 3287803758, 3587389028, 4285381903, 1333458851, 598787549, 1080202704, 3840776601, 2348093532, 4034760428, 863705282, 1058480888, 3881215250, 106894551, 3644349320, 1040659923, 1795894507, 4248062224, 2772204793, 3237203268, 1428006224, 51529788, 668935976, 3699528940, 237909076, 862774217, 399942550, 1978131311, 4104919850, 2420075431, 4190743509, 2977979851, 667476716, 1800414017, 4129693128, 3236573219, 3643265176, 2231179346, 3770377797, 3018596281, 777625617, 3150236028, 807993356, 1062118602, 1111206234, 3034949702, 3466111647, 2903873745, 168793157, 3954100220, 2565575922, 3804688965, 4182317635, 3676636689, 738704512, 2965883016, 906620075, 2338206678, 753142043, 4194249963, 294631994, 3601665724, 2346799957, 3327003594, 2374008412, 3420024048, 1407839181, 495505108, 2528653371, 3539543147, 3214728334, 2342871949, 2429599801, 1956821427, 3369016464, 3369536760, 2812551835, 2798408717, 3513809831, 2662779594, 1508312214, 378660756, 2944046349, 1291929542, 3201469483, 682739608, 139197547, 3523923236, 3454821189, 3039354348, 4188391534, 1028111461, 2933034829, 3501240495, 3390173068, 3410592601, 270325665, 1624060691, 2328683413, 646841424, 2898758556, 2715247365, 347046851, 590568129, 230054109, 1669108420, 878447809, 1287026522, 4178616060, 3725883909, 888729330, 3156788416, 426738829, 944460737, 2680665483, 1950704079, 669202193, 3804715066, 4274197270, 3155581653, 41473408, 3639804426, 1333177801, 2400220405, 2591753222, 1354249504, 830917677, 4006940660, 1748921872, 1960304186, 285908875, 2418701909, 2943762450, 2502787787, 374618523, 4089670950, 3007990815, 613787588, 3258911549, 3260259680, 1982262298, 3770407430, 2856968631, 2014448471, 1664510190, 1889031795, 2614549823, 1869183940, 2318738596, 1520777385, 2078861880, 3464928088, 2831739415, 1503004978, 92793139, 795624159, 3233223383, 3325926298, 566325074, 2346845452, 4164418538, 1929784527, 2573528651, 2208885832, 5244940, 2292418598, 4227174617, 787116940, 1959692638, 3732927751, 967893111, 718547384, 946625851, 1995472164, 1979560815, 1100791278, 2159917275, 3063118380, 4132193334, 1448747796, 1845926204, 3398215160, 3197396051, 2038658401, 1408398930, 4012143273, 2665230799, 3361576121, 1186034006, 2338309247, 1137280380, 2117176108, 2365150017, 655950487, 3727869007, 396316219, 1623060758, 3996761461, 3107254653, 1050468419, 3940116361, 466030546, 2483271745, 4221341004, 1621992756, 1052362623, 4112864176, 774098775, 2428031495, 3564883817, 1509316415, 3396281274, 2456912352, 2034582317, 2168972824, 3266198639, 2143887450, 28938291, 377871097, 3548903920, 491484039, 3980720771, 1242251522, 2591781955, 955310960, 500695322, 1219419814, 413361032, 4100012259, 2256680973, 1042224821, 1083332090, 1996865947, 4020243150, 2681515880, 813482745, 2992968992, 3540267308, 362373912, 3131360882, 297102263, 3926504466, 4061525726, 3960955270, 4161658014, 1958268845, 2035825328, 1929874014, 3857820099, 1224910686, 625822352, 2485455463, 2227495883, 305948140, 1261726943, 2741039156, 3875833359, 4143919468, 3032325275, 481480723, 356421064, 3448802498, 3375122613, 935869040, 2118941353, 1158049496, 2732324066, 3145987796, 2691717509, 2282141802, 2912817812, 3028104204, 3937116493, 4054771976, 2549460884, 1424352683, 2924518943, 3847801870, 3996086383, 566910577, 2602320189, 3492546241, 672706499, 1603917241, 1865853603, 2489693643, 3507930280, 4117292100, 3225381559, 1669447810, 2435379657, 2849076866, 2271240561, 2092843718, 1668285025, 3042740585, 1044252969, 102845963, 1194025694, 1754823861, 4091977154, 721039428, 469494162, 397046509, 596431081, 494573962, 805272480, 3381667927, 1107031592, 365416005, 688154210, 3070984907, 2869571703, 368055797, 2269665257, 1437216433, 1283494141, 3719943341, 1597332668, 1884651228, 664226510, 871923092, 2464598392, 671585141, 2359391728, 77412419, 225388623, 418903100, 1147470854, 4162527004, 3527906238, 433583303, 2871506209, 823212850, 3760120730, 1436454454, 3910202009, 1472709549, 3588354986, 166380222, 3323719488, 1921966805, 2351351418, 3763173007, 2283992528, 272672492, 2535313332, 2112876346, 3426606552, 1860133450, 190300660, 3702411200, 169735799, 2523139833, 3005986591, 1256939672, 1469266076, 874340775, 3187794887, 2103354721, 1958181140, 3610374245, 2861997728, 1682705127, 1303258550, 2750844384, 742108277, 3711051274, 1195480275, 1423236686, 3381750490, 1260204208, 1017807710, 2037428263, 584391579, 2038838316, 542774391, 2579349912, 3119977850, 563852946, 3524084826, 2583725843, 1394278728, 1866821676, 2267682948, 1226384870, 290126587, 815657579, 2593834594, 1217637660, 1248479791, 3077422093, 2600969290, 3310396058, 1950743484, 435508384, 1256883083, 1732790887, 597100301, 444565735, 3914629269, 2960745855, 1191907482, 879604592, 2250290201, 72819967, 1556130474, 393306323, 729656616, 2561328184, 2174252686, 2262204378, 1117636208, 1129362479, 1805796802, 535048156, 1533341272, 1076326714, 1640767044, 4239722680, 304125762, 957462009, 3127787531, 950046473, 2315594029, 2011006504, 2883325003, 1005183788, 1580118417, 3496073729, 623332148, 420082662, 3687233941, 1989922808, 48591494, 429452166, 1927807243, 1838457044, 1004627823, 3028450322, 3208789746, 3003498394, 3937411279, 818126621, 1540162269, 3126657635, 3962963439, 828918739, 2268457618, 828193395, 1198589895, 3011214646, 2822941930, 2231499637, 2448184296, 3717168551, 2636764006, 3620587782, 3452976891, 4080733940, 3746822425, 1616824533, 3614590304, 1412247942, 4009271224, 2866835690, 154478151, 1793734059, 408234142, 2610806707, 2421939937, 1152941802, 2723419397, 807893849, 1725515320, 2627104591, 1933537574, 3552822655, 1311384610, 3377919554, 3376571420, 1470916028, 1146501184, 2420781908, 861391865, 1954897952, 4054075748, 2201000885, 3713384809, 1006072890, 3609831077, 3428631479, 3281517456, 965177693, 3399790642, 4044942388, 1947743829, 3062371992, 277090308, 1504641663, 404425518, 4069553929, 3365934267, 882514768, 4146299734, 1590951113, 4217569432, 99), None)</data>
-<data key="d8">Randomly generated MEP electrical system graph</data>
-<node id="utility_transformer">
-  <data key="d9">utility_transformer</data>
-  <data key="d10">-5.0</data>
-  <data key="d11">10.0</data>
-  <data key="d12">0.0</data>
-  <data key="d13">Utility transformer located outside the building footprint</data>
-  <data key="d14">469.18</data>
-  <data key="d15">500</data>
-</node>
-<node id="main_panel_f0_r0">
-  <data key="d9">panel</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d10">9.690064429911637</data>
-  <data key="d11">9.30498480223853</data>
-  <data key="d12">0.0</data>
-  <data key="d14">469.18</data>
-  <data key="d19">564.335831871643</data>
-  <data key="d20">800</data>
-</node>
-<node id="sub_panel_f0_r0_480_hvac">
-  <data key="d9">panel</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d21">hvac</data>
-  <data key="d22">57.0</data>
-  <data key="d23">main_panel</data>
-  <data key="d10">8.77713646457035</data>
-  <data key="d11">9.772090543464625</data>
-  <data key="d12">0.0</data>
-  <data key="d14">57.0</data>
-  <data key="d19">68.56034446626806</data>
-  <data key="d20">100</data>
-</node>
-<node id="transformer_f0_r0_208_hvac">
-  <data key="d9">transformer</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d24">480</data>
-  <data key="d25">208</data>
-  <data key="d21">hvac</data>
-  <data key="d22">60.0</data>
-  <data key="d23">sub_panel_480_hvac</data>
-  <data key="d10">8.93408044829301</data>
-  <data key="d11">9.306629216557868</data>
-  <data key="d12">0.0</data>
-  <data key="d14">27.0</data>
-  <data key="d26">32.47595264191645</data>
-  <data key="d27">74.94450609673028</data>
-  <data key="d28">37.5</data>
-</node>
-<node id="sub_panel_f0_r0_208_hvac">
-  <data key="d9">panel</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d18">208</data>
-  <data key="d21">hvac</data>
-  <data key="d22">60.0</data>
-  <data key="d23">transformer_208_hvac</data>
-  <data key="d10">9.844042456167074</data>
-  <data key="d11">9.358083829754936</data>
-  <data key="d12">0.0</data>
-  <data key="d14">27.0</data>
-  <data key="d19">74.94450609673028</data>
-  <data key="d20">100</data>
-</node>
-<node id="sub_panel_f0_r0_480_lighting">
-  <data key="d9">panel</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d21">lighting</data>
-  <data key="d22">28.5</data>
-  <data key="d23">main_panel</data>
-  <data key="d10">9.198821819392723</data>
-  <data key="d11">10.974545938525285</data>
-  <data key="d12">0.0</data>
-  <data key="d14">28.5</data>
-  <data key="d19">34.28017223313403</data>
-  <data key="d20">60</data>
-</node>
-<node id="transformer_f0_r0_208_lighting">
-  <data key="d9">transformer</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d24">480</data>
-  <data key="d25">208</data>
-  <data key="d21">lighting</data>
-  <data key="d22">24.0</data>
-  <data key="d23">sub_panel_480_lighting</data>
-  <data key="d10">10.039086000559383</data>
-  <data key="d11">10.99739262819539</data>
-  <data key="d12">0.0</data>
-  <data key="d14">13.5</data>
-  <data key="d26">16.237976320958225</data>
-  <data key="d27">37.47225304836514</data>
-  <data key="d15">25</data>
-</node>
-<node id="sub_panel_f0_r0_208_lighting">
-  <data key="d9">panel</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d18">208</data>
-  <data key="d21">lighting</data>
-  <data key="d22">24.0</data>
-  <data key="d23">transformer_208_lighting</data>
-  <data key="d10">9.931517657601688</data>
-  <data key="d11">9.733536541717795</data>
-  <data key="d12">0.0</data>
-  <data key="d14">13.5</data>
-  <data key="d19">37.47225304836514</data>
-  <data key="d20">60</data>
-</node>
-<node id="sub_panel_f0_r0_480_receptacles">
-  <data key="d9">panel</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d21">receptacles</data>
-  <data key="d22">38.676737348898854</data>
-  <data key="d23">main_panel</data>
-  <data key="d10">10.22061586357639</data>
-  <data key="d11">10.41820136666759</data>
-  <data key="d12">0.0</data>
-  <data key="d14">26.68</data>
-  <data key="d19">32.0910524624567</data>
-  <data key="d20">60</data>
-</node>
-<node id="transformer_f0_r0_208_receptacles">
-  <data key="d9">transformer</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d24">480</data>
-  <data key="d25">208</data>
-  <data key="d21">receptacles</data>
-  <data key="d22">28.0</data>
-  <data key="d23">sub_panel_480_receptacles</data>
-  <data key="d10">8.824233218807503</data>
-  <data key="d11">10.257834592808669</data>
-  <data key="d12">0.0</data>
+<data key="d6">2025</data>
+<data key="d7">2025-07-28T22:47:57.435038</data>
+<data key="d8">(3, (3166283880, 74838692, 3706486883, 23493465, 4111020686, 249284333, 2864368594, 1867325697, 3693497554, 2672292049, 1250880278, 1064967463, 620457465, 3208637170, 1581344004, 3506504976, 4118179309, 295872628, 2268962817, 2987856136, 4081093605, 2049389959, 539124475, 137366842, 4028860598, 1062430774, 387799149, 3423877947, 800288191, 1725402335, 3720234426, 2183838269, 3766859008, 1294854194, 1167277342, 2448302891, 3998423673, 1941542648, 4062636202, 377664248, 181429600, 2526616943, 2694649981, 1661077649, 2283774142, 2820400258, 1459590612, 3302039758, 2862334155, 2144219214, 1441762913, 871222016, 1568813873, 340315494, 287230760, 196152979, 3697444537, 3605482249, 175114241, 579350119, 3285426208, 421239634, 2496137225, 1782367411, 4109902648, 1608554803, 645499219, 2875486602, 3447811211, 3944139023, 3396888126, 4122640405, 993613105, 3063489078, 2941467878, 1320445277, 2656335831, 53830248, 3974098664, 101277236, 1830182374, 2428234064, 3648600650, 3829193731, 4054160167, 157977473, 2845691588, 2404584228, 20639992, 1966341246, 3137540309, 6511250, 30778667, 3727733034, 383940635, 527410777, 3347415217, 2966404778, 1500751842, 3595425776, 1272307948, 1193223918, 1003110294, 3707983656, 3198769683, 3352209078, 2065781031, 2621494848, 257178255, 3610977915, 2309130668, 3168596050, 236903077, 3586731738, 3389304338, 1851638762, 1335232998, 638170003, 3277425151, 4048652504, 109399519, 1310052320, 176398765, 340256047, 290003300, 3801309638, 1921898450, 2679047303, 3454369302, 3905000260, 3349136184, 2795944119, 4065636098, 946532015, 3168196982, 1985757037, 2509405544, 706374879, 3426388705, 1055452803, 4019723461, 2306901280, 1818522986, 892251823, 2951831085, 71247693, 1590480948, 844439144, 489278660, 832927494, 1715759278, 3885586373, 4263140543, 2541487831, 943662504, 424264071, 2525341759, 3735058287, 2939117323, 1695376630, 4281067444, 182650756, 851498776, 2349378802, 142371767, 3260375747, 1836117979, 2125019778, 194013488, 1578790427, 1609699437, 3203728359, 2754043334, 1452553050, 342085416, 416993386, 4037231518, 418051854, 2419746927, 59594169, 2125687065, 1292751069, 2757602473, 3291781050, 2453424485, 2408616220, 3875244105, 3395784150, 2850149643, 2379898434, 1244362157, 760164570, 3768475, 193573162, 3481967886, 2501373150, 2243159251, 1337992062, 1733984608, 239445392, 4068667199, 1174402996, 2030270433, 3439136962, 1610026813, 497724154, 744051785, 2074361030, 1955813102, 1969820565, 3100770512, 68945902, 1316109203, 206981094, 1214553338, 940775715, 234041065, 3488104703, 1499569390, 3080666296, 1762779742, 826948393, 4012174490, 2661232286, 2707690929, 441368158, 3908446160, 2793087508, 2266494993, 2638586153, 1038559298, 1823351993, 195919749, 3678791402, 3053982827, 1466460718, 3215614600, 189983644, 237511208, 2536880815, 247198139, 394549977, 555257975, 3226729320, 4166872372, 3125569637, 3627737980, 2084263981, 165024030, 976405549, 1224203420, 1738523332, 2955097087, 118542164, 817107713, 3936276542, 239372831, 2049429866, 3450884013, 4215140086, 4212843697, 2542603002, 12598995, 1847912201, 4135106213, 33336186, 1831294740, 1312131088, 3465703751, 2524157314, 2295204036, 3718157976, 453096275, 1977561138, 130035056, 235214395, 3449158182, 1369019545, 3196757198, 2573423676, 2566373167, 3701471375, 3159648079, 383138674, 1774066469, 148279825, 3585947663, 638132742, 4137145593, 2097163248, 3887431957, 576188752, 1650792132, 3575923140, 1752568493, 1167940937, 616809001, 2044233268, 116772791, 385047810, 3974423, 3880682766, 796237040, 1261767815, 138202899, 439425263, 4253405219, 3500009471, 4051916272, 1767556654, 2852480848, 4209276859, 2773031121, 2802715533, 1724908488, 2215976997, 1953725070, 1746259676, 49844277, 1352922186, 614841133, 2166472974, 3600938490, 230737989, 483950116, 2063874977, 1718950995, 518843238, 3062767029, 2200591708, 2306641178, 2891166653, 745689493, 1348462919, 2741276117, 3432066100, 1816673572, 967263079, 1275129830, 1724620214, 3438130576, 840126809, 3856133909, 1192356468, 1454767100, 2356786298, 477282638, 1974405225, 3781030581, 1361462273, 1921676243, 3691865186, 3967411514, 3441287518, 4208149925, 1031690471, 2247615602, 1284967753, 3099391894, 1488292985, 293094066, 1793494342, 4049448240, 1187344146, 3278331750, 149431173, 659014575, 2235020682, 1013962568, 2986803817, 922888048, 4116496272, 1041927201, 1371475597, 177081013, 1045266888, 571608573, 985069, 2080103213, 2075156492, 1735377710, 2210154843, 1460777500, 904746280, 2725540396, 3149431842, 1237769878, 2387695441, 905336204, 3121212046, 1717388956, 3183023529, 3843909106, 80271166, 3623564208, 1126350223, 2661436117, 2110996652, 1071144636, 3227302388, 1512618887, 3722977559, 1559630265, 536344645, 3633382059, 2646278384, 4028054469, 636394282, 988785684, 996168812, 4288911811, 2143997124, 4286408693, 1125507478, 1966884728, 2098066888, 1091456051, 3326871203, 2758860185, 2433211857, 4052617731, 2304371626, 817385407, 3850611337, 4014375692, 1529123821, 784460174, 80792226, 1890491545, 3306467844, 3002578735, 2377262052, 4040026874, 4202126035, 267650908, 1161808453, 3651757012, 3859565267, 3293864169, 3619552777, 2168736781, 1122937511, 922276097, 3077794501, 27484885, 907832291, 1082226142, 585028460, 1115650643, 2481817503, 2085482643, 3901275610, 872220645, 3043378653, 2340243820, 1176550022, 3489209362, 3138412763, 1396003682, 2365518981, 858743615, 1174463286, 4177700666, 1048807029, 2031573109, 1618099041, 1138905380, 2798317715, 1009047677, 1885215892, 1502847880, 916274439, 1924913832, 1626571087, 150612347, 3206438919, 1220654899, 4136405644, 3869639199, 2345692759, 3343374835, 2330629239, 736611357, 1209233378, 887367774, 3440294803, 3810885785, 1814138934, 198391005, 695914701, 4236198013, 2949927844, 2170063757, 635011400, 1910533855, 3007482648, 3115312092, 2353865646, 3468269624, 3367847885, 733369311, 160564369, 417607365, 3156377414, 1610703619, 3349929219, 398309862, 2315950173, 3091801349, 4235734545, 2340959614, 1291371512, 2045972603, 1113234430, 2050542351, 2923502293, 720233702, 1256573223, 968706530, 2421917648, 1203400562, 2879987056, 3411892489, 2992669603, 2820228288, 3841598092, 2478358911, 368157215, 1129840311, 333145104, 2536979398, 2464976472, 1718559459, 343843943, 25366437, 865435879, 2682601302, 1213105968, 1184398557, 2781758033, 3332798563, 3662398075, 2695346449, 3816446515, 4114907025, 1264514167, 610184686, 3218326792, 4128135013, 3556053812, 2529329065, 1969152419, 2671274154, 2540766355, 582716276, 3557141982, 3474202580, 3519802238, 604721589, 1346865377, 3908774139, 2579810656, 2895659107, 3197531780, 2774843722, 1570770775, 3690932168, 3791835814, 2201278197, 4292267097, 683758696, 1755541479, 1630370399, 1343871363, 3583466908, 52299038, 1740105055, 1387268389, 177691958, 614508633, 2356433115, 3690909390, 3226016847, 2557262161, 1275783275, 4046653835, 4243664304, 1891971751, 2972212925, 4169824295, 900790152, 2731654584, 3432442189, 530844021, 2931612997, 3274462483, 2723987276, 3339204125, 617111603, 1293579062, 1060709655, 2640113824, 1938205056, 1071466433, 2892081840, 3887396344, 595674580, 1808851460, 2695614935, 580608586, 113015875, 3789601163, 3445979293, 1976238378, 3658782658, 3642233437, 4275901882, 1476870811, 3599396305, 3676171707, 124690980, 949824964, 508354797, 3237912289, 493), None)</data>
+<data key="d9">Randomly generated MEP electrical system graph</data>
+<data key="d10">2025-07-28</data>
+<node id="UT">
+  <data key="d11">utility_transformer</data>
+  <data key="d12">utility_transformer</data>
+  <data key="d13">-5.0</data>
   <data key="d14">10.0</data>
-  <data key="d26">12.028130608117205</data>
-  <data key="d27">27.757224480270473</data>
-  <data key="d15">15</data>
+  <data key="d15">0.0</data>
+  <data key="d16">Utility transformer located outside the building footprint</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">35</data>
+  <data key="d22">306600</data>
+  <data key="d23">0</data>
+  <data key="d24">1000.0699999999999</data>
+  <data key="d25">500</data>
+  <data key="d26"></data>
 </node>
-<node id="sub_panel_f0_r0_208_receptacles">
-  <data key="d9">panel</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d18">208</data>
-  <data key="d21">receptacles</data>
-  <data key="d22">28.0</data>
-  <data key="d23">transformer_208_receptacles</data>
-  <data key="d10">8.938321561416085</data>
-  <data key="d11">9.739761603944926</data>
-  <data key="d12">0.0</data>
-  <data key="d14">10.0</data>
-  <data key="d19">27.757224480270473</data>
-  <data key="d20">60</data>
+<node id="MP0.0">
+  <data key="d11">switchboard</data>
+  <data key="d12">main_panel_f0_r0</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d13">9.661227304576716</data>
+  <data key="d14">9.384487076912677</data>
+  <data key="d15">0.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">1000.0699999999999</data>
+  <data key="d30">1202.8972577259772</data>
+  <data key="d31">1600</data>
+  <data key="d26">UT</data>
 </node>
-<node id="main_panel_f1_r0">
-  <data key="d9">panel</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d10">9.608713074537663</data>
-  <data key="d11">9.663216517378968</data>
-  <data key="d12">3.5</data>
-  <data key="d14">141.0</data>
-  <data key="d19">169.59664157445258</data>
-  <data key="d20">225</data>
+<node id="SP0.0.480.L">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f0_r0_480_lighting</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d32">lighting</data>
+  <data key="d33">22.831531361181636</data>
+  <data key="d26">MP0.0</data>
+  <data key="d13">9.600745532902387</data>
+  <data key="d14">9.882112762637298</data>
+  <data key="d15">0.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">50.23</data>
+  <data key="d30">60.41730004457272</data>
+  <data key="d31">100</data>
 </node>
-<node id="sub_panel_f1_r0_480_receptacles">
-  <data key="d9">panel</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d21">receptacles</data>
-  <data key="d22">30.0</data>
-  <data key="d23">main_panel</data>
-  <data key="d10">8.49908608458609</data>
-  <data key="d11">10.748645800607076</data>
-  <data key="d12">3.5</data>
-  <data key="d14">36.0</data>
-  <data key="d19">43.30127018922194</data>
-  <data key="d20">60</data>
+<node id="TR0.0.208.L">
+  <data key="d11">transformer</data>
+  <data key="d12">transformer_f0_r0_208_lighting</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d34">480</data>
+  <data key="d35">208</data>
+  <data key="d32">lighting</data>
+  <data key="d33">27.397837633417964</data>
+  <data key="d26">SP0.0.480.L</data>
+  <data key="d13">10.523365063857012</data>
+  <data key="d14">9.94069099400961</data>
+  <data key="d15">0.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">27.4</data>
+  <data key="d36">32.95707786624114</data>
+  <data key="d37">131.73076923076923</data>
+  <data key="d38">37.5</data>
 </node>
-<node id="transformer_f1_r0_208_receptacles">
-  <data key="d9">transformer</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d24">480</data>
-  <data key="d25">208</data>
-  <data key="d21">receptacles</data>
-  <data key="d22">34.0</data>
-  <data key="d23">sub_panel_480_receptacles</data>
-  <data key="d10">8.884763261240487</data>
-  <data key="d11">10.482424497632758</data>
-  <data key="d12">3.5</data>
-  <data key="d14">20.0</data>
-  <data key="d26">24.05626121623441</data>
-  <data key="d27">55.514448960540946</data>
-  <data key="d15">25</data>
+<node id="SP0.0.208.L">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f0_r0_208_lighting</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d29">208</data>
+  <data key="d32">lighting</data>
+  <data key="d33">27.397837633417964</data>
+  <data key="d26">TR0.0.208.L</data>
+  <data key="d13">10.099111176952459</data>
+  <data key="d14">9.266087203043645</data>
+  <data key="d15">0.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">27.4</data>
+  <data key="d30">131.73076923076923</data>
+  <data key="d31">200</data>
 </node>
-<node id="sub_panel_f1_r0_208_receptacles">
-  <data key="d9">panel</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d18">208</data>
-  <data key="d21">receptacles</data>
-  <data key="d22">34.0</data>
-  <data key="d23">transformer_208_receptacles</data>
-  <data key="d10">9.3669555608367</data>
-  <data key="d11">9.904321916622257</data>
-  <data key="d12">3.5</data>
-  <data key="d14">20.0</data>
-  <data key="d19">55.514448960540946</data>
-  <data key="d20">100</data>
+<node id="SP0.0.480.R">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f0_r0_480_receptacles</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d32">receptacles</data>
+  <data key="d33">19.92570989593859</data>
+  <data key="d26">MP0.0</data>
+  <data key="d13">9.95356269179603</data>
+  <data key="d14">9.498386597152454</data>
+  <data key="d15">0.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">37.86</data>
+  <data key="d30">45.53850248233174</data>
+  <data key="d31">60</data>
 </node>
-<node id="sub_panel_f1_r0_480_lighting">
-  <data key="d9">panel</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d21">lighting</data>
-  <data key="d22">30.0</data>
-  <data key="d23">main_panel</data>
-  <data key="d10">10.23468993945968</data>
-  <data key="d11">10.512679966995673</data>
-  <data key="d12">3.5</data>
-  <data key="d14">39.0</data>
-  <data key="d19">46.9097093716571</data>
-  <data key="d20">60</data>
+<node id="TR0.0.208.R">
+  <data key="d11">transformer</data>
+  <data key="d12">transformer_f0_r0_208_receptacles</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d34">480</data>
+  <data key="d35">208</data>
+  <data key="d32">receptacles</data>
+  <data key="d33">17.93313890634473</data>
+  <data key="d26">SP0.0.480.R</data>
+  <data key="d13">9.4954601646134</data>
+  <data key="d14">9.485031004167041</data>
+  <data key="d15">0.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">17.93</data>
+  <data key="d36">21.566438180354147</data>
+  <data key="d37">86.20192307692308</data>
+  <data key="d25">25</data>
 </node>
-<node id="transformer_f1_r0_208_lighting">
-  <data key="d9">transformer</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d24">480</data>
-  <data key="d25">208</data>
-  <data key="d21">lighting</data>
-  <data key="d22">39.897599655275656</data>
-  <data key="d23">sub_panel_480_lighting</data>
-  <data key="d10">10.108053781059835</data>
-  <data key="d11">9.788702172178944</data>
-  <data key="d12">3.5</data>
-  <data key="d14">24.0</data>
-  <data key="d26">28.86751345948129</data>
-  <data key="d27">66.61733875264913</data>
-  <data key="d28">37.5</data>
+<node id="SP0.0.208.R">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f0_r0_208_receptacles</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d29">208</data>
+  <data key="d32">receptacles</data>
+  <data key="d33">17.93313890634473</data>
+  <data key="d26">TR0.0.208.R</data>
+  <data key="d13">10.595954865501254</data>
+  <data key="d14">9.855689311428412</data>
+  <data key="d15">0.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">17.93</data>
+  <data key="d30">86.20192307692308</data>
+  <data key="d31">150</data>
 </node>
-<node id="sub_panel_f1_r0_208_lighting">
-  <data key="d9">panel</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d18">208</data>
-  <data key="d21">lighting</data>
-  <data key="d22">39.897599655275656</data>
-  <data key="d23">transformer_208_lighting</data>
-  <data key="d10">8.646909117122181</data>
-  <data key="d11">9.250088016755488</data>
-  <data key="d12">3.5</data>
-  <data key="d14">24.0</data>
-  <data key="d19">66.61733875264913</data>
-  <data key="d20">100</data>
+<node id="SP0.0.480.H">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f0_r0_480_hvac</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d32">hvac</data>
+  <data key="d33">96.3351219650687</data>
+  <data key="d26">MP0.0</data>
+  <data key="d13">9.871528109035395</data>
+  <data key="d14">10.416033767185056</data>
+  <data key="d15">0.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">165.59</data>
+  <data key="d30">199.1738147398128</data>
+  <data key="d31">300</data>
 </node>
-<node id="sub_panel_f1_r0_480_hvac">
-  <data key="d9">panel</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d21">hvac</data>
-  <data key="d22">54.0</data>
-  <data key="d23">main_panel</data>
-  <data key="d10">9.304084544199723</data>
-  <data key="d11">10.082561497776476</data>
-  <data key="d12">3.5</data>
-  <data key="d14">66.0</data>
-  <data key="d19">79.38566201357355</data>
-  <data key="d20">100</data>
+<node id="TR0.0.208.H">
+  <data key="d11">transformer</data>
+  <data key="d12">transformer_f0_r0_208_hvac</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d34">480</data>
+  <data key="d35">208</data>
+  <data key="d32">hvac</data>
+  <data key="d33">69.24086891239311</data>
+  <data key="d26">SP0.0.480.H</data>
+  <data key="d13">10.190672966713693</data>
+  <data key="d14">9.16159416563133</data>
+  <data key="d15">0.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">69.25</data>
+  <data key="d36">83.29480446121164</data>
+  <data key="d37">332.9326923076923</data>
+  <data key="d25">100</data>
 </node>
-<node id="transformer_f1_r0_208_hvac">
-  <data key="d9">transformer</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d24">480</data>
-  <data key="d25">208</data>
-  <data key="d21">hvac</data>
-  <data key="d22">75.0</data>
-  <data key="d23">sub_panel_480_hvac</data>
-  <data key="d10">9.282421031077922</data>
-  <data key="d11">9.589316992736222</data>
-  <data key="d12">3.5</data>
-  <data key="d14">39.0</data>
-  <data key="d26">46.9097093716571</data>
-  <data key="d27">108.25317547305484</data>
-  <data key="d15">50</data>
+<node id="SP0.0.208.H">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f0_r0_208_hvac</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d29">208</data>
+  <data key="d32">hvac</data>
+  <data key="d33">69.24086891239311</data>
+  <data key="d26">TR0.0.208.H</data>
+  <data key="d13">9.498663367917892</data>
+  <data key="d14">9.571081537299333</data>
+  <data key="d15">0.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">69.25</data>
+  <data key="d30">332.9326923076923</data>
+  <data key="d31">500</data>
 </node>
-<node id="sub_panel_f1_r0_208_hvac">
-  <data key="d9">panel</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d18">208</data>
-  <data key="d21">hvac</data>
-  <data key="d22">75.0</data>
-  <data key="d23">transformer_208_hvac</data>
-  <data key="d10">9.721886623564542</data>
-  <data key="d11">10.520954031387484</data>
-  <data key="d12">3.5</data>
-  <data key="d14">39.0</data>
-  <data key="d19">108.25317547305484</data>
-  <data key="d20">150</data>
+<node id="MP1.0">
+  <data key="d11">panel</data>
+  <data key="d12">main_panel_f1_r0</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d13">8.933767560209514</data>
+  <data key="d14">9.032240180996922</data>
+  <data key="d15">3.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">271.47</data>
+  <data key="d30">326.5276616185578</data>
+  <data key="d31">500</data>
+  <data key="d26">MP0.0</data>
 </node>
-<node id="main_panel_f2_r0">
-  <data key="d9">panel</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d10">8.93587827490503</data>
-  <data key="d11">10.962115420264384</data>
-  <data key="d12">7.0</data>
-  <data key="d14">102.0</data>
-  <data key="d19">122.68693220279549</data>
-  <data key="d20">200</data>
+<node id="SP1.0.480.L">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f1_r0_480_lighting</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d32">lighting</data>
+  <data key="d33">35.713357468568205</data>
+  <data key="d26">MP1.0</data>
+  <data key="d13">9.210805064957277</data>
+  <data key="d14">9.815333601101358</data>
+  <data key="d15">3.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">78.87</data>
+  <data key="d30">94.8658661062204</data>
+  <data key="d31">150</data>
 </node>
-<node id="sub_panel_f2_r0_480_lighting">
-  <data key="d9">panel</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d21">lighting</data>
-  <data key="d22">25.5</data>
-  <data key="d23">main_panel</data>
-  <data key="d10">9.116528357856577</data>
-  <data key="d11">10.53616566746742</data>
-  <data key="d12">7.0</data>
-  <data key="d14">24.0</data>
-  <data key="d19">28.86751345948129</data>
-  <data key="d20">60</data>
+<node id="TR1.0.208.L">
+  <data key="d11">transformer</data>
+  <data key="d12">transformer_f1_r0_208_lighting</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d34">480</data>
+  <data key="d35">208</data>
+  <data key="d32">lighting</data>
+  <data key="d33">43.15364027451991</data>
+  <data key="d26">SP1.0.480.L</data>
+  <data key="d13">9.97302439288558</data>
+  <data key="d14">10.302812039525909</data>
+  <data key="d15">3.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">43.15</data>
+  <data key="d36">51.901383574025736</data>
+  <data key="d37">207.45192307692307</data>
+  <data key="d25">75</data>
 </node>
-<node id="transformer_f2_r0_208_lighting">
-  <data key="d9">transformer</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d24">480</data>
-  <data key="d25">208</data>
-  <data key="d21">lighting</data>
-  <data key="d22">37.5</data>
-  <data key="d23">sub_panel_480_lighting</data>
-  <data key="d10">9.696145846720382</data>
-  <data key="d11">10.14460921673401</data>
-  <data key="d12">7.0</data>
-  <data key="d14">12.0</data>
-  <data key="d26">14.433756729740645</data>
-  <data key="d27">33.308669376324566</data>
-  <data key="d15">15</data>
+<node id="SP1.0.208.L">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f1_r0_208_lighting</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d29">208</data>
+  <data key="d32">lighting</data>
+  <data key="d33">43.15364027451991</data>
+  <data key="d26">TR1.0.208.L</data>
+  <data key="d13">8.997454529651003</data>
+  <data key="d14">10.911112936203624</data>
+  <data key="d15">3.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">43.15</data>
+  <data key="d30">207.45192307692307</data>
+  <data key="d31">300</data>
 </node>
-<node id="sub_panel_f2_r0_208_lighting">
-  <data key="d9">panel</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d18">208</data>
-  <data key="d21">lighting</data>
-  <data key="d22">37.5</data>
-  <data key="d23">transformer_208_lighting</data>
-  <data key="d10">9.313596585944104</data>
-  <data key="d11">10.695820859575688</data>
-  <data key="d12">7.0</data>
-  <data key="d14">12.0</data>
-  <data key="d19">33.308669376324566</data>
-  <data key="d20">60</data>
+<node id="SP1.0.480.R">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f1_r0_480_receptacles</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d32">receptacles</data>
+  <data key="d33">38.014775468879364</data>
+  <data key="d26">MP1.0</data>
+  <data key="d13">9.078909153464641</data>
+  <data key="d14">10.56468223340629</data>
+  <data key="d15">3.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">66.04</data>
+  <data key="d30">79.43377453600603</data>
+  <data key="d31">100</data>
 </node>
-<node id="sub_panel_f2_r0_480_hvac">
-  <data key="d9">panel</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d21">hvac</data>
-  <data key="d22">63.0</data>
-  <data key="d23">main_panel</data>
-  <data key="d10">10.39704855620617</data>
-  <data key="d11">9.148058332677259</data>
-  <data key="d12">7.0</data>
-  <data key="d14">48.0</data>
-  <data key="d19">57.73502691896258</data>
-  <data key="d20">100</data>
+<node id="TR1.0.208.R">
+  <data key="d11">transformer</data>
+  <data key="d12">transformer_f1_r0_208_receptacles</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d34">480</data>
+  <data key="d35">208</data>
+  <data key="d32">receptacles</data>
+  <data key="d33">28.010887187595323</data>
+  <data key="d26">SP1.0.480.R</data>
+  <data key="d13">9.634833223555685</data>
+  <data key="d14">10.290525269754609</data>
+  <data key="d15">3.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">28.02</data>
+  <data key="d36">33.70282196394441</data>
+  <data key="d37">134.71153846153845</data>
+  <data key="d38">37.5</data>
 </node>
-<node id="transformer_f2_r0_208_hvac">
-  <data key="d9">transformer</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d24">480</data>
-  <data key="d25">208</data>
-  <data key="d21">hvac</data>
-  <data key="d22">36.40262148982072</data>
-  <data key="d23">sub_panel_480_hvac</data>
-  <data key="d10">10.404893032888058</data>
-  <data key="d11">10.333498464723972</data>
-  <data key="d12">7.0</data>
-  <data key="d14">21.0</data>
-  <data key="d26">25.25907427704613</data>
-  <data key="d27">58.29017140856799</data>
-  <data key="d28">37.5</data>
+<node id="SP1.0.208.R">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f1_r0_208_receptacles</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d29">208</data>
+  <data key="d32">receptacles</data>
+  <data key="d33">28.010887187595323</data>
+  <data key="d26">TR1.0.208.R</data>
+  <data key="d13">10.380912953217148</data>
+  <data key="d14">10.657098131295484</data>
+  <data key="d15">3.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">28.02</data>
+  <data key="d30">134.71153846153845</data>
+  <data key="d31">200</data>
 </node>
-<node id="sub_panel_f2_r0_208_hvac">
-  <data key="d9">panel</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d18">208</data>
-  <data key="d21">hvac</data>
-  <data key="d22">36.40262148982072</data>
-  <data key="d23">transformer_208_hvac</data>
-  <data key="d10">9.671071666167915</data>
-  <data key="d11">10.725446342661504</data>
-  <data key="d12">7.0</data>
-  <data key="d14">21.0</data>
-  <data key="d19">58.29017140856799</data>
-  <data key="d20">100</data>
+<node id="SP1.0.480.H">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f1_r0_480_hvac</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d32">hvac</data>
+  <data key="d33">54.23938555225006</data>
+  <data key="d26">MP1.0</data>
+  <data key="d13">10.54364790963045</data>
+  <data key="d14">10.58223431963367</data>
+  <data key="d15">3.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">126.56</data>
+  <data key="d30">152.22802097633135</data>
+  <data key="d31">200</data>
 </node>
-<node id="sub_panel_f2_r0_480_receptacles">
-  <data key="d9">panel</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d21">receptacles</data>
-  <data key="d22">42.0</data>
-  <data key="d23">main_panel</data>
-  <data key="d10">8.754996691473167</data>
-  <data key="d11">9.646366497547499</data>
-  <data key="d12">7.0</data>
-  <data key="d14">30.0</data>
-  <data key="d19">36.08439182435161</data>
-  <data key="d20">60</data>
+<node id="TR1.0.208.H">
+  <data key="d11">transformer</data>
+  <data key="d12">transformer_f1_r0_208_hvac</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d34">480</data>
+  <data key="d35">208</data>
+  <data key="d32">hvac</data>
+  <data key="d33">72.31918073633341</data>
+  <data key="d26">SP1.0.480.H</data>
+  <data key="d13">9.227267938922743</data>
+  <data key="d14">10.726625311766504</data>
+  <data key="d15">3.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">72.32</data>
+  <data key="d36">86.98744055790362</data>
+  <data key="d37">347.6923076923077</data>
+  <data key="d25">100</data>
 </node>
-<node id="transformer_f2_r0_208_receptacles">
-  <data key="d9">transformer</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d24">480</data>
-  <data key="d25">208</data>
-  <data key="d21">receptacles</data>
-  <data key="d22">34.0</data>
-  <data key="d23">sub_panel_480_receptacles</data>
-  <data key="d10">9.001656219006922</data>
-  <data key="d11">10.02974608792218</data>
-  <data key="d12">7.0</data>
-  <data key="d14">12.0</data>
-  <data key="d26">14.433756729740645</data>
-  <data key="d27">33.308669376324566</data>
-  <data key="d15">15</data>
+<node id="SP1.0.208.H">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f1_r0_208_hvac</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d29">208</data>
+  <data key="d32">hvac</data>
+  <data key="d33">72.31918073633341</data>
+  <data key="d26">TR1.0.208.H</data>
+  <data key="d13">9.025091048064363</data>
+  <data key="d14">10.210422321452931</data>
+  <data key="d15">3.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">72.32</data>
+  <data key="d30">347.6923076923077</data>
+  <data key="d31">500</data>
 </node>
-<node id="sub_panel_f2_r0_208_receptacles">
-  <data key="d9">panel</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d18">208</data>
-  <data key="d21">receptacles</data>
-  <data key="d22">34.0</data>
-  <data key="d23">transformer_208_receptacles</data>
-  <data key="d10">8.590942857639522</data>
-  <data key="d11">9.90311861014552</data>
-  <data key="d12">7.0</data>
-  <data key="d14">12.0</data>
-  <data key="d19">33.308669376324566</data>
-  <data key="d20">60</data>
+<node id="MP2.0">
+  <data key="d11">panel</data>
+  <data key="d12">main_panel_f2_r0</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d13">10.561766670229762</data>
+  <data key="d14">9.539462286982669</data>
+  <data key="d15">7.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">235.32999999999996</data>
+  <data key="d30">283.0579976008221</data>
+  <data key="d31">400</data>
+  <data key="d26">MP0.0</data>
 </node>
-<node id="main_panel_f3_r0">
-  <data key="d9">panel</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d10">9.567990455035964</data>
-  <data key="d11">10.890150737914578</data>
-  <data key="d12">10.5</data>
-  <data key="d14">114.0</data>
-  <data key="d19">137.12068893253613</data>
-  <data key="d20">200</data>
+<node id="SP2.0.480.L">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f2_r0_480_lighting</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d32">lighting</data>
+  <data key="d33">21.178600164849673</data>
+  <data key="d26">MP2.0</data>
+  <data key="d13">9.797326580640759</data>
+  <data key="d14">9.67635724114468</data>
+  <data key="d15">7.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">30.259999999999998</data>
+  <data key="d30">36.397123220162655</data>
+  <data key="d31">60</data>
 </node>
-<node id="sub_panel_f3_r0_480_hvac">
-  <data key="d9">panel</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d21">hvac</data>
-  <data key="d22">60.52304150600469</data>
-  <data key="d23">main_panel</data>
-  <data key="d10">10.378859216439114</data>
-  <data key="d11">9.04111134353803</data>
-  <data key="d12">10.5</data>
-  <data key="d14">42.0</data>
-  <data key="d19">50.51814855409226</data>
-  <data key="d20">100</data>
+<node id="TR2.0.208.L">
+  <data key="d11">transformer</data>
+  <data key="d12">transformer_f2_r0_208_lighting</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d34">480</data>
+  <data key="d35">208</data>
+  <data key="d32">lighting</data>
+  <data key="d33">9.076542927792719</data>
+  <data key="d26">SP2.0.480.L</data>
+  <data key="d13">10.30746083078175</data>
+  <data key="d14">9.187627560857917</data>
+  <data key="d15">7.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">9.08</data>
+  <data key="d36">10.921542592170422</data>
+  <data key="d37">43.65384615384615</data>
+  <data key="d25">15</data>
 </node>
-<node id="transformer_f3_r0_208_hvac">
-  <data key="d9">transformer</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d24">480</data>
-  <data key="d25">208</data>
-  <data key="d21">hvac</data>
-  <data key="d22">42.0</data>
-  <data key="d23">sub_panel_480_hvac</data>
-  <data key="d10">8.725342043628087</data>
-  <data key="d11">9.525880794019518</data>
-  <data key="d12">10.5</data>
-  <data key="d14">12.0</data>
-  <data key="d26">14.433756729740645</data>
-  <data key="d27">33.308669376324566</data>
-  <data key="d15">15</data>
+<node id="SP2.0.208.L">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f2_r0_208_lighting</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d29">208</data>
+  <data key="d32">lighting</data>
+  <data key="d33">9.076542927792719</data>
+  <data key="d26">TR2.0.208.L</data>
+  <data key="d13">10.568127401098167</data>
+  <data key="d14">9.302189411509612</data>
+  <data key="d15">7.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">9.08</data>
+  <data key="d30">43.65384615384615</data>
+  <data key="d31">60</data>
 </node>
-<node id="sub_panel_f3_r0_208_hvac">
-  <data key="d9">panel</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d18">208</data>
-  <data key="d21">hvac</data>
-  <data key="d22">42.0</data>
-  <data key="d23">transformer_208_hvac</data>
-  <data key="d10">9.130036175663712</data>
-  <data key="d11">9.003199786907679</data>
-  <data key="d12">10.5</data>
-  <data key="d14">12.0</data>
-  <data key="d19">33.308669376324566</data>
-  <data key="d20">60</data>
+<node id="SP2.0.480.R">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f2_r0_480_receptacles</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d32">receptacles</data>
+  <data key="d33">30.29481551152302</data>
+  <data key="d26">MP2.0</data>
+  <data key="d13">10.287397499444115</data>
+  <data key="d14">9.543887771071761</data>
+  <data key="d15">7.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">60.6</data>
+  <data key="d30">72.89047148519026</data>
+  <data key="d31">100</data>
 </node>
-<node id="sub_panel_f3_r0_480_lighting">
-  <data key="d9">panel</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d21">lighting</data>
-  <data key="d22">37.5</data>
-  <data key="d23">main_panel</data>
-  <data key="d10">8.569053191338307</data>
-  <data key="d11">9.744405853395605</data>
-  <data key="d12">10.5</data>
-  <data key="d14">36.0</data>
-  <data key="d19">43.30127018922194</data>
-  <data key="d20">60</data>
+<node id="TR2.0.208.R">
+  <data key="d11">transformer</data>
+  <data key="d12">transformer_f2_r0_208_receptacles</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d34">480</data>
+  <data key="d35">208</data>
+  <data key="d32">receptacles</data>
+  <data key="d33">30.29481551152302</data>
+  <data key="d26">SP2.0.480.R</data>
+  <data key="d13">10.289933836655825</data>
+  <data key="d14">9.20800311817208</data>
+  <data key="d15">7.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">30.3</data>
+  <data key="d36">36.44523574259513</data>
+  <data key="d37">145.67307692307693</data>
+  <data key="d25">50</data>
 </node>
-<node id="transformer_f3_r0_208_lighting">
-  <data key="d9">transformer</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d24">480</data>
-  <data key="d25">208</data>
-  <data key="d21">lighting</data>
-  <data key="d22">40.5</data>
-  <data key="d23">sub_panel_480_lighting</data>
-  <data key="d10">9.174401567133474</data>
-  <data key="d11">10.197744398384746</data>
-  <data key="d12">10.5</data>
-  <data key="d14">19.5</data>
-  <data key="d26">23.45485468582855</data>
-  <data key="d27">54.12658773652742</data>
-  <data key="d15">25</data>
+<node id="SP2.0.208.R">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f2_r0_208_receptacles</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d29">208</data>
+  <data key="d32">receptacles</data>
+  <data key="d33">30.29481551152302</data>
+  <data key="d26">TR2.0.208.R</data>
+  <data key="d13">9.713233608587535</data>
+  <data key="d14">10.26447207453213</data>
+  <data key="d15">7.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">30.3</data>
+  <data key="d30">145.67307692307693</data>
+  <data key="d31">200</data>
 </node>
-<node id="sub_panel_f3_r0_208_lighting">
-  <data key="d9">panel</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d18">208</data>
-  <data key="d21">lighting</data>
-  <data key="d22">40.5</data>
-  <data key="d23">transformer_208_lighting</data>
-  <data key="d10">8.449553734606353</data>
-  <data key="d11">9.210030144923454</data>
-  <data key="d12">10.5</data>
-  <data key="d14">19.5</data>
-  <data key="d19">54.12658773652742</data>
-  <data key="d20">100</data>
+<node id="SP2.0.480.H">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f2_r0_480_hvac</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d32">hvac</data>
+  <data key="d33">75.23982325265911</data>
+  <data key="d26">MP2.0</data>
+  <data key="d13">9.103820569407112</data>
+  <data key="d14">9.488378235127502</data>
+  <data key="d15">7.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">144.46999999999997</data>
+  <data key="d30">173.77040289546923</data>
+  <data key="d31">225</data>
 </node>
-<node id="sub_panel_f3_r0_480_receptacles">
-  <data key="d9">panel</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d18">480</data>
-  <data key="d21">receptacles</data>
-  <data key="d22">32.0</data>
-  <data key="d23">main_panel</data>
-  <data key="d10">10.41792068479923</data>
-  <data key="d11">10.343886324058106</data>
-  <data key="d12">10.5</data>
-  <data key="d14">36.0</data>
-  <data key="d19">43.30127018922194</data>
-  <data key="d20">60</data>
+<node id="TR2.0.208.H">
+  <data key="d11">transformer</data>
+  <data key="d12">transformer_f2_r0_208_hvac</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d34">480</data>
+  <data key="d35">208</data>
+  <data key="d32">hvac</data>
+  <data key="d33">69.22063739244638</data>
+  <data key="d26">SP2.0.480.H</data>
+  <data key="d13">9.0004878588895</data>
+  <data key="d14">10.33221462688676</data>
+  <data key="d15">7.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">69.22999999999999</data>
+  <data key="d36">83.2707481999954</data>
+  <data key="d37">332.8365384615384</data>
+  <data key="d25">100</data>
 </node>
-<node id="transformer_f3_r0_208_receptacles">
-  <data key="d9">transformer</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d24">480</data>
-  <data key="d25">208</data>
-  <data key="d21">receptacles</data>
-  <data key="d22">50.0</data>
-  <data key="d23">sub_panel_480_receptacles</data>
-  <data key="d10">9.779204905438988</data>
-  <data key="d11">9.883614525643697</data>
-  <data key="d12">10.5</data>
-  <data key="d14">20.0</data>
-  <data key="d26">24.05626121623441</data>
-  <data key="d27">55.514448960540946</data>
-  <data key="d15">25</data>
+<node id="SP2.0.208.H">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f2_r0_208_hvac</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d29">208</data>
+  <data key="d32">hvac</data>
+  <data key="d33">69.22063739244638</data>
+  <data key="d26">TR2.0.208.H</data>
+  <data key="d13">10.06706309870839</data>
+  <data key="d14">9.074773013826261</data>
+  <data key="d15">7.0</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">69.22999999999999</data>
+  <data key="d30">332.8365384615384</data>
+  <data key="d31">500</data>
 </node>
-<node id="sub_panel_f3_r0_208_receptacles">
-  <data key="d9">panel</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d18">208</data>
-  <data key="d21">receptacles</data>
-  <data key="d22">50.0</data>
-  <data key="d23">transformer_208_receptacles</data>
-  <data key="d10">9.964025778681943</data>
-  <data key="d11">9.710878360806324</data>
-  <data key="d12">10.5</data>
-  <data key="d14">20.0</data>
-  <data key="d19">55.514448960540946</data>
-  <data key="d20">100</data>
+<node id="MP3.0">
+  <data key="d11">panel</data>
+  <data key="d12">main_panel_f3_r0</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d13">9.320288564957917</data>
+  <data key="d14">9.40292365825993</data>
+  <data key="d15">10.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">239.59</data>
+  <data key="d30">288.1819812398801</data>
+  <data key="d31">400</data>
+  <data key="d26">MP0.0</data>
 </node>
-<node id="end_load_f0_r0_hvac_480">
-  <data key="d9">end_load</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d21">hvac</data>
-  <data key="d18">480</data>
-  <data key="d10">8.863361114614584</data>
-  <data key="d11">17.90650863798552</data>
-  <data key="d12">0.0</data>
-  <data key="d22">30.0</data>
-  <data key="d14">30.0</data>
-  <data key="d19">36.08439182435161</data>
+<node id="SP3.0.480.L">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f3_r0_480_lighting</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d32">lighting</data>
+  <data key="d33">55.07504412701299</data>
+  <data key="d26">MP3.0</data>
+  <data key="d13">10.129040554440369</data>
+  <data key="d14">9.851175464076222</data>
+  <data key="d15">10.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">95.25999999999999</data>
+  <data key="d30">114.57997217292447</data>
+  <data key="d31">150</data>
 </node>
-<node id="end_load_f0_r0_hvac_208">
-  <data key="d9">end_load</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d21">hvac</data>
-  <data key="d18">208</data>
-  <data key="d10">17.5715850162473</data>
-  <data key="d11">10.511613273132433</data>
-  <data key="d12">0.0</data>
-  <data key="d22">27.0</data>
-  <data key="d14">27.0</data>
-  <data key="d19">74.94450609673028</data>
+<node id="TR3.0.208.L">
+  <data key="d11">transformer</data>
+  <data key="d12">transformer_f3_r0_208_lighting</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d34">480</data>
+  <data key="d35">208</data>
+  <data key="d32">lighting</data>
+  <data key="d33">40.18989706565813</data>
+  <data key="d26">SP3.0.480.L</data>
+  <data key="d13">9.033806047603921</data>
+  <data key="d14">9.540018909165395</data>
+  <data key="d15">10.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">40.19</data>
+  <data key="d36">48.34105691402305</data>
+  <data key="d37">193.22115384615384</data>
+  <data key="d25">75</data>
 </node>
-<node id="end_load_f0_r0_lighting_480">
-  <data key="d9">end_load</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d21">lighting</data>
-  <data key="d18">480</data>
-  <data key="d10">13.767959579297496</data>
-  <data key="d11">12.000978198095083</data>
-  <data key="d12">0.0</data>
-  <data key="d22">15.0</data>
-  <data key="d14">15.0</data>
-  <data key="d19">18.042195912175806</data>
+<node id="SP3.0.208.L">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f3_r0_208_lighting</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d29">208</data>
+  <data key="d32">lighting</data>
+  <data key="d33">40.18989706565813</data>
+  <data key="d26">TR3.0.208.L</data>
+  <data key="d13">10.553246509850347</data>
+  <data key="d14">9.067633000396276</data>
+  <data key="d15">10.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">40.19</data>
+  <data key="d30">193.22115384615384</data>
+  <data key="d31">300</data>
 </node>
-<node id="end_load_f0_r0_lighting_208">
-  <data key="d9">end_load</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d21">lighting</data>
-  <data key="d18">208</data>
-  <data key="d10">16.027173633538034</data>
-  <data key="d11">6.10109076993449</data>
-  <data key="d12">0.0</data>
-  <data key="d22">13.5</data>
-  <data key="d14">13.5</data>
-  <data key="d19">37.47225304836514</data>
+<node id="SP3.0.480.R">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f3_r0_480_receptacles</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d32">receptacles</data>
+  <data key="d33">65.4491302368663</data>
+  <data key="d26">MP3.0</data>
+  <data key="d13">9.880410711747018</data>
+  <data key="d14">10.386697452833648</data>
+  <data key="d15">10.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">111.08000000000001</data>
+  <data key="d30">133.60847479496593</data>
+  <data key="d31">200</data>
 </node>
-<node id="end_load_f0_r0_receptacles_480">
-  <data key="d9">end_load</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d21">receptacles</data>
-  <data key="d18">480</data>
-  <data key="d10">4.287328107580157</data>
-  <data key="d11">4.7286290504607065</data>
-  <data key="d12">0.0</data>
-  <data key="d22">16.68</data>
-  <data key="d14">16.68</data>
-  <data key="d19">20.062921854339496</data>
+<node id="TR3.0.208.R">
+  <data key="d11">transformer</data>
+  <data key="d12">transformer_f3_r0_208_receptacles</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d34">480</data>
+  <data key="d35">208</data>
+  <data key="d32">receptacles</data>
+  <data key="d33">45.61606046811893</data>
+  <data key="d26">SP3.0.480.R</data>
+  <data key="d13">9.218055534541064</data>
+  <data key="d14">10.2435274188752</data>
+  <data key="d15">10.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">45.620000000000005</data>
+  <data key="d36">54.8723318342307</data>
+  <data key="d37">219.32692307692312</data>
+  <data key="d25">75</data>
 </node>
-<node id="end_load_f0_r0_receptacles_208">
-  <data key="d9">end_load</data>
-  <data key="d16">0</data>
-  <data key="d17">0</data>
-  <data key="d21">receptacles</data>
-  <data key="d18">208</data>
-  <data key="d10">18.125619237800834</data>
-  <data key="d11">2.21884228242319</data>
-  <data key="d12">0.0</data>
-  <data key="d22">10.0</data>
-  <data key="d14">10.0</data>
-  <data key="d19">27.757224480270473</data>
+<node id="SP3.0.208.R">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f3_r0_208_receptacles</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d29">208</data>
+  <data key="d32">receptacles</data>
+  <data key="d33">45.61606046811893</data>
+  <data key="d26">TR3.0.208.R</data>
+  <data key="d13">8.929021693197697</data>
+  <data key="d14">10.398560481520407</data>
+  <data key="d15">10.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">45.620000000000005</data>
+  <data key="d30">219.32692307692312</data>
+  <data key="d31">300</data>
 </node>
-<node id="end_load_f1_r0_receptacles_480">
-  <data key="d9">end_load</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d21">receptacles</data>
-  <data key="d18">480</data>
-  <data key="d10">19.924151113585395</data>
-  <data key="d11">7.5637104102018515</data>
-  <data key="d12">3.5</data>
-  <data key="d22">16.0</data>
-  <data key="d14">16.0</data>
-  <data key="d19">19.245008972987527</data>
+<node id="SP3.0.480.H">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f3_r0_480_hvac</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d29">480</data>
+  <data key="d32">hvac</data>
+  <data key="d33">12.09061744693047</data>
+  <data key="d26">MP3.0</data>
+  <data key="d13">10.342527113885643</data>
+  <data key="d14">9.822842410724986</data>
+  <data key="d15">10.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">33.25</data>
+  <data key="d30">39.9935342719897</data>
+  <data key="d31">60</data>
 </node>
-<node id="end_load_f1_r0_receptacles_208">
-  <data key="d9">end_load</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d21">receptacles</data>
-  <data key="d18">208</data>
-  <data key="d10">13.978782634311386</data>
-  <data key="d11">13.973967175378853</data>
-  <data key="d12">3.5</data>
-  <data key="d22">20.0</data>
-  <data key="d14">20.0</data>
-  <data key="d19">55.514448960540946</data>
+<node id="TR3.0.208.H">
+  <data key="d11">transformer</data>
+  <data key="d12">transformer_f3_r0_208_hvac</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d34">480</data>
+  <data key="d35">208</data>
+  <data key="d32">hvac</data>
+  <data key="d33">21.15858053212832</data>
+  <data key="d26">SP3.0.480.H</data>
+  <data key="d13">9.72887615143663</data>
+  <data key="d14">10.462918547517917</data>
+  <data key="d15">10.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">12</data>
+  <data key="d20">0</data>
+  <data key="d21">30</data>
+  <data key="d22">262800</data>
+  <data key="d23">0</data>
+  <data key="d24">21.16</data>
+  <data key="d36">25.451524366776006</data>
+  <data key="d37">101.73076923076923</data>
+  <data key="d38">37.5</data>
 </node>
-<node id="end_load_f1_r0_lighting_480">
-  <data key="d9">end_load</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d21">lighting</data>
-  <data key="d18">480</data>
-  <data key="d10">10.3568032146759</data>
-  <data key="d11">10.267741736195452</data>
-  <data key="d12">3.5</data>
-  <data key="d22">15.0</data>
-  <data key="d14">15.0</data>
-  <data key="d19">18.042195912175806</data>
+<node id="SP3.0.208.H">
+  <data key="d11">panel</data>
+  <data key="d12">sub_panel_f3_r0_208_hvac</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d29">208</data>
+  <data key="d32">hvac</data>
+  <data key="d33">21.15858053212832</data>
+  <data key="d26">TR3.0.208.H</data>
+  <data key="d13">8.951847831526795</data>
+  <data key="d14">9.099277279037503</data>
+  <data key="d15">10.5</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">24</data>
+  <data key="d20">0</data>
+  <data key="d21">25</data>
+  <data key="d22">219000</data>
+  <data key="d23">0</data>
+  <data key="d24">21.16</data>
+  <data key="d30">101.73076923076923</data>
+  <data key="d31">150</data>
 </node>
-<node id="end_load_f1_r0_lighting_208_c0">
-  <data key="d9">end_load</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d21">lighting</data>
-  <data key="d18">208</data>
-  <data key="d10">10.737973234022894</data>
-  <data key="d11">9.636360743224564</data>
-  <data key="d12">3.5</data>
-  <data key="d22">12.0</data>
-  <data key="d14">12.0</data>
-  <data key="d19">33.308669376324566</data>
+<node id="EL0.0.277.L.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f0_r0_lighting_277_c0</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">277</data>
+  <data key="d13">10.450747022366931</data>
+  <data key="d14">12.154132187255948</data>
+  <data key="d15">0.0</data>
+  <data key="d33">12.18</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">12.18</data>
+  <data key="d30">43.97111913357401</data>
+  <data key="d26">SP0.0.480.L</data>
 </node>
-<node id="end_load_f1_r0_lighting_208_c1">
-  <data key="d9">end_load</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d21">lighting</data>
-  <data key="d18">208</data>
-  <data key="d10">11.118775586011036</data>
-  <data key="d11">8.438511525123879</data>
-  <data key="d12">3.5</data>
-  <data key="d22">12.0</data>
-  <data key="d14">12.0</data>
-  <data key="d19">33.308669376324566</data>
+<node id="EL0.0.480.L.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f0_r0_lighting_480_c1</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">480</data>
+  <data key="d13">11.148992709577401</data>
+  <data key="d14">5.576088476982821</data>
+  <data key="d15">0.0</data>
+  <data key="d33">10.65</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">10.65</data>
+  <data key="d30">12.809959097644823</data>
+  <data key="d26">SP0.0.480.L</data>
 </node>
-<node id="end_load_f1_r0_hvac_480">
-  <data key="d9">end_load</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d21">hvac</data>
-  <data key="d18">480</data>
-  <data key="d10">2.4438330826873167</data>
-  <data key="d11">2.7015939947989587</data>
-  <data key="d12">3.5</data>
-  <data key="d22">27.0</data>
-  <data key="d14">27.0</data>
-  <data key="d19">32.47595264191645</data>
+<node id="EL0.0.120.L.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f0_r0_lighting_120_c0</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">120</data>
+  <data key="d13">9.834771906021565</data>
+  <data key="d14">11.427339407113632</data>
+  <data key="d15">0.0</data>
+  <data key="d33">13.7</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">13.7</data>
+  <data key="d30">114.16666666666667</data>
+  <data key="d26">SP0.0.208.L</data>
 </node>
-<node id="end_load_f1_r0_hvac_208_c0">
-  <data key="d9">end_load</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d21">hvac</data>
-  <data key="d18">208</data>
-  <data key="d10">7.985740310142272</data>
-  <data key="d11">11.672661661540218</data>
-  <data key="d12">3.5</data>
-  <data key="d22">21.0</data>
-  <data key="d14">21.0</data>
-  <data key="d19">58.29017140856799</data>
+<node id="EL0.0.208.L.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f0_r0_lighting_208_c1</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">208</data>
+  <data key="d13">11.039634905692889</data>
+  <data key="d14">9.583218789388873</data>
+  <data key="d15">0.0</data>
+  <data key="d33">13.7</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">13.7</data>
+  <data key="d30">65.86538461538461</data>
+  <data key="d26">SP0.0.208.L</data>
 </node>
-<node id="end_load_f1_r0_hvac_208_c1">
-  <data key="d9">end_load</data>
-  <data key="d16">1</data>
-  <data key="d17">0</data>
-  <data key="d21">hvac</data>
-  <data key="d18">208</data>
-  <data key="d10">8.884664003878127</data>
-  <data key="d11">11.37460953031413</data>
-  <data key="d12">3.5</data>
-  <data key="d22">18.0</data>
-  <data key="d14">18.0</data>
-  <data key="d19">49.963004064486846</data>
+<node id="EL0.0.277.R">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f0_r0_receptacles_277</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">277</data>
+  <data key="d13">18.288766756891274</data>
+  <data key="d14">9.447265467702923</data>
+  <data key="d15">0.0</data>
+  <data key="d33">19.93</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">19.93</data>
+  <data key="d30">71.94945848375451</data>
+  <data key="d26">SP0.0.480.R</data>
 </node>
-<node id="end_load_f2_r0_lighting_480">
-  <data key="d9">end_load</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d21">lighting</data>
-  <data key="d18">480</data>
-  <data key="d10">5.418678195214901</data>
-  <data key="d11">7.212400328993109</data>
-  <data key="d12">7.0</data>
-  <data key="d22">12.0</data>
-  <data key="d14">12.0</data>
-  <data key="d19">14.433756729740645</data>
+<node id="EL0.0.120.R">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f0_r0_receptacles_120</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">120</data>
+  <data key="d13">14.952125852258858</data>
+  <data key="d14">3.438280987558746</data>
+  <data key="d15">0.0</data>
+  <data key="d33">17.93</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">17.93</data>
+  <data key="d30">149.41666666666666</data>
+  <data key="d26">SP0.0.208.R</data>
 </node>
-<node id="end_load_f2_r0_lighting_208">
-  <data key="d9">end_load</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d21">lighting</data>
-  <data key="d18">208</data>
-  <data key="d10">15.35908072129417</data>
-  <data key="d11">17.626092147811644</data>
-  <data key="d12">7.0</data>
-  <data key="d22">12.0</data>
-  <data key="d14">12.0</data>
-  <data key="d19">33.308669376324566</data>
+<node id="EL0.0.277.H.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f0_r0_hvac_277_c0</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">277</data>
+  <data key="d13">10.966359051344579</data>
+  <data key="d14">9.365518443223962</data>
+  <data key="d15">0.0</data>
+  <data key="d33">33.12</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">33.12</data>
+  <data key="d30">119.5667870036101</data>
+  <data key="d26">SP0.0.480.H</data>
 </node>
-<node id="end_load_f2_r0_hvac_480">
-  <data key="d9">end_load</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d21">hvac</data>
-  <data key="d18">480</data>
-  <data key="d10">8.340500004754096</data>
-  <data key="d11">18.52745852941835</data>
-  <data key="d12">7.0</data>
-  <data key="d22">27.0</data>
-  <data key="d14">27.0</data>
-  <data key="d19">32.47595264191645</data>
+<node id="EL0.0.277.H.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f0_r0_hvac_277_c1</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">277</data>
+  <data key="d13">7.9424207147943005</data>
+  <data key="d14">13.098809849561805</data>
+  <data key="d15">0.0</data>
+  <data key="d33">33.12</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">33.12</data>
+  <data key="d30">119.5667870036101</data>
+  <data key="d26">SP0.0.480.H</data>
 </node>
-<node id="end_load_f2_r0_hvac_208">
-  <data key="d9">end_load</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d21">hvac</data>
-  <data key="d18">208</data>
-  <data key="d10">7.28866351603968</data>
-  <data key="d11">10.226434990916054</data>
-  <data key="d12">7.0</data>
-  <data key="d22">21.0</data>
-  <data key="d14">21.0</data>
-  <data key="d19">58.29017140856799</data>
+<node id="EL0.0.277.H.c2">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f0_r0_hvac_277_c2</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">277</data>
+  <data key="d13">9.251650718647047</data>
+  <data key="d14">10.800156875416928</data>
+  <data key="d15">0.0</data>
+  <data key="d33">30.1</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">30.1</data>
+  <data key="d30">108.66425992779783</data>
+  <data key="d26">SP0.0.480.H</data>
 </node>
-<node id="end_load_f2_r0_receptacles_480">
-  <data key="d9">end_load</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d21">receptacles</data>
-  <data key="d18">480</data>
-  <data key="d10">9.84300528421726</data>
-  <data key="d11">19.92834304338905</data>
-  <data key="d12">7.0</data>
-  <data key="d22">18.0</data>
-  <data key="d14">18.0</data>
-  <data key="d19">21.65063509461097</data>
+<node id="EL0.0.208.H.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f0_r0_hvac_208_c0</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">208</data>
+  <data key="d13">8.878074933524871</data>
+  <data key="d14">6.815048930405154</data>
+  <data key="d15">0.0</data>
+  <data key="d33">36.13</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">36.13</data>
+  <data key="d30">173.70192307692307</data>
+  <data key="d26">SP0.0.208.H</data>
 </node>
-<node id="end_load_f2_r0_receptacles_208">
-  <data key="d9">end_load</data>
-  <data key="d16">2</data>
-  <data key="d17">0</data>
-  <data key="d21">receptacles</data>
-  <data key="d18">208</data>
-  <data key="d10">16.353340013024557</data>
-  <data key="d11">13.980088442792432</data>
-  <data key="d12">7.0</data>
-  <data key="d22">12.0</data>
-  <data key="d14">12.0</data>
-  <data key="d19">33.308669376324566</data>
+<node id="EL0.0.120.H.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f0_r0_hvac_120_c1</data>
+  <data key="d27">0</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">120</data>
+  <data key="d13">7.098074740535366</data>
+  <data key="d14">9.103728837170213</data>
+  <data key="d15">0.0</data>
+  <data key="d33">33.12</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">33.12</data>
+  <data key="d30">276.0</data>
+  <data key="d26">SP0.0.208.H</data>
 </node>
-<node id="end_load_f3_r0_hvac_480">
-  <data key="d9">end_load</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d21">hvac</data>
-  <data key="d18">480</data>
-  <data key="d10">9.427225604313868</data>
-  <data key="d11">4.808825240344177</data>
-  <data key="d12">10.5</data>
-  <data key="d22">30.0</data>
-  <data key="d14">30.0</data>
-  <data key="d19">36.08439182435161</data>
+<node id="EL1.0.480.L.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f1_r0_lighting_480_c0</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">480</data>
+  <data key="d13">9.595616980718239</data>
+  <data key="d14">11.66332484942716</data>
+  <data key="d15">3.5</data>
+  <data key="d33">17.86</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">17.86</data>
+  <data key="d30">21.48224126609733</data>
+  <data key="d26">SP1.0.480.L</data>
 </node>
-<node id="end_load_f3_r0_hvac_208">
-  <data key="d9">end_load</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d21">hvac</data>
-  <data key="d18">208</data>
-  <data key="d10">5.25631459157241</data>
-  <data key="d11">13.8668197820266</data>
-  <data key="d12">10.5</data>
-  <data key="d22">12.0</data>
-  <data key="d14">12.0</data>
-  <data key="d19">33.308669376324566</data>
+<node id="EL1.0.277.L.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f1_r0_lighting_277_c1</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">277</data>
+  <data key="d13">8.153208906320877</data>
+  <data key="d14">7.08919739841492</data>
+  <data key="d15">3.5</data>
+  <data key="d33">17.86</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">17.86</data>
+  <data key="d30">64.47653429602889</data>
+  <data key="d26">SP1.0.480.L</data>
 </node>
-<node id="end_load_f3_r0_lighting_480_c0">
-  <data key="d9">end_load</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d21">lighting</data>
-  <data key="d18">480</data>
-  <data key="d10">12.066278784590535</data>
-  <data key="d11">11.700315813048272</data>
-  <data key="d12">10.5</data>
-  <data key="d22">9.0</data>
-  <data key="d14">9.0</data>
-  <data key="d19">10.825317547305485</data>
+<node id="EL1.0.208.L.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f1_r0_lighting_208_c0</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">208</data>
+  <data key="d13">10.697379072271918</data>
+  <data key="d14">9.359051029843414</data>
+  <data key="d15">3.5</data>
+  <data key="d33">22.32</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">22.32</data>
+  <data key="d30">107.3076923076923</data>
+  <data key="d26">SP1.0.208.L</data>
 </node>
-<node id="end_load_f3_r0_lighting_480_c1">
-  <data key="d9">end_load</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d21">lighting</data>
-  <data key="d18">480</data>
-  <data key="d10">4.658724515038708</data>
-  <data key="d11">6.184237899581492</data>
-  <data key="d12">10.5</data>
-  <data key="d22">7.5</data>
-  <data key="d14">7.5</data>
-  <data key="d19">9.021097956087903</data>
+<node id="EL1.0.208.L.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f1_r0_lighting_208_c1</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">208</data>
+  <data key="d13">8.609861162711189</data>
+  <data key="d14">11.033852275866534</data>
+  <data key="d15">3.5</data>
+  <data key="d33">20.83</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">20.83</data>
+  <data key="d30">100.14423076923077</data>
+  <data key="d26">SP1.0.208.L</data>
 </node>
-<node id="end_load_f3_r0_lighting_208_c0">
-  <data key="d9">end_load</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d21">lighting</data>
-  <data key="d18">208</data>
-  <data key="d10">13.184155694857125</data>
-  <data key="d11">9.795467597906972</data>
-  <data key="d12">10.5</data>
-  <data key="d22">10.5</data>
-  <data key="d14">10.5</data>
-  <data key="d19">29.145085704283996</data>
+<node id="EL1.0.277.R.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f1_r0_receptacles_277_c0</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">277</data>
+  <data key="d13">10.625917890836238</data>
+  <data key="d14">6.97600336980822</data>
+  <data key="d15">3.5</data>
+  <data key="d33">20.01</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">20.01</data>
+  <data key="d30">72.23826714801444</data>
+  <data key="d26">SP1.0.480.R</data>
 </node>
-<node id="end_load_f3_r0_lighting_208_c1">
-  <data key="d9">end_load</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d21">lighting</data>
-  <data key="d18">208</data>
-  <data key="d10">15.188872333843667</data>
-  <data key="d11">11.920824793916367</data>
-  <data key="d12">10.5</data>
-  <data key="d22">9.0</data>
-  <data key="d14">9.0</data>
-  <data key="d19">24.981502032243423</data>
+<node id="EL1.0.480.R.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f1_r0_receptacles_480_c1</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">480</data>
+  <data key="d13">9.35496112001845</data>
+  <data key="d14">12.367575839993519</data>
+  <data key="d15">3.5</data>
+  <data key="d33">18.01</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">18.01</data>
+  <data key="d30">21.662663225219084</data>
+  <data key="d26">SP1.0.480.R</data>
 </node>
-<node id="end_load_f3_r0_receptacles_480">
-  <data key="d9">end_load</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d21">receptacles</data>
-  <data key="d18">480</data>
-  <data key="d10">8.263486732443788</data>
-  <data key="d11">15.119475134172713</data>
-  <data key="d12">10.5</data>
-  <data key="d22">16.0</data>
-  <data key="d14">16.0</data>
-  <data key="d19">19.245008972987527</data>
+<node id="EL1.0.120.R.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f1_r0_receptacles_120_c0</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">120</data>
+  <data key="d13">11.103872453592514</data>
+  <data key="d14">12.7107201900964</data>
+  <data key="d15">3.5</data>
+  <data key="d33">14.01</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">14.01</data>
+  <data key="d30">116.75</data>
+  <data key="d26">SP1.0.208.R</data>
 </node>
-<node id="end_load_f3_r0_receptacles_208">
-  <data key="d9">end_load</data>
-  <data key="d16">3</data>
-  <data key="d17">0</data>
-  <data key="d21">receptacles</data>
-  <data key="d18">208</data>
-  <data key="d10">7.964424875475993</data>
-  <data key="d11">8.777572606573166</data>
-  <data key="d12">10.5</data>
-  <data key="d22">20.0</data>
-  <data key="d14">20.0</data>
-  <data key="d19">55.514448960540946</data>
+<node id="EL1.0.208.R.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f1_r0_receptacles_208_c1</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">208</data>
+  <data key="d13">12.006790258078592</data>
+  <data key="d14">8.141996741879973</data>
+  <data key="d15">3.5</data>
+  <data key="d33">14.01</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">14.01</data>
+  <data key="d30">67.35576923076923</data>
+  <data key="d26">SP1.0.208.R</data>
 </node>
-<edge source="utility_transformer" target="main_panel_f0_r0">
-  <data key="d29">Utility to main panel connection</data>
-</edge>
-<edge source="main_panel_f0_r0" target="main_panel_f1_r0">
-  <data key="d29">Main panel feed from ground floor</data>
-</edge>
-<edge source="main_panel_f0_r0" target="main_panel_f2_r0">
-  <data key="d29">Main panel feed from ground floor</data>
-</edge>
-<edge source="main_panel_f0_r0" target="main_panel_f3_r0">
-  <data key="d29">Main panel feed from ground floor</data>
-</edge>
-<edge source="main_panel_f0_r0" target="sub_panel_f0_r0_480_hvac">
-  <data key="d29">main_panel to sub_panel</data>
-</edge>
-<edge source="main_panel_f0_r0" target="sub_panel_f0_r0_480_lighting">
-  <data key="d29">main_panel to sub_panel</data>
-</edge>
-<edge source="main_panel_f0_r0" target="sub_panel_f0_r0_480_receptacles">
-  <data key="d29">main_panel to sub_panel</data>
-</edge>
-<edge source="sub_panel_f0_r0_480_hvac" target="transformer_f0_r0_208_hvac">
-  <data key="d29">sub_panel_480_hvac to transformer</data>
-</edge>
-<edge source="sub_panel_f0_r0_480_hvac" target="end_load_f0_r0_hvac_480">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="transformer_f0_r0_208_hvac" target="sub_panel_f0_r0_208_hvac">
-  <data key="d29">transformer_208_hvac to sub_panel</data>
-</edge>
-<edge source="sub_panel_f0_r0_208_hvac" target="end_load_f0_r0_hvac_208">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="sub_panel_f0_r0_480_lighting" target="transformer_f0_r0_208_lighting">
-  <data key="d29">sub_panel_480_lighting to transformer</data>
-</edge>
-<edge source="sub_panel_f0_r0_480_lighting" target="end_load_f0_r0_lighting_480">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="transformer_f0_r0_208_lighting" target="sub_panel_f0_r0_208_lighting">
-  <data key="d29">transformer_208_lighting to sub_panel</data>
-</edge>
-<edge source="sub_panel_f0_r0_208_lighting" target="end_load_f0_r0_lighting_208">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="sub_panel_f0_r0_480_receptacles" target="transformer_f0_r0_208_receptacles">
-  <data key="d29">sub_panel_480_receptacles to transformer</data>
-</edge>
-<edge source="sub_panel_f0_r0_480_receptacles" target="end_load_f0_r0_receptacles_480">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="transformer_f0_r0_208_receptacles" target="sub_panel_f0_r0_208_receptacles">
-  <data key="d29">transformer_208_receptacles to sub_panel</data>
-</edge>
-<edge source="sub_panel_f0_r0_208_receptacles" target="end_load_f0_r0_receptacles_208">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="main_panel_f1_r0" target="sub_panel_f1_r0_480_receptacles">
-  <data key="d29">main_panel to sub_panel</data>
-</edge>
-<edge source="main_panel_f1_r0" target="sub_panel_f1_r0_480_lighting">
-  <data key="d29">main_panel to sub_panel</data>
-</edge>
-<edge source="main_panel_f1_r0" target="sub_panel_f1_r0_480_hvac">
-  <data key="d29">main_panel to sub_panel</data>
-</edge>
-<edge source="sub_panel_f1_r0_480_receptacles" target="transformer_f1_r0_208_receptacles">
-  <data key="d29">sub_panel_480_receptacles to transformer</data>
-</edge>
-<edge source="sub_panel_f1_r0_480_receptacles" target="end_load_f1_r0_receptacles_480">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="transformer_f1_r0_208_receptacles" target="sub_panel_f1_r0_208_receptacles">
-  <data key="d29">transformer_208_receptacles to sub_panel</data>
-</edge>
-<edge source="sub_panel_f1_r0_208_receptacles" target="end_load_f1_r0_receptacles_208">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="sub_panel_f1_r0_480_lighting" target="transformer_f1_r0_208_lighting">
-  <data key="d29">sub_panel_480_lighting to transformer</data>
-</edge>
-<edge source="sub_panel_f1_r0_480_lighting" target="end_load_f1_r0_lighting_480">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="transformer_f1_r0_208_lighting" target="sub_panel_f1_r0_208_lighting">
-  <data key="d29">transformer_208_lighting to sub_panel</data>
-</edge>
-<edge source="sub_panel_f1_r0_208_lighting" target="end_load_f1_r0_lighting_208_c0">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="sub_panel_f1_r0_208_lighting" target="end_load_f1_r0_lighting_208_c1">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="sub_panel_f1_r0_480_hvac" target="transformer_f1_r0_208_hvac">
-  <data key="d29">sub_panel_480_hvac to transformer</data>
-</edge>
-<edge source="sub_panel_f1_r0_480_hvac" target="end_load_f1_r0_hvac_480">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="transformer_f1_r0_208_hvac" target="sub_panel_f1_r0_208_hvac">
-  <data key="d29">transformer_208_hvac to sub_panel</data>
-</edge>
-<edge source="sub_panel_f1_r0_208_hvac" target="end_load_f1_r0_hvac_208_c0">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="sub_panel_f1_r0_208_hvac" target="end_load_f1_r0_hvac_208_c1">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="main_panel_f2_r0" target="sub_panel_f2_r0_480_lighting">
-  <data key="d29">main_panel to sub_panel</data>
-</edge>
-<edge source="main_panel_f2_r0" target="sub_panel_f2_r0_480_hvac">
-  <data key="d29">main_panel to sub_panel</data>
-</edge>
-<edge source="main_panel_f2_r0" target="sub_panel_f2_r0_480_receptacles">
-  <data key="d29">main_panel to sub_panel</data>
-</edge>
-<edge source="sub_panel_f2_r0_480_lighting" target="transformer_f2_r0_208_lighting">
-  <data key="d29">sub_panel_480_lighting to transformer</data>
-</edge>
-<edge source="sub_panel_f2_r0_480_lighting" target="end_load_f2_r0_lighting_480">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="transformer_f2_r0_208_lighting" target="sub_panel_f2_r0_208_lighting">
-  <data key="d29">transformer_208_lighting to sub_panel</data>
-</edge>
-<edge source="sub_panel_f2_r0_208_lighting" target="end_load_f2_r0_lighting_208">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="sub_panel_f2_r0_480_hvac" target="transformer_f2_r0_208_hvac">
-  <data key="d29">sub_panel_480_hvac to transformer</data>
-</edge>
-<edge source="sub_panel_f2_r0_480_hvac" target="end_load_f2_r0_hvac_480">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="transformer_f2_r0_208_hvac" target="sub_panel_f2_r0_208_hvac">
-  <data key="d29">transformer_208_hvac to sub_panel</data>
-</edge>
-<edge source="sub_panel_f2_r0_208_hvac" target="end_load_f2_r0_hvac_208">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="sub_panel_f2_r0_480_receptacles" target="transformer_f2_r0_208_receptacles">
-  <data key="d29">sub_panel_480_receptacles to transformer</data>
-</edge>
-<edge source="sub_panel_f2_r0_480_receptacles" target="end_load_f2_r0_receptacles_480">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="transformer_f2_r0_208_receptacles" target="sub_panel_f2_r0_208_receptacles">
-  <data key="d29">transformer_208_receptacles to sub_panel</data>
-</edge>
-<edge source="sub_panel_f2_r0_208_receptacles" target="end_load_f2_r0_receptacles_208">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="main_panel_f3_r0" target="sub_panel_f3_r0_480_hvac">
-  <data key="d29">main_panel to sub_panel</data>
-</edge>
-<edge source="main_panel_f3_r0" target="sub_panel_f3_r0_480_lighting">
-  <data key="d29">main_panel to sub_panel</data>
-</edge>
-<edge source="main_panel_f3_r0" target="sub_panel_f3_r0_480_receptacles">
-  <data key="d29">main_panel to sub_panel</data>
-</edge>
-<edge source="sub_panel_f3_r0_480_hvac" target="transformer_f3_r0_208_hvac">
-  <data key="d29">sub_panel_480_hvac to transformer</data>
-</edge>
-<edge source="sub_panel_f3_r0_480_hvac" target="end_load_f3_r0_hvac_480">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="transformer_f3_r0_208_hvac" target="sub_panel_f3_r0_208_hvac">
-  <data key="d29">transformer_208_hvac to sub_panel</data>
-</edge>
-<edge source="sub_panel_f3_r0_208_hvac" target="end_load_f3_r0_hvac_208">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="sub_panel_f3_r0_480_lighting" target="transformer_f3_r0_208_lighting">
-  <data key="d29">sub_panel_480_lighting to transformer</data>
-</edge>
-<edge source="sub_panel_f3_r0_480_lighting" target="end_load_f3_r0_lighting_480_c0">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="sub_panel_f3_r0_480_lighting" target="end_load_f3_r0_lighting_480_c1">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="transformer_f3_r0_208_lighting" target="sub_panel_f3_r0_208_lighting">
-  <data key="d29">transformer_208_lighting to sub_panel</data>
-</edge>
-<edge source="sub_panel_f3_r0_208_lighting" target="end_load_f3_r0_lighting_208_c0">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="sub_panel_f3_r0_208_lighting" target="end_load_f3_r0_lighting_208_c1">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="sub_panel_f3_r0_480_receptacles" target="transformer_f3_r0_208_receptacles">
-  <data key="d29">sub_panel_480_receptacles to transformer</data>
-</edge>
-<edge source="sub_panel_f3_r0_480_receptacles" target="end_load_f3_r0_receptacles_480">
-  <data key="d29">Sub-panel to end load</data>
-</edge>
-<edge source="transformer_f3_r0_208_receptacles" target="sub_panel_f3_r0_208_receptacles">
-  <data key="d29">transformer_208_receptacles to sub_panel</data>
-</edge>
-<edge source="sub_panel_f3_r0_208_receptacles" target="end_load_f3_r0_receptacles_208">
-  <data key="d29">Sub-panel to end load</data>
+<node id="EL1.0.277.H.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f1_r0_hvac_277_c0</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">277</data>
+  <data key="d13">9.10412734597583</data>
+  <data key="d14">11.32979351594256</data>
+  <data key="d15">3.5</data>
+  <data key="d33">27.12</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">27.12</data>
+  <data key="d30">97.90613718411552</data>
+  <data key="d26">SP1.0.480.H</data>
+</node>
+<node id="EL1.0.277.H.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f1_r0_hvac_277_c1</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">277</data>
+  <data key="d13">8.663566140632547</data>
+  <data key="d14">10.291375221865186</data>
+  <data key="d15">3.5</data>
+  <data key="d33">27.12</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">27.12</data>
+  <data key="d30">97.90613718411552</data>
+  <data key="d26">SP1.0.480.H</data>
+</node>
+<node id="EL1.0.208.H.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f1_r0_hvac_208_c0</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">208</data>
+  <data key="d13">8.086287287091833</data>
+  <data key="d14">8.526817103989588</data>
+  <data key="d15">3.5</data>
+  <data key="d33">36.16</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">36.16</data>
+  <data key="d30">173.84615384615384</data>
+  <data key="d26">SP1.0.208.H</data>
+</node>
+<node id="EL1.0.208.H.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f1_r0_hvac_208_c1</data>
+  <data key="d27">1</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">208</data>
+  <data key="d13">9.525333443648746</data>
+  <data key="d14">11.406312698415858</data>
+  <data key="d15">3.5</data>
+  <data key="d33">36.16</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">36.16</data>
+  <data key="d30">173.84615384615384</data>
+  <data key="d26">SP1.0.208.H</data>
+</node>
+<node id="EL2.0.277.L.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f2_r0_lighting_277_c0</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">277</data>
+  <data key="d13">4.218635348198082</data>
+  <data key="d14">10.586341243039184</data>
+  <data key="d15">7.0</data>
+  <data key="d33">10.59</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">10.59</data>
+  <data key="d30">38.231046931407946</data>
+  <data key="d26">SP2.0.480.L</data>
+</node>
+<node id="EL2.0.480.L.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f2_r0_lighting_480_c1</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">480</data>
+  <data key="d13">8.842780610051175</data>
+  <data key="d14">6.880958809526037</data>
+  <data key="d15">7.0</data>
+  <data key="d33">10.59</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">10.59</data>
+  <data key="d30">12.73779031399612</data>
+  <data key="d26">SP2.0.480.L</data>
+</node>
+<node id="EL2.0.208.L">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f2_r0_lighting_208</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">208</data>
+  <data key="d13">0.4184114290354568</data>
+  <data key="d14">3.7194673344787055</data>
+  <data key="d15">7.0</data>
+  <data key="d33">9.08</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">9.08</data>
+  <data key="d30">43.65384615384615</data>
+  <data key="d26">SP2.0.208.L</data>
+</node>
+<node id="EL2.0.480.R.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f2_r0_receptacles_480_c0</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">480</data>
+  <data key="d13">11.0889383164442</data>
+  <data key="d14">11.539163554745231</data>
+  <data key="d15">7.0</data>
+  <data key="d33">16.16</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">16.16</data>
+  <data key="d30">19.4374590627174</data>
+  <data key="d26">SP2.0.480.R</data>
+</node>
+<node id="EL2.0.277.R.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f2_r0_receptacles_277_c1</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">277</data>
+  <data key="d13">6.05552025451218</data>
+  <data key="d14">12.042372556012182</data>
+  <data key="d15">7.0</data>
+  <data key="d33">14.14</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">14.14</data>
+  <data key="d30">51.04693140794224</data>
+  <data key="d26">SP2.0.480.R</data>
+</node>
+<node id="EL2.0.208.R.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f2_r0_receptacles_208_c0</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">208</data>
+  <data key="d13">9.384126385918142</data>
+  <data key="d14">11.364299019867188</data>
+  <data key="d15">7.0</data>
+  <data key="d33">16.16</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">16.16</data>
+  <data key="d30">77.6923076923077</data>
+  <data key="d26">SP2.0.208.R</data>
+</node>
+<node id="EL2.0.208.R.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f2_r0_receptacles_208_c1</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">208</data>
+  <data key="d13">8.599102368160331</data>
+  <data key="d14">9.65482732870535</data>
+  <data key="d15">7.0</data>
+  <data key="d33">14.14</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">14.14</data>
+  <data key="d30">67.98076923076923</data>
+  <data key="d26">SP2.0.208.R</data>
+</node>
+<node id="EL2.0.277.H.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f2_r0_hvac_277_c0</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">277</data>
+  <data key="d13">10.972672107464176</data>
+  <data key="d14">11.934191577154671</data>
+  <data key="d15">7.0</data>
+  <data key="d33">39.12</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">39.12</data>
+  <data key="d30">141.22743682310468</data>
+  <data key="d26">SP2.0.480.H</data>
+</node>
+<node id="EL2.0.480.H.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f2_r0_hvac_480_c1</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">480</data>
+  <data key="d13">9.690315707141387</data>
+  <data key="d14">9.228547284810892</data>
+  <data key="d15">7.0</data>
+  <data key="d33">36.12</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">36.12</data>
+  <data key="d30">43.445607756519344</data>
+  <data key="d26">SP2.0.480.H</data>
+</node>
+<node id="EL2.0.208.H.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f2_r0_hvac_208_c0</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">208</data>
+  <data key="d13">10.239231723869038</data>
+  <data key="d14">12.610860706449435</data>
+  <data key="d15">7.0</data>
+  <data key="d33">36.12</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">36.12</data>
+  <data key="d30">173.65384615384616</data>
+  <data key="d26">SP2.0.208.H</data>
+</node>
+<node id="EL2.0.120.H.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f2_r0_hvac_120_c1</data>
+  <data key="d27">2</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">120</data>
+  <data key="d13">11.150575848565667</data>
+  <data key="d14">11.675929041834985</data>
+  <data key="d15">7.0</data>
+  <data key="d33">33.11</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">33.11</data>
+  <data key="d30">275.9166666666667</data>
+  <data key="d26">SP2.0.208.H</data>
+</node>
+<node id="EL3.0.480.L.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f3_r0_lighting_480_c0</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">480</data>
+  <data key="d13">12.501648716172038</data>
+  <data key="d14">10.852657946982198</data>
+  <data key="d15">10.5</data>
+  <data key="d33">19.35</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">19.35</data>
+  <data key="d30">23.27443272670679</data>
+  <data key="d26">SP3.0.480.L</data>
+</node>
+<node id="EL3.0.277.L.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f3_r0_lighting_277_c1</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">277</data>
+  <data key="d13">9.051426597994169</data>
+  <data key="d14">9.716623048067975</data>
+  <data key="d15">10.5</data>
+  <data key="d33">19.35</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">19.35</data>
+  <data key="d30">69.85559566787003</data>
+  <data key="d26">SP3.0.480.L</data>
+</node>
+<node id="EL3.0.480.L.c2">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f3_r0_lighting_480_c2</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">480</data>
+  <data key="d13">9.546364763140154</data>
+  <data key="d14">10.377173755018482</data>
+  <data key="d15">10.5</data>
+  <data key="d33">16.37</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">16.37</data>
+  <data key="d30">19.690049805487867</data>
+  <data key="d26">SP3.0.480.L</data>
+</node>
+<node id="EL3.0.208.L.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f3_r0_lighting_208_c0</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">208</data>
+  <data key="d13">11.101668321855401</data>
+  <data key="d14">9.78820943552748</data>
+  <data key="d15">10.5</data>
+  <data key="d33">20.84</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">20.84</data>
+  <data key="d30">100.1923076923077</data>
+  <data key="d26">SP3.0.208.L</data>
+</node>
+<node id="EL3.0.120.L.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f3_r0_lighting_120_c1</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d32">lighting</data>
+  <data key="d29">120</data>
+  <data key="d13">13.380540574858095</data>
+  <data key="d14">9.542684774846462</data>
+  <data key="d15">10.5</data>
+  <data key="d33">19.35</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">19.35</data>
+  <data key="d30">161.25</data>
+  <data key="d26">SP3.0.208.L</data>
+</node>
+<node id="EL3.0.277.R.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f3_r0_receptacles_277_c0</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">277</data>
+  <data key="d13">8.520992315525138</data>
+  <data key="d14">9.729055313481814</data>
+  <data key="d15">10.5</data>
+  <data key="d33">21.82</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">21.82</data>
+  <data key="d30">78.7725631768953</data>
+  <data key="d26">SP3.0.480.R</data>
+</node>
+<node id="EL3.0.277.R.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f3_r0_receptacles_277_c1</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">277</data>
+  <data key="d13">11.870729316712762</data>
+  <data key="d14">9.626468038965509</data>
+  <data key="d15">10.5</data>
+  <data key="d33">21.82</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">21.82</data>
+  <data key="d30">78.7725631768953</data>
+  <data key="d26">SP3.0.480.R</data>
+</node>
+<node id="EL3.0.277.R.c2">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f3_r0_receptacles_277_c2</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">277</data>
+  <data key="d13">9.640385878496907</data>
+  <data key="d14">11.221842875666814</data>
+  <data key="d15">10.5</data>
+  <data key="d33">21.82</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">21.82</data>
+  <data key="d30">78.7725631768953</data>
+  <data key="d26">SP3.0.480.R</data>
+</node>
+<node id="EL3.0.208.R.c0">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f3_r0_receptacles_208_c0</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">208</data>
+  <data key="d13">9.16167966907392</data>
+  <data key="d14">11.12289669712892</data>
+  <data key="d15">10.5</data>
+  <data key="d33">23.8</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">23.8</data>
+  <data key="d30">114.42307692307692</data>
+  <data key="d26">SP3.0.208.R</data>
+</node>
+<node id="EL3.0.208.R.c1">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f3_r0_receptacles_208_c1</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d32">receptacles</data>
+  <data key="d29">208</data>
+  <data key="d13">9.734164897703232</data>
+  <data key="d14">10.075487054746398</data>
+  <data key="d15">10.5</data>
+  <data key="d33">21.82</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">21.82</data>
+  <data key="d30">104.90384615384616</data>
+  <data key="d26">SP3.0.208.R</data>
+</node>
+<node id="EL3.0.277.H">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f3_r0_hvac_277</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">277</data>
+  <data key="d13">15.632679848563004</data>
+  <data key="d14">8.99598457847384</data>
+  <data key="d15">10.5</data>
+  <data key="d33">12.09</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">12.09</data>
+  <data key="d30">43.64620938628159</data>
+  <data key="d26">SP3.0.480.H</data>
+</node>
+<node id="EL3.0.120.H">
+  <data key="d11">end_load</data>
+  <data key="d12">end_load_f3_r0_hvac_120</data>
+  <data key="d27">3</data>
+  <data key="d28">0</data>
+  <data key="d32">hvac</data>
+  <data key="d29">120</data>
+  <data key="d13">9.59522689388599</data>
+  <data key="d14">17.52060791830217</data>
+  <data key="d15">10.5</data>
+  <data key="d33">21.16</data>
+  <data key="d17">2025-07-28</data>
+  <data key="d18">2025</data>
+  <data key="d19">6</data>
+  <data key="d20">0</data>
+  <data key="d21">15</data>
+  <data key="d22">131400</data>
+  <data key="d23">0</data>
+  <data key="d24">21.16</data>
+  <data key="d30">176.33333333333334</data>
+  <data key="d26">SP3.0.208.H</data>
+</node>
+<edge source="UT" target="MP0.0">
+  <data key="d39">Utility to main panel connection</data>
+</edge>
+<edge source="MP0.0" target="MP1.0">
+  <data key="d39">Main panel feed from ground floor</data>
+</edge>
+<edge source="MP0.0" target="MP2.0">
+  <data key="d39">Main panel feed from ground floor</data>
+</edge>
+<edge source="MP0.0" target="MP3.0">
+  <data key="d39">Main panel feed from ground floor</data>
+</edge>
+<edge source="MP0.0" target="SP0.0.480.L">
+  <data key="d39">main_panel to sub_panel</data>
+</edge>
+<edge source="MP0.0" target="SP0.0.480.R">
+  <data key="d39">main_panel to sub_panel</data>
+</edge>
+<edge source="MP0.0" target="SP0.0.480.H">
+  <data key="d39">main_panel to sub_panel</data>
+</edge>
+<edge source="SP0.0.480.L" target="TR0.0.208.L">
+  <data key="d39">sub_panel_480_lighting to transformer</data>
+</edge>
+<edge source="SP0.0.480.L" target="EL0.0.277.L.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP0.0.480.L" target="EL0.0.480.L.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="TR0.0.208.L" target="SP0.0.208.L">
+  <data key="d39">transformer_208_lighting to sub_panel</data>
+</edge>
+<edge source="SP0.0.208.L" target="EL0.0.120.L.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP0.0.208.L" target="EL0.0.208.L.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP0.0.480.R" target="TR0.0.208.R">
+  <data key="d39">sub_panel_480_receptacles to transformer</data>
+</edge>
+<edge source="SP0.0.480.R" target="EL0.0.277.R">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="TR0.0.208.R" target="SP0.0.208.R">
+  <data key="d39">transformer_208_receptacles to sub_panel</data>
+</edge>
+<edge source="SP0.0.208.R" target="EL0.0.120.R">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP0.0.480.H" target="TR0.0.208.H">
+  <data key="d39">sub_panel_480_hvac to transformer</data>
+</edge>
+<edge source="SP0.0.480.H" target="EL0.0.277.H.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP0.0.480.H" target="EL0.0.277.H.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP0.0.480.H" target="EL0.0.277.H.c2">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="TR0.0.208.H" target="SP0.0.208.H">
+  <data key="d39">transformer_208_hvac to sub_panel</data>
+</edge>
+<edge source="SP0.0.208.H" target="EL0.0.208.H.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP0.0.208.H" target="EL0.0.120.H.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="MP1.0" target="SP1.0.480.L">
+  <data key="d39">main_panel to sub_panel</data>
+</edge>
+<edge source="MP1.0" target="SP1.0.480.R">
+  <data key="d39">main_panel to sub_panel</data>
+</edge>
+<edge source="MP1.0" target="SP1.0.480.H">
+  <data key="d39">main_panel to sub_panel</data>
+</edge>
+<edge source="SP1.0.480.L" target="TR1.0.208.L">
+  <data key="d39">sub_panel_480_lighting to transformer</data>
+</edge>
+<edge source="SP1.0.480.L" target="EL1.0.480.L.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP1.0.480.L" target="EL1.0.277.L.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="TR1.0.208.L" target="SP1.0.208.L">
+  <data key="d39">transformer_208_lighting to sub_panel</data>
+</edge>
+<edge source="SP1.0.208.L" target="EL1.0.208.L.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP1.0.208.L" target="EL1.0.208.L.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP1.0.480.R" target="TR1.0.208.R">
+  <data key="d39">sub_panel_480_receptacles to transformer</data>
+</edge>
+<edge source="SP1.0.480.R" target="EL1.0.277.R.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP1.0.480.R" target="EL1.0.480.R.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="TR1.0.208.R" target="SP1.0.208.R">
+  <data key="d39">transformer_208_receptacles to sub_panel</data>
+</edge>
+<edge source="SP1.0.208.R" target="EL1.0.120.R.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP1.0.208.R" target="EL1.0.208.R.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP1.0.480.H" target="TR1.0.208.H">
+  <data key="d39">sub_panel_480_hvac to transformer</data>
+</edge>
+<edge source="SP1.0.480.H" target="EL1.0.277.H.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP1.0.480.H" target="EL1.0.277.H.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="TR1.0.208.H" target="SP1.0.208.H">
+  <data key="d39">transformer_208_hvac to sub_panel</data>
+</edge>
+<edge source="SP1.0.208.H" target="EL1.0.208.H.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP1.0.208.H" target="EL1.0.208.H.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="MP2.0" target="SP2.0.480.L">
+  <data key="d39">main_panel to sub_panel</data>
+</edge>
+<edge source="MP2.0" target="SP2.0.480.R">
+  <data key="d39">main_panel to sub_panel</data>
+</edge>
+<edge source="MP2.0" target="SP2.0.480.H">
+  <data key="d39">main_panel to sub_panel</data>
+</edge>
+<edge source="SP2.0.480.L" target="TR2.0.208.L">
+  <data key="d39">sub_panel_480_lighting to transformer</data>
+</edge>
+<edge source="SP2.0.480.L" target="EL2.0.277.L.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP2.0.480.L" target="EL2.0.480.L.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="TR2.0.208.L" target="SP2.0.208.L">
+  <data key="d39">transformer_208_lighting to sub_panel</data>
+</edge>
+<edge source="SP2.0.208.L" target="EL2.0.208.L">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP2.0.480.R" target="TR2.0.208.R">
+  <data key="d39">sub_panel_480_receptacles to transformer</data>
+</edge>
+<edge source="SP2.0.480.R" target="EL2.0.480.R.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP2.0.480.R" target="EL2.0.277.R.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="TR2.0.208.R" target="SP2.0.208.R">
+  <data key="d39">transformer_208_receptacles to sub_panel</data>
+</edge>
+<edge source="SP2.0.208.R" target="EL2.0.208.R.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP2.0.208.R" target="EL2.0.208.R.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP2.0.480.H" target="TR2.0.208.H">
+  <data key="d39">sub_panel_480_hvac to transformer</data>
+</edge>
+<edge source="SP2.0.480.H" target="EL2.0.277.H.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP2.0.480.H" target="EL2.0.480.H.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="TR2.0.208.H" target="SP2.0.208.H">
+  <data key="d39">transformer_208_hvac to sub_panel</data>
+</edge>
+<edge source="SP2.0.208.H" target="EL2.0.208.H.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP2.0.208.H" target="EL2.0.120.H.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="MP3.0" target="SP3.0.480.L">
+  <data key="d39">main_panel to sub_panel</data>
+</edge>
+<edge source="MP3.0" target="SP3.0.480.R">
+  <data key="d39">main_panel to sub_panel</data>
+</edge>
+<edge source="MP3.0" target="SP3.0.480.H">
+  <data key="d39">main_panel to sub_panel</data>
+</edge>
+<edge source="SP3.0.480.L" target="TR3.0.208.L">
+  <data key="d39">sub_panel_480_lighting to transformer</data>
+</edge>
+<edge source="SP3.0.480.L" target="EL3.0.480.L.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP3.0.480.L" target="EL3.0.277.L.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP3.0.480.L" target="EL3.0.480.L.c2">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="TR3.0.208.L" target="SP3.0.208.L">
+  <data key="d39">transformer_208_lighting to sub_panel</data>
+</edge>
+<edge source="SP3.0.208.L" target="EL3.0.208.L.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP3.0.208.L" target="EL3.0.120.L.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP3.0.480.R" target="TR3.0.208.R">
+  <data key="d39">sub_panel_480_receptacles to transformer</data>
+</edge>
+<edge source="SP3.0.480.R" target="EL3.0.277.R.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP3.0.480.R" target="EL3.0.277.R.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP3.0.480.R" target="EL3.0.277.R.c2">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="TR3.0.208.R" target="SP3.0.208.R">
+  <data key="d39">transformer_208_receptacles to sub_panel</data>
+</edge>
+<edge source="SP3.0.208.R" target="EL3.0.208.R.c0">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP3.0.208.R" target="EL3.0.208.R.c1">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="SP3.0.480.H" target="TR3.0.208.H">
+  <data key="d39">sub_panel_480_hvac to transformer</data>
+</edge>
+<edge source="SP3.0.480.H" target="EL3.0.277.H">
+  <data key="d39">Sub-panel to end load</data>
+</edge>
+<edge source="TR3.0.208.H" target="SP3.0.208.H">
+  <data key="d39">transformer_208_hvac to sub_panel</data>
+</edge>
+<edge source="SP3.0.208.H" target="EL3.0.120.H">
+  <data key="d39">Sub-panel to end load</data>
 </edge>
 </graph></graphml>
