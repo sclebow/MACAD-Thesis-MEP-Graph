@@ -131,12 +131,14 @@ def generate_maintenance_tasks_from_graph(graph, tasks) -> List[Dict[str, Any]]:
 
             # Determine frequency (months)
             freq_months = template['recommended_frequency_months']
-            if freq_months == -1:
+            print(f"Processing node {node_id} with template {task_id}, frequency: {freq_months} months")
+            if freq_months == -1 or freq_months is None:
                 # Use node's expected_lifespan
-                node_lifespan = attrs.get('expected_lifespan')
+                node_lifespan = attrs['expected_lifespan'] * 12  # Convert years to months
                 if node_lifespan is None:
                     raise ValueError(f"expected_lifespan missing for node {node_id} but required by template {task_id}")
                 freq_months = int(node_lifespan)
+                print(f"Using node's expected lifespan: {node_lifespan} months for node {node_id}")
             if freq_months > 0:
                 scheduled_dt = install_dt + relativedelta(months=int(freq_months))
                 scheduled_date = scheduled_dt.isoformat()
@@ -145,8 +147,8 @@ def generate_maintenance_tasks_from_graph(graph, tasks) -> List[Dict[str, Any]]:
 
             # Determine money_cost
             money_cost = template['money_cost']
-            if money_cost == -1:
-                node_replacement_cost = attrs.get('replacement_cost')
+            if money_cost == -1 or money_cost is None:
+                node_replacement_cost = attrs['replacement_cost']
                 if node_replacement_cost is None:
                     raise ValueError(f"replacement_cost missing for node {node_id} but required by template {task_id}")
                 money_cost = float(node_replacement_cost)
@@ -167,9 +169,11 @@ def generate_maintenance_tasks_from_graph(graph, tasks) -> List[Dict[str, Any]]:
                 'status': 'pending',
                 'notes': template.get('notes', ''),
                 'description': template.get('description', ''),
+                'task_id': task_id,
+                'recommended_frequency_months': freq_months,
             }
             # Check for any None values in required fields
-            for k in ['recommended_frequency_months', 'default_priority', 'time_cost', 'money_cost']:
+            for k in ['recommended_frequency_months', 'priority', 'time_cost', 'money_cost']:
                 if task.get(k) is None:
                     raise ValueError(f"Field '{k}' is None for task {task['task_instance_id']} (template {task_id}, node {node_id}). Please check template and node attributes.")
             maintenance_tasks.append(task)
@@ -184,8 +188,12 @@ def prioritize_tasks(tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 # Placeholder: Export maintenance tasks to CSV
 def export_tasks_to_csv(tasks: List[Dict[str, Any]], csv_path: str):
     """Export the list of generic maintenance task templates to a CSV file."""
-    # TODO: Implement CSV writing logic
-    ...
+    fieldnames = tasks[0].keys() if tasks else []
+    with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for task in tasks:
+            writer.writerow(task)
 
 # Placeholder: Update task status
 def update_task_status(tasks: List[Dict[str, Any]], task_id: str, new_status: str):
@@ -210,7 +218,7 @@ def main():
     print("--- Maintenance Task List Helper Test ---")
     # Example file paths (update as needed)
     task_csv = "./tables/example_maintenance_list.csv"
-    graph_file = "./graph_outputs/generated_graph_20250727_220854.mepg"
+    graph_file = "./example_graph.mepg"
     try:
         print(f"Loading task templates from: {task_csv}")
         templates = load_maintenance_tasks(task_csv)
@@ -225,7 +233,8 @@ def main():
     except Exception as e:
         print(f"Error loading graph: {e}")
         sys.exit(1)
-    try:
+    # try:
+    if True: # This is a placeholder to allow for try/except block
         print("Generating maintenance tasks...")
         tasks = generate_maintenance_tasks_from_graph(G, templates)
         print(f"Generated {len(tasks)} maintenance tasks.")
@@ -244,9 +253,9 @@ def main():
         print(f"Exporting tasks to: {output_path}")
         export_tasks_to_csv(tasks, output_path)
         print(f"Tasks exported successfully to {output_path}")
-    except Exception as e:
-        print(f"Error generating maintenance tasks: {e}")
-        sys.exit(1)
+    # except Exception as e:
+    #     print(f"Error generating maintenance tasks: {e}")
+    #     sys.exit(1)
 
 if __name__ == "__main__":
     main()

@@ -100,6 +100,30 @@ STANDARD_DISTRIBUTION_EQUIPMENT_SIZES = [
     10000,
 ]
 
+STANDARD_DISTRIBUTION_EQUIPMENT_COSTS = [ # Costs in USD for each size
+    1000,  # 60A
+    1500,  # 100A
+    2000,  # 150A
+    2250,  # 200A
+    3000,  # 225A
+    4000,  # 300A
+    5000,  # 400A
+    6000,  # 500A
+    8000,  # 600A
+    10000, # 800A
+    12000, # 1000A
+    16000, # 1200A
+    20000, # 1600A
+    25000, # 2000A
+    30000, # 2500A
+    40000, # 3000A
+    50000, # 4000A
+    60000, # 5000A
+    80000, # 6000A
+    100000, # 8000A
+    120000, # 10000A
+]
+
 MAXIMUM_PANEL_SIZE = 800 # Any larger than this is considered a switchboard
 
 STANDARD_TRANSFORMER_SIZES = [
@@ -118,6 +142,24 @@ STANDARD_TRANSFORMER_SIZES = [
     300,
     400,
     500,
+]
+
+STANDARD_TRANSFORMER_COSTS = [ # Costs in USD for each size
+    1500,  # 15 kVA
+    2500,  # 25 kVA
+    3750,  # 37.5 kVA
+    5000,  # 50 kVA
+    7500,  # 75 kVA
+    10000, # 100 kVA
+    11250, # 112.5 kVA
+    15000, # 150 kVA
+    16700, # 167 kVA
+    20000, # 200 kVA
+    22500, # 225 kVA
+    25000, # 250 kVA
+    30000, # 300 kVA
+    40000, # 400 kVA
+    50000, # 500 kVA
 ]
 
 # Equipment baseline attributes for new construction
@@ -1367,7 +1409,12 @@ def size_equipment(G: nx.DiGraph) -> None:
                     if amperage <= size * 0.8:  # Check if 80% of the size is greater than or equal to the amperage
                         d['amperage_rating'] = size
                         break
-                    
+                
+                # Get index of the size in the original list
+                size_index = STANDARD_DISTRIBUTION_EQUIPMENT_SIZES.index(d['amperage_rating'])
+                # Get cost from the standard costs
+                d['replacement_cost'] = STANDARD_DISTRIBUTION_EQUIPMENT_COSTS[size_index]
+
                 # Use MAXIMUM_PANEL_SIZE to determine if the node is a panel or switchboard
                 if d['amperage_rating'] > MAXIMUM_PANEL_SIZE:
                     d['type'] = 'switchboard'
@@ -1384,6 +1431,11 @@ def size_equipment(G: nx.DiGraph) -> None:
                 if power <= size * 0.8:
                     d['power_rating'] = size
                     break
+
+            # Get index of the size in the original list
+            size_index = STANDARD_TRANSFORMER_SIZES.index(d['power_rating'])
+            # Get cost from the standard costs
+            d['replacement_cost'] = STANDARD_TRANSFORMER_COSTS[size_index]
 
 if __name__ == "__main__":
     main()
