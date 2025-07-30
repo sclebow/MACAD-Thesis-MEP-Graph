@@ -100,6 +100,30 @@ STANDARD_DISTRIBUTION_EQUIPMENT_SIZES = [
     10000,
 ]
 
+STANDARD_DISTRIBUTION_EQUIPMENT_COSTS = [ # Costs in USD for each size
+    1000,  # 60A
+    1500,  # 100A
+    2000,  # 150A
+    2250,  # 200A
+    3000,  # 225A
+    4000,  # 300A
+    5000,  # 400A
+    6000,  # 500A
+    8000,  # 600A
+    10000, # 800A
+    12000, # 1000A
+    16000, # 1200A
+    20000, # 1600A
+    25000, # 2000A
+    30000, # 2500A
+    40000, # 3000A
+    50000, # 4000A
+    60000, # 5000A
+    80000, # 6000A
+    100000, # 8000A
+    120000, # 10000A
+]
+
 MAXIMUM_PANEL_SIZE = 800 # Any larger than this is considered a switchboard
 
 STANDARD_TRANSFORMER_SIZES = [
@@ -118,6 +142,24 @@ STANDARD_TRANSFORMER_SIZES = [
     300,
     400,
     500,
+]
+
+STANDARD_TRANSFORMER_COSTS = [ # Costs in USD for each size
+    1500,  # 15 kVA
+    2500,  # 25 kVA
+    3750,  # 37.5 kVA
+    5000,  # 50 kVA
+    7500,  # 75 kVA
+    10000, # 100 kVA
+    11250, # 112.5 kVA
+    15000, # 150 kVA
+    16700, # 167 kVA
+    20000, # 200 kVA
+    22500, # 225 kVA
+    25000, # 250 kVA
+    30000, # 300 kVA
+    40000, # 400 kVA
+    50000, # 500 kVA
 ]
 
 # Equipment baseline attributes for new construction
@@ -184,7 +226,7 @@ def abbreviate_load_type(load_type):
     }
     return abbreviations.get(load_type, load_type)
 
-def create_abbreviated_node_id(eq_type, floor=None, riser=None, voltage=None, load_type=None, to_voltage=None, cluster_id=None):
+def create_abbreviated_node_id(eq_type, floor=None, riser=None, voltage=None, load_type=None, secondary_voltage=None, cluster_id=None):
     """Create abbreviated node ID using compact notation."""
     type_abbrev = abbreviate_equipment_type(eq_type)
     
@@ -197,7 +239,7 @@ def create_abbreviated_node_id(eq_type, floor=None, riser=None, voltage=None, lo
     # Add voltage and load type for specific equipment
     if eq_type == 'transformer':
         load_abbrev = abbreviate_load_type(load_type) if load_type else ''
-        return f"{base_id}.{to_voltage}.{load_abbrev}" if to_voltage and load_abbrev else base_id
+        return f"{base_id}.{secondary_voltage}.{load_abbrev}" if secondary_voltage and load_abbrev else base_id
     elif eq_type in ['sub_panel', 'panel', 'switchboard']:
         load_abbrev = abbreviate_load_type(load_type) if load_type else ''
         if voltage and load_abbrev:
@@ -215,7 +257,7 @@ def create_abbreviated_node_id(eq_type, floor=None, riser=None, voltage=None, lo
     else:
         return base_id
 
-def create_full_node_id(eq_type, floor=None, riser=None, voltage=None, load_type=None, to_voltage=None, cluster_id=None):
+def create_full_node_id(eq_type, floor=None, riser=None, voltage=None, load_type=None, secondary_voltage=None, cluster_id=None):
     """Create full (original) node ID for storage as an attribute."""
     if eq_type == 'utility_transformer':
         return 'utility_transformer'
@@ -225,7 +267,7 @@ def create_full_node_id(eq_type, floor=None, riser=None, voltage=None, load_type
     
     # Add voltage and load type for specific equipment
     if eq_type == 'transformer':
-        return f"{base_id}_{to_voltage}_{load_type}" if to_voltage and load_type else base_id
+        return f"{base_id}_{secondary_voltage}_{load_type}" if secondary_voltage and load_type else base_id
     elif eq_type in ['sub_panel', 'panel', 'switchboard']:
         if voltage and load_type:
             return f"{base_id}_{voltage}_{load_type}"
@@ -241,25 +283,43 @@ def create_full_node_id(eq_type, floor=None, riser=None, voltage=None, load_type
     else:
         return base_id
 
-def get_baseline_attributes(equipment_type, construction_year):
+def get_baseline_attributes(equipment_type, building_attrs):
     """Get baseline attributes for new equipment based on type and construction year."""
     import datetime
-    
+    construction_year = building_attrs.get('construction_year')
+    construction_date = building_attrs.get('construction_date')
+
     # Get baseline attributes for this equipment type
     baseline = EQUIPMENT_BASELINE_ATTRIBUTES.get(equipment_type)
-    
     # Create attributes dictionary
+
+    # Assume installation_date is the current day
+
     attributes = {
-        'installation_date': construction_year,
-        'last_maintenance_date': construction_year,  # Assume commissioning counts as first maintenance
+        'installation_date': construction_date,  # Use construction date as installation date
+        'last_maintenance_date': construction_date,  # Assume commissioning counts as first maintenance
         'maintenance_frequency': baseline['maintenance_frequency'],
         'operating_hours': 0,  # Start at 0 for new equipment
         'expected_lifespan': baseline['expected_lifespan'],
         'mean_time_to_failure': baseline['mean_time_to_failure'],
         'failure_count': baseline['failure_count']
     }
-    
     return attributes
+
+# Utility: Clean None values from graph attributes for GraphML compatibility
+def clean_graph_none_values(G):
+    """
+    Replace None values in node and edge attributes with empty strings for GraphML compatibility.
+    """
+    for n, attrs in G.nodes(data=True):
+        for k, v in list(attrs.items()):
+            if v is None:
+                G.nodes[n][k] = ""
+    for u, v, attrs in G.edges(data=True):
+        for k, val in list(attrs.items()):
+            if val is None:
+                G.edges[u, v][k] = ""
+    return G
 
 def main():
     """Main function for command-line usage."""
@@ -276,6 +336,7 @@ def main():
     parser.add_argument('--floor_height', type=float, default=3.5, help='Floor height in meters')
     parser.add_argument('--cluster_strength', type=float, default=0.95, help='Strength of clustering (0.0 = no clustering, 1.0 = full clustering)')
     parser.add_argument('--construction_year', type=int, default=datetime.datetime.now().year, help='Year of building construction')
+    parser.add_argument('--construction_date', type=str, default=datetime.datetime.now().strftime("%Y-%m-%d"), help='Construction date in YYYY-MM-DD format (optional)')
 
     args = parser.parse_args()
 
@@ -288,7 +349,8 @@ def main():
         "building_width": args.building_width,
         "num_floors": args.num_floors,
         "floor_height": args.floor_height,
-        "construction_year": args.construction_year
+        "construction_year": args.construction_year,
+        "construction_date": args.construction_date
     }
 
 
@@ -370,6 +432,14 @@ def main():
     print(f"Generated MEP graph with {graph.number_of_nodes()} nodes and {graph.number_of_edges()} edges.")
 
     output_dir = "graph_outputs/"
+
+    # If output_dir doesn't exist, create it
+    import os
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Sanitize graph: replace None attributes with empty string before saving
+    graph = clean_graph_none_values(graph)
 
     # Save the graph in graphml format
     nx.write_graphml(graph, f"{output_dir}{filename}")
@@ -688,12 +758,12 @@ def place_distribution_equipment(building_attrs: Dict[str, Any], riser_floor_att
         }
         equipment_list.append(panel)
 
-    def add_transformer(equipment_list, from_voltage, to_voltage, load_type, power, parent, riser_idx, used_positions):
+    def add_transformer(equipment_list, primary_voltage, secondary_voltage, load_type, power, parent, riser_idx, used_positions):
         x, y = unique_xy(riser_idx, used_positions)
         transformer = {
             "type": "transformer",
-            "from_voltage": from_voltage,
-            "to_voltage": to_voltage,
+            "primary_voltage": primary_voltage,
+            "secondary_voltage": secondary_voltage,
             "load_type": load_type,
             "power": power,
             "parent": parent,
@@ -762,7 +832,7 @@ def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[fl
     add_utility_transformer(G, building_attrs)
 
     # 2. Add all distribution equipment nodes (main panels, transformers, sub-panels, etc.)
-    add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
+    add_distribution_equipment_nodes(G, distribution_equipment, riser_locations, building_attrs)
 
     # 3. Connect utility transformer to the nearest main panel on the ground floor
     connect_utility_to_main_panel(G, distribution_equipment, riser_locations)
@@ -796,6 +866,16 @@ def connect_nodes(building_attrs: Dict[str, Any], riser_locations: List[Tuple[fl
     G.graph['timestamp'] = datetime.datetime.now().isoformat()
     G.graph['seed'] = str(random.getstate())  # Optionally store as string, or remove entirely
     G.graph['description'] = "Randomly generated MEP electrical system graph"
+    G.graph['construction_date'] = building_attrs.get('construction_date')
+
+    # --- Update 'parent' attribute for all nodes ---
+    for node in G.nodes:
+        preds = list(G.predecessors(node))
+        if preds:
+            # If multiple parents, just take the first (can be adjusted if needed)
+            G.nodes[node]['parent'] = preds[0]
+        else:
+            G.nodes[node]['parent'] = ''
 
     return G
 
@@ -807,6 +887,7 @@ def add_utility_transformer(G, building_attrs):
     floor_height = building_attrs['floor_height']
     num_floors = building_attrs['num_floors']
     construction_year = building_attrs.get('construction_year')
+    construction_date = building_attrs.get('construction_date')
     
     # Place transformer outside the building, near the main entrance (assume at x = -5, y = width/2, z = 0)
     x = -5.0
@@ -816,7 +897,7 @@ def add_utility_transformer(G, building_attrs):
     full_name = create_full_node_id('utility_transformer')
     
     # Get baseline attributes for new utility transformer
-    baseline_attrs = get_baseline_attributes('utility_transformer', construction_year)
+    baseline_attrs = get_baseline_attributes('utility_transformer', building_attrs)
     
     G.add_node(
         node_id,
@@ -829,11 +910,9 @@ def add_utility_transformer(G, building_attrs):
         **baseline_attrs
     )
 
-def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations):
+def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations, building_attrs):
     """Add all distribution equipment nodes to the graph with unique IDs and coordinates."""
-    # Get construction year from graph metadata or default
-    construction_year = G.graph.get('construction_year')
-    
+
     for floor, risers in distribution_equipment.items():
         for riser_idx, equipment_list in risers.items():
             # Use x/y from equipment dict if present, else fallback to riser_locations
@@ -850,12 +929,12 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
                     x, y = riser_locations[riser_idx]
                 
                 # Get baseline attributes for this equipment type
-                baseline_attrs = get_baseline_attributes(eq_type, construction_year)
-                
+                baseline_attrs = get_baseline_attributes(eq_type, building_attrs)
+                # Compute full_name for all node types
                 if eq_type == 'transformer':
-                    to_voltage = eq.get('to_voltage', '')
-                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, to_voltage)
-                    full_name = create_full_node_id('transformer', floor, riser_idx, voltage, load_type, to_voltage)
+                    secondary_voltage = eq.get('secondary_voltage', '')
+                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, secondary_voltage)
+                    full_name = create_full_node_id('transformer', floor, riser_idx, voltage, load_type, secondary_voltage)
                     # Add all transformer attributes
                     G.add_node(
                         node_id,
@@ -863,8 +942,8 @@ def add_distribution_equipment_nodes(G, distribution_equipment, riser_locations)
                         full_name=full_name,
                         floor=floor,
                         riser=riser_idx,
-                        from_voltage=eq.get('from_voltage',''),
-                        to_voltage=to_voltage,
+                        primary_voltage=eq.get('primary_voltage',''),
+                        secondary_voltage=secondary_voltage,
                         load_type=load_type,
                         power=eq.get('power',0.0),
                         parent=eq.get('parent',''),
@@ -981,7 +1060,7 @@ def connect_equipment_hierarchy(G, distribution_equipment):
                 eq_type = eq.get('type')
                 voltage = eq.get('voltage', '')
                 load_type = eq.get('load_type', '')
-                to_voltage = eq.get('to_voltage', '')
+                secondary_voltage = eq.get('secondary_voltage', '')
                 
                 if eq_type == 'main_panel':
                     node_id = create_abbreviated_node_id('main_panel', floor, riser_idx, voltage)
@@ -994,15 +1073,15 @@ def connect_equipment_hierarchy(G, distribution_equipment):
                         node_id_map[f"sub_panel_208_{load_type}"] = node_id
                     # Add for other voltages if needed
                 elif eq_type == 'transformer':
-                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, to_voltage)
-                    node_id_map[f"transformer_{to_voltage}_{load_type}"] = node_id
+                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, secondary_voltage)
+                    node_id_map[f"transformer_{secondary_voltage}_{load_type}"] = node_id
             
             # Now connect each node to its parent using the parent field
             for eq in equipment_list:
                 eq_type = eq.get('type')
                 voltage = eq.get('voltage', '')
                 load_type = eq.get('load_type', '')
-                to_voltage = eq.get('to_voltage', '')
+                secondary_voltage = eq.get('secondary_voltage', '')
                 parent_key = eq.get('parent', None)
                 
                 # Determine this node's ID
@@ -1011,7 +1090,7 @@ def connect_equipment_hierarchy(G, distribution_equipment):
                 elif eq_type == 'sub_panel':
                     node_id = create_abbreviated_node_id('sub_panel', floor, riser_idx, voltage, load_type)
                 elif eq_type == 'transformer':
-                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, to_voltage)
+                    node_id = create_abbreviated_node_id('transformer', floor, riser_idx, voltage, load_type, secondary_voltage)
                 else:
                     continue
                 
@@ -1108,8 +1187,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                     full_name = create_full_node_id('end_load', floor, riser_idx, load_voltage, load_type)
                     if end_load_id not in created_nodes:
                         # Get baseline attributes for end load
-                        construction_year = building_attrs.get('construction_year')
-                        baseline_attrs = get_baseline_attributes('end_load', construction_year)
+                        baseline_attrs = get_baseline_attributes('end_load', building_attrs)
                         
                         G.add_node(
                             end_load_id,
@@ -1146,8 +1224,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                         full_name = create_full_node_id('end_load', floor, riser_idx, load_voltage, load_type, cluster_id=i)
                         if end_load_id not in created_nodes:
                             # Get baseline attributes for end load
-                            construction_year = building_attrs.get('construction_year')
-                            baseline_attrs = get_baseline_attributes('end_load', construction_year)
+                            baseline_attrs = get_baseline_attributes('end_load', building_attrs)
                             
                             G.add_node(
                                 end_load_id,
@@ -1193,6 +1270,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                             end_load_id = create_abbreviated_node_id('end_load', floor, riser_idx, load_voltage, load_type)
                             full_name = create_full_node_id('end_load', floor, riser_idx, load_voltage, load_type)
                             if end_load_id not in created_nodes:
+                                baseline_attrs = get_baseline_attributes('end_load', building_attrs)
                                 G.add_node(
                                     end_load_id,
                                     type='end_load',
@@ -1204,7 +1282,8 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                                     x=x,
                                     y=y,
                                     z=z,
-                                    power=round(total_power, 2)
+                                    power=round(total_power, 2),
+                                    **baseline_attrs
                                 )
                                 created_nodes.add(end_load_id)
                             G.add_edge(main_panel_id, end_load_id, description='Main panel to end load')
@@ -1224,6 +1303,7 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                                 end_load_id = create_abbreviated_node_id('end_load', floor, riser_idx, load_voltage, load_type, cluster_id=i)
                                 full_name = create_full_node_id('end_load', floor, riser_idx, load_voltage, load_type, cluster_id=i)
                                 if end_load_id not in created_nodes:
+                                    baseline_attrs = get_baseline_attributes('end_load', building_attrs)
                                     G.add_node(
                                         end_load_id,
                                         type='end_load',
@@ -1235,7 +1315,8 @@ def add_and_connect_end_loads(G, distribution_equipment, building_attrs, end_loa
                                         x=x,
                                         y=y,
                                         z=z,
-                                        power=round(total_power, 2)
+                                        power=round(total_power, 2),
+                                        **baseline_attrs
                                     )
                                     created_nodes.add(end_load_id)
                                 G.add_edge(main_panel_id, end_load_id, description='Main panel to end load')
@@ -1291,8 +1372,8 @@ def calculate_amperage(G: nx.DiGraph, voltage_info: Dict[str, Any]) -> None:
         # Transformers: calculate both primary and secondary amperage
         if d.get('type') == 'transformer':
             power = d.get('propagated_power', d.get('power', 0.0))
-            from_v = d.get('from_voltage', None)
-            to_v = d.get('to_voltage', None)
+            from_v = d.get('primary_voltage', None)
+            to_v = d.get('secondary_voltage', None)
             # Primary (upstream)
             if from_v:
                 G.nodes[n]['primary_amperage'] = calc_amperage(power, from_v)
@@ -1328,7 +1409,12 @@ def size_equipment(G: nx.DiGraph) -> None:
                     if amperage <= size * 0.8:  # Check if 80% of the size is greater than or equal to the amperage
                         d['amperage_rating'] = size
                         break
-                    
+                
+                # Get index of the size in the original list
+                size_index = STANDARD_DISTRIBUTION_EQUIPMENT_SIZES.index(d['amperage_rating'])
+                # Get cost from the standard costs
+                d['replacement_cost'] = STANDARD_DISTRIBUTION_EQUIPMENT_COSTS[size_index]
+
                 # Use MAXIMUM_PANEL_SIZE to determine if the node is a panel or switchboard
                 if d['amperage_rating'] > MAXIMUM_PANEL_SIZE:
                     d['type'] = 'switchboard'
@@ -1345,6 +1431,11 @@ def size_equipment(G: nx.DiGraph) -> None:
                 if power <= size * 0.8:
                     d['power_rating'] = size
                     break
+
+            # Get index of the size in the original list
+            size_index = STANDARD_TRANSFORMER_SIZES.index(d['power_rating'])
+            # Get cost from the standard costs
+            d['replacement_cost'] = STANDARD_TRANSFORMER_COSTS[size_index]
 
 if __name__ == "__main__":
     main()

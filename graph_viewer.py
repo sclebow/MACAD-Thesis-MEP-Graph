@@ -13,9 +13,14 @@ import math
 import datetime
 
 # Import helper files
+# Import helper files
 from helpers.node_risk import *
+from helpers.rul_helper import apply_rul_to_graph
 # Import MEP graph generator
 from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes
+from graph_generator.mepg_generator import clean_graph_none_values
+
+print("\n" * 5)
 
 pn.extension('plotly')
 pn.extension('jsoneditor')
@@ -85,7 +90,10 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
             
     return _hierarchy_pos(G, root, width, vert_gap, vert_loc, xcenter)
 
-def visualize_graph_two_d(graph, use_full_names=False):
+# Visualization functions
+
+def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=None, color_palette=None, colorbar_title=None, showlegend=False):
+    # Shared logic for 2D graph visualization
     try:
         # Select a valid root node (first node in the graph)
         if len(graph.nodes) == 0:
@@ -97,19 +105,6 @@ def visualize_graph_two_d(graph, use_full_names=False):
     except Exception as e:
         print(f"Error calculating positions: {e}")
         pos = nx.spring_layout(graph)
-
-    # Get node types for color mapping
-    node_types = [graph.nodes[n].get('type', 'Unknown') for n in graph.nodes]
-    unique_types = list(sorted(set(node_types)))
-    # Assign a color to each type (using Plotly qualitative palette)
-    plotly_palette = [
-        '#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3',
-        '#FF6692', '#B6E880', '#FF97FF', '#FECB52', '#1f77b4', '#ff7f0e',
-        '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
-        '#bcbd22', '#17becf'
-    ]
-    type_color_map = {t: plotly_palette[i % len(plotly_palette)] for i, t in enumerate(unique_types)}
-    node_colors = [type_color_map[t] for t in node_types]
 
     edge_x = []
     edge_y = []
@@ -148,28 +143,24 @@ def visualize_graph_two_d(graph, use_full_names=False):
         marker=dict(size=10, color='rgba(0,0,0,0)'),  # Invisible
         hoverinfo='text',
         hovertext=edge_marker_text,
-        showlegend=False
+        showlegend=showlegend
     )
-
 
     node_x = []
     node_y = []
     names = []
     node_text = []
-    node_type_list = []
-    for idx, (node, attrs) in enumerate(graph.nodes(data=True)):
+    for node, attrs in graph.nodes(data=True):
         x, y = pos[node]
         node_x.append(x)
         node_y.append(y)
         # Use full name or short name based on toggle
         display_name = attrs.get('full_name', node) if use_full_names else node
         names.append(display_name)
-        node_type = attrs.get('type', 'Unknown')
-        node_type_list.append(node_type)
-        hover = f"{display_name}<br>Type: {node_type}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items() if k not in ['type', 'full_name']])
+        hover = f"{display_name}<br>Type: {attrs.get('type', 'Unknown')}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items() if k not in ['type', 'full_name']])
         node_text.append(hover)
 
-    # Use propagated_power to scale node size
+    # Node size scaling based on propagated_power
     prop_powers = [graph.nodes[n].get('propagated_power', 0) for n in graph.nodes]
     if prop_powers:
         min_power = min(prop_powers)
@@ -183,38 +174,89 @@ def visualize_graph_two_d(graph, use_full_names=False):
     else:
         node_sizes = [15 for _ in graph.nodes]
 
-    # Create a trace for each type for legend
-    node_traces = []
-    for t in unique_types:
-        indices = [i for i, typ in enumerate(node_type_list) if typ == t]
-        if not indices:
-            continue
-        trace = go.Scatter(
-            x=[node_x[i] for i in indices],
-            y=[node_y[i] for i in indices],
+    # Node coloring logic
+    if node_color_values is not None:
+        # Use provided values and palette
+        color_vals = [node_color_values.get(n, 0) for n in graph.nodes]
+        palette = color_palette or 'Viridis'
+        node_trace = go.Scatter(
+            x=node_x,
+            y=node_y,
             mode='markers+text',
-            text=[names[i] for i in indices],
+            text=names,
             textposition="top center",
             hoverinfo='text',
             marker=dict(
-                color=type_color_map[t],
-                size=[node_sizes[i] for i in indices],
-                line_width=2
+                color=color_vals,
+                colorscale=palette,
+                size=node_sizes,
+                colorbar=dict(title=colorbar_title or 'Value'),
+                line_width=2,
+                opacity=0.85
             ),
-            hovertext=[node_text[i] for i in indices],
-            name=str(t)
+            hovertext=node_text,
+            name='Nodes'
         )
-        node_traces.append(trace)
+        node_traces = [node_trace]
+    else:
+        node_types = [graph.nodes[n].get('type', 'Unknown') for n in graph.nodes]
+        unique_types = list(sorted(set(node_types)))
+        plotly_palette = [
+            'rgba(99,110,250,0.85)', 'rgba(239,85,59,0.85)', 'rgba(0,204,150,0.85)', 'rgba(171,99,250,0.85)', 'rgba(255,161,90,0.85)', 'rgba(25,211,243,0.85)',
+            'rgba(255,102,146,0.85)', 'rgba(182,232,128,0.85)', 'rgba(255,151,255,0.85)', 'rgba(254,203,82,0.85)', 'rgba(31,119,180,0.85)', 'rgba(255,127,14,0.85)',
+            'rgba(44,160,44,0.85)', 'rgba(214,39,40,0.85)', 'rgba(148,103,189,0.85)', 'rgba(140,86,75,0.85)', 'rgba(227,119,194,0.85)', 'rgba(127,127,127,0.85)',
+            'rgba(188,189,34,0.85)', 'rgba(23,190,207,0.85)'
+        ]
+        type_color_map = {t: plotly_palette[i % len(plotly_palette)] for i, t in enumerate(unique_types)}
+        node_colors = [type_color_map[t] for t in node_types]
+        node_traces = []
+        node_type_list = node_types
+        for t in unique_types:
+            indices = [i for i, typ in enumerate(node_type_list) if typ == t]
+            if not indices:
+                continue
+            trace = go.Scatter(
+                x=[node_x[i] for i in indices],
+                y=[node_y[i] for i in indices],
+                mode='markers+text',
+                text=[names[i] for i in indices],
+                textposition="top center",
+                hoverinfo='text',
+                marker=dict(
+                    color=[node_colors[i] for i in indices],
+                    size=[node_sizes[i] for i in indices],
+                    line_width=2,
+                    opacity=0.85
+                ),
+                hovertext=[node_text[i] for i in indices],
+                name=str(t)
+            )
+            node_traces.append(trace)
 
     fig = go.Figure(data=[edge_trace, edge_marker_trace] + node_traces,
                     layout=go.Layout(
-                        showlegend=True,
+                        showlegend=showlegend,
                         hovermode='closest',
                         margin=dict(b=20,l=5,r=5,t=40),
                         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
                     ))
     return fig
+
+def visualize_graph_two_d(graph, use_full_names=False):
+    return _generate_2d_graph_figure(graph, use_full_names=use_full_names)
+
+def visualize_graph_two_d_risk(graph, use_full_names=False):
+    # Color nodes by risk_score attribute
+    risk_scores = {n: graph.nodes[n].get('risk_score', 0) for n in graph.nodes}
+    return _generate_2d_graph_figure(
+        graph,
+        use_full_names=use_full_names,
+        node_color_values=risk_scores,
+        color_palette='Inferno',
+        colorbar_title='Risk Score',
+        showlegend=False
+    )
 
 def visualize_graph_three_d(graph, use_full_names=False):
     """
@@ -511,12 +553,15 @@ def file_input_callback(event):
             G = add_risk_scores(G)
             fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
             plot_pane.object = fig
+            fig_risk = visualize_graph_two_d_risk(G, use_full_names=name_toggle.value)
+            plot_risk_pane.object = fig_risk
             three_d_fig = visualize_graph_three_d(G, use_full_names=name_toggle.value)
             three_d_pane.object = three_d_fig
             current_graph[0] = G
             update_dropdowns(G)
         except Exception as e:
             plot_pane.object = None
+            plot_risk_pane.object = None
             three_d_pane.object = None
             node_dropdown.options = []
             edge_dropdown.options = []
@@ -525,7 +570,7 @@ def file_input_callback(event):
             pn.state.notifications.error(f"Failed to load graph: {e}")
 
 def add_risk_scores(graph):
-    # Process risk scores with error handling
+    # Process risk scores and remaining useful life with error handling
     try:
         print("Calculating risk scores...")
         graph = apply_risk_scores_to_graph(graph)
@@ -533,6 +578,15 @@ def add_risk_scores(graph):
     except Exception as risk_error:
         print(f"Warning: Failed to calculate risk scores: {risk_error}")
         # Continue without risk scores
+
+    # Apply remaining useful life attribute
+    try:
+        print("Applying remaining useful life...")
+        graph = apply_rul_to_graph(graph)
+        print("Remaining useful life applied.")
+    except Exception as rul_error:
+        print(f"Warning: Failed to apply remaining useful life: {rul_error}")
+        # Continue without RUL
 
     return graph
 
@@ -548,6 +602,8 @@ def autoload_example_graph():
                     raise ValueError("The example graph must be a directed graph.")
                 fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
                 plot_pane.object = fig
+                fig_risk = visualize_graph_two_d_risk(G, use_full_names=name_toggle.value)
+                plot_risk_pane.object = fig_risk
                 three_d_fig = visualize_graph_three_d(G, use_full_names=name_toggle.value)
                 three_d_pane.object = three_d_fig
                 current_graph[0] = G
@@ -557,6 +613,7 @@ def autoload_example_graph():
                 update_dropdowns(G)
         except Exception as e:
             plot_pane.object = None
+            plot_risk_pane.object = None
             three_d_pane.object = None
             node_dropdown.options = []
             edge_dropdown.options = []
@@ -584,8 +641,9 @@ name_toggle = pn.widgets.Toggle(name="Use Full Names", value=False)
 
 def name_toggle_callback(event):
     if current_graph[0] is not None:
-        # Refresh both plots with new name setting
+        # Refresh all plots with new name setting
         plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=event.new)
+        plot_risk_pane.object = visualize_graph_two_d_risk(current_graph[0], use_full_names=event.new)
         three_d_pane.object = visualize_graph_three_d(current_graph[0], use_full_names=event.new)
 
 name_toggle.param.watch(name_toggle_callback, 'value')
@@ -624,6 +682,8 @@ def generate_graph_callback(event):
         # Update visualizations
         fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
         plot_pane.object = fig
+        fig_risk = visualize_graph_two_d_risk(G, use_full_names=name_toggle.value)
+        plot_risk_pane.object = fig_risk
         three_d_fig = visualize_graph_three_d(G, use_full_names=name_toggle.value)
         three_d_pane.object = three_d_fig
         current_graph[0] = G
@@ -631,11 +691,21 @@ def generate_graph_callback(event):
         
         generator_status.object = "**Graph generated successfully!**"
         generator_status.visible = True
-        
+
+        # Save the generated graph to the graph_output directory
+        output_dir = 'graph_outputs'
+        os.makedirs(output_dir, exist_ok=True)
+        current_date_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = os.path.join(output_dir, f"generated_graph_{current_date_str}.mepg")
+        # Clean None values before saving
+        G = clean_graph_none_values(G)
+        nx.write_graphml(G, output_path)
+
     except Exception as e:
+        print(f"Error generating graph: {e}")
         generator_status.object = f"**Error generating graph:** {e}"
         generator_status.visible = True
-        pn.state.notifications.error(f"Failed to generate graph: {e}")
+        # pn.state.notifications.error(f"Failed to generate graph: {e}")
 
 # Generator input widgets with help text
 total_load_slider = pn.widgets.IntSlider(
@@ -752,6 +822,7 @@ def node_attr_df_callback(event):
                 current_graph[0].nodes[node][k] = v
         # Refresh visualizations after node attribute edit
         plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=name_toggle.value)
+        plot_risk_pane.object = visualize_graph_two_d_risk(current_graph[0], use_full_names=name_toggle.value)
         three_d_pane.object = visualize_graph_three_d(current_graph[0], use_full_names=name_toggle.value)
 node_attr_df.param.watch(node_attr_df_callback, 'value')
 node_dropdown.param.watch(node_dropdown_callback, 'value')
@@ -781,6 +852,7 @@ def edge_attr_df_callback(event):
                 current_graph[0].edges[edge_tuple][k] = v
             # Refresh visualizations after edge attribute edit
             plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=name_toggle.value)
+            plot_risk_pane.object = visualize_graph_two_d_risk(current_graph[0], use_full_names=name_toggle.value)
             three_d_pane.object = visualize_graph_three_d(current_graph[0], use_full_names=name_toggle.value)
 edge_attr_df.param.watch(edge_attr_df_callback, 'value')
 
@@ -794,13 +866,19 @@ app.append(pn.Column(
 ))
 
 # Placeholder for the plot
+# 2D visualization by type
 two_d_column = pn.Column()
-two_d_column.append("### 2D Graph Visualization")
+two_d_column.append("### 2D Graph Visualization (Type)")
 plot_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
 two_d_column.append(plot_pane)
 
-# 3D graph visualization function
-# This function takes a NetworkX graph and visualizes it using Plotly.
+# 2D visualization by risk
+two_d_risk_column = pn.Column()
+two_d_risk_column.append("### 2D Graph Visualization (Risk Score)")
+plot_risk_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
+two_d_risk_column.append(plot_risk_pane)
+
+# 3D visualization
 three_d_column = pn.Column()
 three_d_column.append("### 3D Graph Visualization")
 three_d_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
@@ -809,8 +887,8 @@ three_d_column.append(three_d_pane)
 # Autoload example graph if present
 autoload_example_graph()
 
-# Create a row to show both plots side by side
-plots_row = pn.Row(two_d_column, three_d_column, sizing_mode='stretch_width')
+# Create a row to show all plots side by side
+plots_row = pn.Row(two_d_column, two_d_risk_column, three_d_column, sizing_mode='stretch_width')
 app.append(plots_row)
 
 node_column = pn.Column("### Node Selection", node_dropdown, node_info_pane, node_attr_df, sizing_mode='stretch_width')

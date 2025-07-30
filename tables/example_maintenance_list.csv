@@ -1,0 +1,11 @@
+task_id,equipment_type,task_type,recommended_frequency_months,description,default_priority,time_cost,money_cost,notes
+T-01,transformer,visual inspection,12,"Visually inspect for corrosion, scoring, stains or any other indicators of wear.",2,0.5,50,Check for oil leaks and discoloration.
+T-02,transformer,test winding ratios,24,Test transformer winding ratios to ensure correct operation.,1,1,100,Use appropriate test equipment.
+T-03,transformer,test grounding,12,Test transformer grounding connections for integrity.,1,0.5,30,Ensure all ground connections are secure.
+T-04,transformer,test torque of bolted connections,12,Check and retorque all bolted electrical connections.,2,0.5,20,Follow manufacturer's torque specifications.
+T-05,transformer,replacement,-1,Replace transformer at end of service life or if failed.,1,8,-1,Coordinate with utility if required.
+P-01,panel,visual inspection,12,"Visually inspect panel for signs of overheating, corrosion, or damage.",2,0.5,30,Check for missing or loose covers.
+P-02,panel,test grounding,12,Test panel grounding and bonding connections.,1,0.5,20,Verify all ground lugs are tight.
+P-03,panel,test gfci,6,Test all GFCI breakers and receptacles for proper operation.,1,0.25,10,Document any failed devices.
+P-04,panel,inspect breakers,12,Inspect all breakers for signs of wear or damage.,2,0.5,15,Replace any defective breakers.
+P-05,panel,replacement,-1,Replace panel at end of service life or if failed.,1,6,-1,Label all circuits after replacement.
