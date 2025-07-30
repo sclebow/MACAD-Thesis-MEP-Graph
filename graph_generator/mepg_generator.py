@@ -297,7 +297,7 @@ def get_baseline_attributes(equipment_type, building_attrs):
 
     attributes = {
         'installation_date': construction_date,  # Use construction date as installation date
-        'last_maintenance_date': construction_year,  # Assume commissioning counts as first maintenance
+        'last_maintenance_date': construction_date,  # Assume commissioning counts as first maintenance
         'maintenance_frequency': baseline['maintenance_frequency'],
         'operating_hours': 0,  # Start at 0 for new equipment
         'expected_lifespan': baseline['expected_lifespan'],

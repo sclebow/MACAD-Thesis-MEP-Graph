@@ -13,10 +13,14 @@ import math
 import datetime
 
 # Import helper files
+# Import helper files
 from helpers.node_risk import *
+from helpers.rul_helper import apply_rul_to_graph
 # Import MEP graph generator
 from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes
 from graph_generator.mepg_generator import clean_graph_none_values
+
+print("\n" * 5)
 
 pn.extension('plotly')
 pn.extension('jsoneditor')
@@ -566,7 +570,7 @@ def file_input_callback(event):
             pn.state.notifications.error(f"Failed to load graph: {e}")
 
 def add_risk_scores(graph):
-    # Process risk scores with error handling
+    # Process risk scores and remaining useful life with error handling
     try:
         print("Calculating risk scores...")
         graph = apply_risk_scores_to_graph(graph)
@@ -574,6 +578,15 @@ def add_risk_scores(graph):
     except Exception as risk_error:
         print(f"Warning: Failed to calculate risk scores: {risk_error}")
         # Continue without risk scores
+
+    # Apply remaining useful life attribute
+    try:
+        print("Applying remaining useful life...")
+        graph = apply_rul_to_graph(graph)
+        print("Remaining useful life applied.")
+    except Exception as rul_error:
+        print(f"Warning: Failed to apply remaining useful life: {rul_error}")
+        # Continue without RUL
 
     return graph
 
