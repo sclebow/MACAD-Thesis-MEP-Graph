@@ -13,31 +13,41 @@ def calculate_risk_scores(graph):
     dict: A dictionary mapping each node to its risk score.
     """
 
-    # Risk score based on downstream reachability and strong articulation points
+    # New risk score: (propagated_power / total_load + betweenness_centrality) / 2
     if not isinstance(graph, nx.DiGraph):
         raise ValueError("The graph must be a directed graph.")
 
+    # Calculate total load (sum of all node loads)
+    total_load = sum(graph.nodes[n].get('propagated_power', 0) for n in graph.nodes)
+    if total_load == 0:
+        total_load = 1  # Prevent division by zero
+
     risk_scores = {}
-
-    # 1. Find strong articulation points (nodes whose removal increases the number of strongly connected components)
-    try:
-        strong_articulation_points = set(nx.algorithms.connectivity.strongly_connected.strong_articulation_points(graph))
-    except Exception:
-        # Fallback if not available in older networkx versions
-        strong_articulation_points = set()
-
-    # 2. For each node, calculate the number of downstream nodes (descendants)
-    for node in graph.nodes:
-        # Remove node and count how many nodes become unreachable from its predecessors
+    # Helper to count descendants excluding 'end_load' nodes
+    def filtered_descendants_count(graph, node):
         descendants = nx.descendants(graph, node)
-        # Risk score: number of downstream nodes disconnected if this node fails
-        risk = len(descendants)
-        # Boost risk score if node is a strong articulation point
-        if node in strong_articulation_points:
-            risk += len(graph.nodes)  # Add a large penalty/bonus
+        filtered = [n for n in descendants if graph.nodes[n].get('type') != 'end_load']
+        return len(filtered)
+
+    # Compute max filtered descendants for normalization
+    max_descendants = max(filtered_descendants_count(graph, n) for n in graph.nodes) if graph.nodes else 1
+    if max_descendants == 0:
+        max_descendants = 1
+
+    for node in graph.nodes:
+        propagated_power = graph.nodes[node].get('propagated_power', 0)
+        norm_power = propagated_power / total_load
+        descendants_count = filtered_descendants_count(graph, node)
+        norm_descendants = descendants_count / max_descendants
+        risk = (norm_power + norm_descendants) / 2
         risk_scores[node] = risk
 
-    return risk_scores
+    # Normalize so the highest risk is 1
+    max_risk = max(risk_scores.values()) if risk_scores else 1
+    if max_risk == 0:
+        max_risk = 1
+    normalized_scores = {node: score / max_risk for node, score in risk_scores.items()}
+    return normalized_scores
     
 def apply_risk_scores_to_graph(graph):
     """
