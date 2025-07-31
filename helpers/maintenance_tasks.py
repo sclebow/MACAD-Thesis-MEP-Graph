@@ -58,6 +58,8 @@ The goal is to:
 
 import csv
 from typing import List, Dict, Any
+import datetime
+from dateutil.relativedelta import relativedelta
 
 # Placeholder: Load maintenance tasks from a CSV file
 def load_maintenance_tasks(csv_path: str) -> List[Dict[str, Any]]:
@@ -91,8 +93,6 @@ def generate_maintenance_tasks_from_graph(graph, tasks) -> List[Dict[str, Any]]:
     status = 'pending'
     If any template field is None, raise ValueError.
     """
-    import datetime
-    from dateutil.relativedelta import relativedelta
 
     # Build a lookup for templates by equipment_type
     template_by_type = {}
@@ -113,21 +113,7 @@ def generate_maintenance_tasks_from_graph(graph, tasks) -> List[Dict[str, Any]]:
             task_instance_id = f"{task_id}-{node_id}"
             # Get installation_date from node (should be str or int year)
             installation_date = attrs.get('installation_date')
-            # Parse installation_date to datetime
-            if isinstance(installation_date, int):
-                install_dt = datetime.date(installation_date, 1, 1)
-            elif isinstance(installation_date, str):
-                try:
-                    # Try YYYY-MM-DD
-                    install_dt = datetime.datetime.strptime(installation_date, "%Y-%m-%d").date()
-                except Exception:
-                    try:
-                        # Try YYYY
-                        install_dt = datetime.date(int(installation_date), 1, 1)
-                    except Exception:
-                        raise ValueError(f"Could not parse installation_date '{installation_date}' for node {node_id}")
-            else:
-                raise ValueError(f"Missing or invalid installation_date for node {node_id}")
+            install_dt = datetime.datetime.strptime(installation_date, "%Y-%m-%d").date()
 
             # Determine frequency (months)
             freq_months = template['recommended_frequency_months']
@@ -171,6 +157,8 @@ def generate_maintenance_tasks_from_graph(graph, tasks) -> List[Dict[str, Any]]:
                 'description': template.get('description', ''),
                 'task_id': task_id,
                 'recommended_frequency_months': freq_months,
+                'node_risk_score': attrs.get('risk_score'),
+                'months_deferred': 0,  
             }
             # Check for any None values in required fields
             for k in ['recommended_frequency_months', 'priority', 'time_cost', 'money_cost']:
@@ -202,6 +190,163 @@ def update_task_status(tasks: List[Dict[str, Any]], task_id: str, new_status: st
     ...
 
 # Additional helper functions can be added as needed
+def create_calendar_schedule(tasks: List[Dict[str, Any]]):
+    """Create a calendar schedule for the tasks, grouping by month, as a dictionary.
+    Includes all months between the earliest and latest task dates, even if no tasks exist in those months."""
+    calendar_schedule = {}
+    
+    if not tasks:
+        return calendar_schedule
+    
+    # Find earliest and latest dates
+    task_dates = [datetime.datetime.strptime(task['scheduled_date'], '%Y-%m-%d') for task in tasks]
+    earliest_date = min(task_dates)
+    latest_date = max(task_dates)
+    
+    # Create all months between earliest and latest
+    current_date = earliest_date.replace(day=1)  # Start at beginning of month
+    end_date = latest_date.replace(day=1)
+    
+    while current_date <= end_date:
+        month_key = current_date.strftime('%Y-%m')
+        calendar_schedule[month_key] = []
+        current_date += relativedelta(months=1)
+    
+    # Now add tasks to their respective months
+    for task in tasks:
+        month = datetime.datetime.strptime(task['scheduled_date'], '%Y-%m-%d').strftime('%Y-%m')
+        calendar_schedule[month].append(task)
+    
+    return calendar_schedule
+
+def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]], monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int=36) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Prioritize tasks in the calendar schedule based on time and money budgets.
+    Use the 'node_risk_score' to influence priority.
+
+    First sort all tasks in a month by risk score
+    and then select tasks until either the time or money budget is exceeded.
+
+    Tasks that are completed generate a new task into a future month as 'pending' tasks,
+    to represent ongoing maintenance.  Use the completed task's attributes to fill in the new task's attributes.
+
+    Tasks that are not completed are pushed to the next month and labeled as 'deferred'.
+
+    We can track how many months a task has been deferred by updating the 'months_deferred' field.
+
+    Use the 'months_to_schedule' parameter to limit how far into the future we schedule tasks.
+
+    Print a summary of the prioritized tasks for each month, including total time and money costs and the number of deferred tasks.
+
+    Parameters:
+    - calendar_schedule: The calendar schedule containing tasks grouped by month.
+    - monthly_budget_time: The maximum time budget for each month.
+    - monthly_budget_money: The maximum money budget for each month.
+    - months_to_schedule: The number of months into the future to schedule tasks (default is 36).
+    Returns:
+    - A dictionary containing the prioritized tasks grouped by month.
+    """
+    prioritized_schedule = {}
+    
+    # Get all months and sort them chronologically
+    all_months = sorted(calendar_schedule.keys())
+    
+    # Calculate the cutoff month based on months_to_schedule
+    if all_months:
+        start_month = datetime.datetime.strptime(all_months[0], '%Y-%m')
+        cutoff_month = (start_month + relativedelta(months=months_to_schedule)).strftime('%Y-%m')
+    else:
+        cutoff_month = None
+    
+    # Process each month in chronological order
+    for index, month in enumerate(all_months):
+        if cutoff_month and month > cutoff_month:
+            break
+            
+        print(f"\n--- Processing month {index} {month} ---")
+        
+        # Get tasks for this month and sort by risk score (descending - highest risk first)
+        month_tasks = calendar_schedule[month][:]  # Make a copy
+        month_tasks.sort(key=lambda t: t.get('node_risk_score', 0), reverse=True)
+        
+        # Track budgets for this month
+        remaining_time = monthly_budget_time
+        remaining_money = monthly_budget_money
+        
+        completed_tasks = []
+        deferred_tasks = []
+        
+        # Select tasks until budget is exceeded
+        for task in month_tasks:
+            task_time = task.get('time_cost', 0) or 0
+            task_money = task.get('money_cost', 0) or 0
+            
+            # Check if task fits in remaining budget
+            if task_time <= remaining_time and task_money <= remaining_money:
+                # Task can be completed
+                remaining_time -= task_time
+                remaining_money -= task_money
+                
+                # Mark as completed and add to completed list
+                task_copy = task.copy()
+                task_copy['status'] = 'completed'
+                completed_tasks.append(task_copy)
+                
+                # Generate future maintenance task
+                current_date = datetime.datetime.strptime(task['scheduled_date'], '%Y-%m-%d')
+                frequency_months = task.get('recommended_frequency_months', 12)
+                next_date = current_date + relativedelta(months=frequency_months)
+                next_month = next_date.strftime('%Y-%m')
+                
+                # Only schedule if within the months_to_schedule limit
+                if not cutoff_month or next_month <= cutoff_month:
+                    future_task = task.copy()
+                    future_task['scheduled_date'] = next_date.strftime('%Y-%m-%d')
+                    future_task['last_maintenance_date'] = task['scheduled_date']
+                    future_task['status'] = 'pending'
+                    future_task['months_deferred'] = 0
+                    
+                    # Add to appropriate month in calendar_schedule
+                    if next_month not in calendar_schedule:
+                        calendar_schedule[next_month] = []
+                    calendar_schedule[next_month].append(future_task)
+                    
+            else:
+                # Task cannot be completed - defer to next month
+                next_month_date = datetime.datetime.strptime(month, '%Y-%m') + relativedelta(months=1)
+                next_month = next_month_date.strftime('%Y-%m')
+                
+                # Only defer if within the months_to_schedule limit
+                if not cutoff_month or next_month <= cutoff_month:
+                    deferred_task = task.copy()
+                    deferred_task['scheduled_date'] = next_month_date.strftime('%Y-%m-%d')
+                    deferred_task['status'] = 'deferred'
+                    deferred_task['months_deferred'] = deferred_task.get('months_deferred', 0) + 1
+                    deferred_tasks.append(deferred_task)
+                    
+                    # Add to next month in calendar_schedule
+                    if next_month not in calendar_schedule:
+                        calendar_schedule[next_month] = []
+                    calendar_schedule[next_month].append(deferred_task)
+        
+        # Store the prioritized tasks for this month
+        prioritized_schedule[month] = completed_tasks
+        
+        # Print summary for this month
+        total_time_used = monthly_budget_time - remaining_time
+        total_money_used = monthly_budget_money - remaining_money
+        
+        print(f"Completed tasks: {len(completed_tasks)}")
+        print(f"Deferred tasks: {len(deferred_tasks)}")
+        print(f"Time used: {total_time_used:.1f}/{monthly_budget_time:.1f} hours ({total_time_used/monthly_budget_time*100:.1f}%)")
+        print(f"Money used: ${total_money_used:.2f}/${monthly_budget_money:.2f} ({total_money_used/monthly_budget_money*100:.1f}%)")
+        
+        if deferred_tasks:
+            print(f"Deferred task details:")
+            for dt in deferred_tasks:
+                print(f"  - {dt['task_instance_id']} (months deferred: {dt['months_deferred']})")
+    
+    return prioritized_schedule
 
 # Simple test main function
 def main():
@@ -233,8 +378,7 @@ def main():
     except Exception as e:
         print(f"Error loading graph: {e}")
         sys.exit(1)
-    # try:
-    if True: # This is a placeholder to allow for try/except block
+    try:
         print("Generating maintenance tasks...")
         tasks = generate_maintenance_tasks_from_graph(G, templates)
         print(f"Generated {len(tasks)} maintenance tasks.")
@@ -243,19 +387,34 @@ def main():
             print(t)
         if len(tasks) > 5:
             print(f"... ({len(tasks)-5} more tasks)")
+    except Exception as e:
+        print(f"Error generating maintenance tasks: {e}")
+        sys.exit(1)
 
-        # Save to CSV
-        output_dir = "./maintenance_tasks/"
-        filenname = "example_detailed_maintenance_tasks.csv"
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        output_path = os.path.join(output_dir, filenname)
-        print(f"Exporting tasks to: {output_path}")
-        export_tasks_to_csv(tasks, output_path)
-        print(f"Tasks exported successfully to {output_path}")
-    # except Exception as e:
-    #     print(f"Error generating maintenance tasks: {e}")
-    #     sys.exit(1)
+    # Create a calendar schedule for the tasks
+    calendar_schedule = create_calendar_schedule(tasks)
+    print("Generated calendar schedule for tasks:")
+    for month, tasks in calendar_schedule.items():
+        print(f"{month}: {len(tasks)} tasks")
+        for task in tasks:
+            print(f"  - {task['task_instance_id']} ({task['equipment_id']}) - {task['task_type']} on {task['scheduled_date']}")
+        
+        print(f"Total time cost for {month}: {sum(t['time_cost'] for t in tasks if t['time_cost'] is not None)} hours")
+        print(f"Total money cost for {month}: ${sum(t['money_cost'] for t in tasks if t['money_cost'] is not None):.2f}")
+        print()
+
+    # Prioritize calendar tasks
+    calendar_schedule = prioritize_calendar_tasks(calendar_schedule=calendar_schedule, monthly_budget_time=20, monthly_budget_money=500)
+
+    # Save to CSV
+    output_dir = "./maintenance_tasks/"
+    filenname = "example_detailed_maintenance_tasks.csv"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    output_path = os.path.join(output_dir, filenname)
+    print(f"Exporting tasks to: {output_path}")
+    export_tasks_to_csv(tasks, output_path)
+    print(f"Tasks exported successfully to {output_path}")
 
 if __name__ == "__main__":
     main()
