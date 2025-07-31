@@ -219,7 +219,7 @@ def create_calendar_schedule(tasks: List[Dict[str, Any]]):
     
     return calendar_schedule
 
-def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule):
+def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule, calendar_schedule=None):
     """Create an interactive HTML timeline visualization of the prioritized maintenance schedule.
     
     Shows tasks as colored cards that move between months:
@@ -236,9 +236,15 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
     
     # Collect all unique tasks and their status changes over time
     task_timeline = {}
+    
     all_months = sorted(prioritized_schedule.keys())
     
-    # Track task movements and status changes
+    # Limit to months_to_schedule if specified
+    if months_to_schedule and len(all_months) > 0:
+        start_month = datetime.datetime.strptime(all_months[0], '%Y-%m')
+        cutoff_month = (start_month + relativedelta(months=months_to_schedule)).strftime('%Y-%m')
+        all_months = [m for m in all_months if m <= cutoff_month]
+    
     for month in all_months:
         for task in prioritized_schedule[month]:
             task_id = task['task_instance_id']
@@ -305,10 +311,28 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 15px;
-            min-height: 400px;
+            min-height: 200px;
             padding: 20px;
             border: 2px dashed #ddd;
             border-radius: 8px;
+            margin-bottom: 20px;
+        }}
+        
+        .tasks-section {{
+            margin-bottom: 30px;
+        }}
+        
+        .section-title {{
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }}
+        
+        .section-title:nth-of-type(2) {{
+            border-bottom-color: #dc3545;
         }}
         
         .task-card {{
@@ -415,24 +439,10 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
     <div class="header">
         <h1>Maintenance Schedule Timeline</h1>
         <p>Monthly Budget: {monthly_budget_time} hours / ${monthly_budget_money}</p>
+        <p>Cards represent tasks that have been scheduled for maintenance in the specified month.</p>
     </div>
     
     <div class="timeline-container">
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color pending"></div>
-                <span>Pending</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color completed"></div>
-                <span>Completed</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color deferred"></div>
-                <span>Deferred</span>
-            </div>
-        </div>
-        
         <div class="timeline-controls">
             <label for="timelineSlider">Timeline: </label>
             <input type="range" id="timelineSlider" class="timeline-slider" 
@@ -446,8 +456,18 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         
         <div class="month-display" id="monthDisplay">{all_months[0] if all_months else 'No Data'}</div>
         
-        <div class="tasks-grid" id="tasksGrid">
-            <!-- Tasks will be populated by JavaScript -->
+        <div class="tasks-section">
+            <h3 class="section-title">New Tasks This Month</h3>
+            <div class="tasks-grid" id="newTasksGrid">
+                <!-- New tasks will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="tasks-section">
+            <h3 class="section-title">Deferred Tasks (Carried Over)</h3>
+            <div class="tasks-grid" id="deferredTasksGrid">
+                <!-- Deferred tasks will be populated by JavaScript -->
+            </div>
         </div>
     </div>
 
@@ -460,7 +480,8 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         
         const slider = document.getElementById('timelineSlider');
         const monthDisplay = document.getElementById('monthDisplay');
-        const tasksGrid = document.getElementById('tasksGrid');
+        const newTasksGrid = document.getElementById('newTasksGrid');
+        const deferredTasksGrid = document.getElementById('deferredTasksGrid');
         
         function updateDisplay() {{
             const currentMonth = months[currentMonthIndex];
@@ -468,9 +489,10 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
             slider.value = currentMonthIndex;
             
             // Clear existing tasks
-            tasksGrid.innerHTML = '';
+            newTasksGrid.innerHTML = '';
+            deferredTasksGrid.innerHTML = '';
             
-            // Find tasks for current month
+            // Find tasks for current month and separate new vs deferred
             Object.keys(taskData).forEach(taskId => {{
                 const task = taskData[taskId];
                 const monthData = task.months.find(m => m.month === currentMonth);
@@ -495,7 +517,10 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
                     // Add entrance animation
                     taskCard.style.opacity = '0';
                     taskCard.style.transform = 'scale(0.8)';
-                    tasksGrid.appendChild(taskCard);
+                    
+                    // Determine which grid to add to based on deferral status
+                    const targetGrid = monthData.months_deferred > 0 ? deferredTasksGrid : newTasksGrid;
+                    targetGrid.appendChild(taskCard);
                     
                     // Trigger animation
                     setTimeout(() => {{
@@ -717,7 +742,7 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
             for dt in deferred_tasks:
                 print(f"  - {dt['task_instance_id']} (months deferred: {dt['months_deferred']})")
     
-    animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule)
+    animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule, calendar_schedule=calendar_schedule)
 
     return prioritized_schedule
 

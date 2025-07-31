@@ -46,10 +46,35 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 15px;
-            min-height: 400px;
+            min-height: 200px;
             padding: 20px;
             border: 2px dashed #ddd;
             border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .tasks-section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }
+        
+        .section-title:nth-of-type(2) {
+            border-bottom-color: #dc3545;
+        }
+        
+        .task-counter {
+            font-size: 14px;
+            font-weight: normal;
+            color: #666;
+            margin-left: 8px;
         }
         
         .task-card {
@@ -156,24 +181,10 @@
     <div class="header">
         <h1>Maintenance Schedule Timeline</h1>
         <p>Monthly Budget: 20 hours / $500</p>
+        <p>Cards represent tasks that have been scheduled for maintenance in the specified month.</p>
     </div>
     
     <div class="timeline-container">
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color pending"></div>
-                <span>Pending</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color completed"></div>
-                <span>Completed</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color deferred"></div>
-                <span>Deferred</span>
-            </div>
-        </div>
-        
         <div class="timeline-controls">
             <label for="timelineSlider">Timeline: </label>
             <input type="range" id="timelineSlider" class="timeline-slider" 
@@ -187,8 +198,18 @@
         
         <div class="month-display" id="monthDisplay">2025-11</div>
         
-        <div class="tasks-grid" id="tasksGrid">
-            <!-- Tasks will be populated by JavaScript -->
+        <div class="tasks-section">
+            <h3 class="section-title">New Tasks This Month <span class="task-counter" id="newTasksCounter">(0)</span></h3>
+            <div class="tasks-grid" id="newTasksGrid">
+                <!-- New tasks will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="tasks-section">
+            <h3 class="section-title">Deferred Tasks (Carried Over) <span class="task-counter" id="deferredTasksCounter">(0)</span></h3>
+            <div class="tasks-grid" id="deferredTasksGrid">
+                <!-- Deferred tasks will be populated by JavaScript -->
+            </div>
         </div>
     </div>
 
@@ -4444,7 +4465,10 @@
         
         const slider = document.getElementById('timelineSlider');
         const monthDisplay = document.getElementById('monthDisplay');
-        const tasksGrid = document.getElementById('tasksGrid');
+        const newTasksGrid = document.getElementById('newTasksGrid');
+        const deferredTasksGrid = document.getElementById('deferredTasksGrid');
+        const newTasksCounter = document.getElementById('newTasksCounter');
+        const deferredTasksCounter = document.getElementById('deferredTasksCounter');
         
         function updateDisplay() {
             const currentMonth = months[currentMonthIndex];
@@ -4452,9 +4476,14 @@
             slider.value = currentMonthIndex;
             
             // Clear existing tasks
-            tasksGrid.innerHTML = '';
+            newTasksGrid.innerHTML = '';
+            deferredTasksGrid.innerHTML = '';
             
-            // Find tasks for current month
+            // Counters for tasks
+            let newTasksCount = 0;
+            let deferredTasksCount = 0;
+            
+            // Find tasks for current month and separate new vs deferred
             Object.keys(taskData).forEach(taskId => {
                 const task = taskData[taskId];
                 const monthData = task.months.find(m => m.month === currentMonth);
@@ -4479,7 +4508,15 @@
                     // Add entrance animation
                     taskCard.style.opacity = '0';
                     taskCard.style.transform = 'scale(0.8)';
-                    tasksGrid.appendChild(taskCard);
+                    
+                    // Determine which grid to add to based on deferral status
+                    if (monthData.months_deferred > 0) {
+                        deferredTasksGrid.appendChild(taskCard);
+                        deferredTasksCount++;
+                    } else {
+                        newTasksGrid.appendChild(taskCard);
+                        newTasksCount++;
+                    }
                     
                     // Trigger animation
                     setTimeout(() => {
@@ -4488,6 +4525,10 @@
                     }, Math.random() * 300);
                 }
             });
+            
+            // Update counters
+            newTasksCounter.textContent = `(${newTasksCount})`;
+            deferredTasksCounter.textContent = `(${deferredTasksCount})`;
         }
         
         function playAnimation() {
