@@ -219,6 +219,12 @@ def create_calendar_schedule(tasks: List[Dict[str, Any]]):
     
     return calendar_schedule
 
+def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule):
+    """Placeholder for animation function to visualize the prioritized schedule.
+    This could use matplotlib or another library to create a Gantt chart or similar visualization."""
+
+    print("Animating prioritized schedule...")
+
 def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]], monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int=36) -> Dict[str, List[Dict[str, Any]]]:
     """
     Prioritize tasks in the calendar schedule based on time and money budgets.
@@ -346,6 +352,8 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
             for dt in deferred_tasks:
                 print(f"  - {dt['task_instance_id']} (months deferred: {dt['months_deferred']})")
     
+    animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule)
+
     return prioritized_schedule
 
 # Simple test main function
