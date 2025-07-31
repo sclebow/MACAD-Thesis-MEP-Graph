@@ -220,10 +220,375 @@ def create_calendar_schedule(tasks: List[Dict[str, Any]]):
     return calendar_schedule
 
 def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule):
-    """Placeholder for animation function to visualize the prioritized schedule.
-    This could use matplotlib or another library to create a Gantt chart or similar visualization."""
+    """Create an interactive HTML timeline visualization of the prioritized maintenance schedule.
+    
+    Shows tasks as colored cards that move between months:
+    - Yellow: Pending tasks
+    - Green: Completed tasks  
+    - Red: Deferred tasks
+    
+    Saves as an interactive HTML file with timeline slider controls.
+    """
+    import json
+    import os
+    
+    print("Creating animated timeline visualization...")
+    
+    # Collect all unique tasks and their status changes over time
+    task_timeline = {}
+    all_months = sorted(prioritized_schedule.keys())
+    
+    # Track task movements and status changes
+    for month in all_months:
+        for task in prioritized_schedule[month]:
+            task_id = task['task_instance_id']
+            if task_id not in task_timeline:
+                task_timeline[task_id] = {
+                    'equipment_id': task['equipment_id'],
+                    'task_type': task['task_type'],
+                    'equipment_type': task['equipment_type'],
+                    'months': []
+                }
+            
+            task_timeline[task_id]['months'].append({
+                'month': month,
+                'status': task['status'],
+                'months_deferred': task.get('months_deferred', 0)
+            })
+    
+    # Create HTML content
+    html_content = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance Schedule Timeline - Budget: {monthly_budget_time}h/${monthly_budget_money}</title>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }}
+        
+        .header {{
+            text-align: center;
+            margin-bottom: 30px;
+        }}
+        
+        .timeline-container {{
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }}
+        
+        .timeline-controls {{
+            margin-bottom: 20px;
+            text-align: center;
+        }}
+        
+        .timeline-slider {{
+            width: 80%;
+            margin: 0 10px;
+        }}
+        
+        .month-display {{
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+            color: #333;
+        }}
+        
+        .tasks-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            min-height: 400px;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+        }}
+        
+        .task-card {{
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #333;
+            transition: all 0.5s ease;
+            transform-origin: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }}
+        
+        .task-card:hover {{
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }}
+        
+        .task-card.pending {{
+            background-color: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }}
+        
+        .task-card.completed {{
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }}
+        
+        .task-card.deferred {{
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }}
+        
+        .task-id {{
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }}
+        
+        .task-equipment {{
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 3px;
+        }}
+        
+        .task-type {{
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+        
+        .deferred-badge {{
+            background: #dc3545;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-top: 5px;
+            display: inline-block;
+        }}
+        
+        .legend {{
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }}
+        
+        .legend-item {{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }}
+        
+        .legend-color {{
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #333;
+        }}
+        
+        .play-controls {{
+            margin-top: 10px;
+        }}
+        
+        .play-button {{
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 5px;
+        }}
+        
+        .play-button:hover {{
+            background: #0056b3;
+        }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Maintenance Schedule Timeline</h1>
+        <p>Monthly Budget: {monthly_budget_time} hours / ${monthly_budget_money}</p>
+    </div>
+    
+    <div class="timeline-container">
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color pending"></div>
+                <span>Pending</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color completed"></div>
+                <span>Completed</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color deferred"></div>
+                <span>Deferred</span>
+            </div>
+        </div>
+        
+        <div class="timeline-controls">
+            <label for="timelineSlider">Timeline: </label>
+            <input type="range" id="timelineSlider" class="timeline-slider" 
+                   min="0" max="{len(all_months)-1}" value="0" step="1">
+            <div class="play-controls">
+                <button class="play-button" onclick="playAnimation()">▶ Play</button>
+                <button class="play-button" onclick="pauseAnimation()">⏸ Pause</button>
+                <button class="play-button" onclick="resetAnimation()">⏮ Reset</button>
+            </div>
+        </div>
+        
+        <div class="month-display" id="monthDisplay">{all_months[0] if all_months else 'No Data'}</div>
+        
+        <div class="tasks-grid" id="tasksGrid">
+            <!-- Tasks will be populated by JavaScript -->
+        </div>
+    </div>
 
-    print("Animating prioritized schedule...")
+    <script>
+        const taskData = {json.dumps(task_timeline, indent=2)};
+        const months = {json.dumps(all_months)};
+        let currentMonthIndex = 0;
+        let isPlaying = false;
+        let animationInterval = null;
+        
+        const slider = document.getElementById('timelineSlider');
+        const monthDisplay = document.getElementById('monthDisplay');
+        const tasksGrid = document.getElementById('tasksGrid');
+        
+        function updateDisplay() {{
+            const currentMonth = months[currentMonthIndex];
+            monthDisplay.textContent = currentMonth;
+            slider.value = currentMonthIndex;
+            
+            // Clear existing tasks
+            tasksGrid.innerHTML = '';
+            
+            // Find tasks for current month
+            Object.keys(taskData).forEach(taskId => {{
+                const task = taskData[taskId];
+                const monthData = task.months.find(m => m.month === currentMonth);
+                
+                if (monthData) {{
+                    const taskCard = document.createElement('div');
+                    taskCard.className = `task-card ${{monthData.status}}`;
+                    taskCard.style.animationDelay = `${{Math.random() * 0.5}}s`;
+                    
+                    let deferredBadge = '';
+                    if (monthData.months_deferred > 0) {{
+                        deferredBadge = `<div class="deferred-badge">Deferred ${{monthData.months_deferred}} months</div>`;
+                    }}
+                    
+                    taskCard.innerHTML = `
+                        <div class="task-id">${{taskId}}</div>
+                        <div class="task-equipment">${{task.equipment_id}} - ${{task.equipment_type}}</div>
+                        <div class="task-type">${{task.task_type}}</div>
+                        ${{deferredBadge}}
+                    `;
+                    
+                    // Add entrance animation
+                    taskCard.style.opacity = '0';
+                    taskCard.style.transform = 'scale(0.8)';
+                    tasksGrid.appendChild(taskCard);
+                    
+                    // Trigger animation
+                    setTimeout(() => {{
+                        taskCard.style.opacity = '1';
+                        taskCard.style.transform = 'scale(1)';
+                    }}, Math.random() * 300);
+                }}
+            }});
+        }}
+        
+        function playAnimation() {{
+            if (!isPlaying) {{
+                isPlaying = true;
+                animationInterval = setInterval(() => {{
+                    if (currentMonthIndex < months.length - 1) {{
+                        currentMonthIndex++;
+                        updateDisplay();
+                    }} else {{
+                        pauseAnimation();
+                    }}
+                }}, 2000); // 2 seconds per month
+            }}
+        }}
+        
+        function pauseAnimation() {{
+            isPlaying = false;
+            if (animationInterval) {{
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }}
+        }}
+        
+        function resetAnimation() {{
+            pauseAnimation();
+            currentMonthIndex = 0;
+            updateDisplay();
+        }}
+        
+        // Slider event listener
+        slider.addEventListener('input', function() {{
+            pauseAnimation();
+            currentMonthIndex = parseInt(this.value);
+            updateDisplay();
+        }});
+        
+        // Keyboard controls
+        document.addEventListener('keydown', function(e) {{
+            switch(e.key) {{
+                case 'ArrowLeft':
+                    if (currentMonthIndex > 0) {{
+                        pauseAnimation();
+                        currentMonthIndex--;
+                        updateDisplay();
+                    }}
+                    break;
+                case 'ArrowRight':
+                    if (currentMonthIndex < months.length - 1) {{
+                        pauseAnimation();
+                        currentMonthIndex++;
+                        updateDisplay();
+                    }}
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    if (isPlaying) {{
+                        pauseAnimation();
+                    }} else {{
+                        playAnimation();
+                    }}
+                    break;
+            }}
+        }});
+        
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+</html>"""
+    
+    # Save to file
+    output_dir = "./maintenance_tasks/"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    filename = f"maintenance_timeline_budget_{monthly_budget_time}h_{monthly_budget_money}usd.html"
+    output_path = os.path.join(output_dir, filename)
+    
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    
+    print(f"Interactive timeline saved to: {output_path}")
+    print("Open the HTML file in a web browser to view the animation.")
+    print("Controls: Use the slider, play/pause buttons, or arrow keys (←/→) and spacebar to navigate.")
 
 def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]], monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int=36) -> Dict[str, List[Dict[str, Any]]]:
     """
