@@ -74,6 +74,12 @@ import networkx as nx
 from typing import List, Dict, Tuple, Any, Optional
 from dataclasses import dataclass
 
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from helpers.node_risk import apply_risk_scores_to_graph
+from helpers.rul_helper import apply_rul_to_graph
+
 # --- Constants ---
 # Standard equipment sizes in Amps for distribution panels and switchboards.
 STANDARD_DISTRIBUTION_EQUIPMENT_SIZES = [
@@ -365,6 +371,10 @@ def main():
     distribution_equipment = place_distribution_equipment(building_attrs, riser_floor_attributes, voltage_info)
     cluster_strength = args.cluster_strength
     graph = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info, end_loads, cluster_strength)
+
+    # Apply risk scores and RUL to the graph
+    graph = apply_risk_scores_to_graph(graph)
+    graph = apply_rul_to_graph(graph)
 
     # --- Reporting ---
     print("\n--- BUILDING MEP GRAPH REPORT ---")
