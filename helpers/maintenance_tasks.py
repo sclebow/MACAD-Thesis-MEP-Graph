@@ -926,7 +926,7 @@ def main():
         print()
 
     # Prioritize calendar tasks
-    calendar_schedule = prioritize_calendar_tasks(calendar_schedule=calendar_schedule, monthly_budget_time=5, monthly_budget_money=50)
+    calendar_schedule = prioritize_calendar_tasks(calendar_schedule=calendar_schedule, monthly_budget_time=10, monthly_budget_money=100)
 
     # Save to CSV
     output_dir = "./maintenance_tasks/"
