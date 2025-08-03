@@ -60,6 +60,8 @@ import csv
 from typing import List, Dict, Any
 import datetime
 from dateutil.relativedelta import relativedelta
+import json
+import os
 
 # Placeholder: Load maintenance tasks from a CSV file
 def load_maintenance_tasks(csv_path: str) -> List[Dict[str, Any]]:
@@ -219,7 +221,7 @@ def create_calendar_schedule(tasks: List[Dict[str, Any]]):
     
     return calendar_schedule
 
-def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule, calendar_schedule=None):
+def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule):
     """Create an interactive HTML timeline visualization of the prioritized maintenance schedule.
     
     Shows tasks as colored cards organized into four categories:
@@ -229,480 +231,593 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
     - Deferred Deferred: Red cards for tasks that remain deferred
     
     Saves as an interactive HTML file with timeline slider controls.
-    """
-    import json
-    import os
+
+    Display a vertical list of cards which represent tasks in each month.
+    Each card shows:
+    - Task ID
+    - Equipment ID
+    - Number of months deferred (if applicable)
+    - Time cost
+    - Money cost
+    - Status on current month (completed, deferred)
+
+    The tasks will be organized into two lists:
+    - Completed tasks
+    - Deferred tasks
+
+    The tasks will be colored based on their status:
+    - Completed that are new: green
+    - Completed that were deferred: light green
+    - Deferred that are new: orange
+    - Deferred that were completed: red
+
+    The timeline will have a slider to navigate through months, with play/pause controls.
     
+    Animation:
+    The timeline will animate the transition of tasks from one month to the next.  When the timeline changes from one month to the next,
+    tasks that were deferred last month but are now completed will slide from the deferred list to the completed list.
+    Tasks in each column will be sorted by their priority score, with the highest priority tasks at the top.
+    From month to month, the tasks will slide to their new positions based on their status and priority.
+
+    """
     print("Creating animated timeline visualization...")
     
     # Collect task data organized by month and category
     month_data = {}
-    
     all_months = sorted(prioritized_schedule.keys())
     
-    # Limit to months_to_schedule if specified
-    if months_to_schedule and len(all_months) > 0:
-        start_month = datetime.datetime.strptime(all_months[0], '%Y-%m')
-        cutoff_month = (start_month + relativedelta(months=months_to_schedule)).strftime('%Y-%m')
-        all_months = [m for m in all_months if m <= cutoff_month]
-    
+    # Process data for each month
     for month in all_months:
-        month_categories = prioritized_schedule[month]
+        month_tasks = prioritized_schedule[month]
+        
+        # Calculate budget usage for this month
+        all_completed = month_tasks['new_completed'] + month_tasks['deferred_completed']
+        total_time_used = sum(task.get('time_cost', 0) for task in all_completed)
+        total_money_used = sum(task.get('money_cost', 0) for task in all_completed)
+        
         month_data[month] = {
-            'new_completed': month_categories.get('new_completed', []),
-            'new_deferred': month_categories.get('new_deferred', []),
-            'deferred_completed': month_categories.get('deferred_completed', []),
-            'deferred_deferred': month_categories.get('deferred_deferred', [])
+            'budget_used': {
+                'time': total_time_used,
+                'money': total_money_used
+            },
+            'tasks': {
+                'new_completed': month_tasks['new_completed'],
+                'new_deferred': month_tasks['new_deferred'], 
+                'deferred_completed': month_tasks['deferred_completed'],
+                'deferred_deferred': month_tasks['deferred_deferred']
+            }
         }
     
-    # Create HTML content
-    html_content = f"""
-<!DOCTYPE html>
+    # Create timeline data structure for JavaScript
+    timeline_data = {
+        'months': all_months,
+        'data': month_data,
+        'budget': {
+            'time': monthly_budget_time,
+            'money': monthly_budget_money
+        }
+    }
+    
+    # Generate HTML content
+    html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maintenance Schedule Timeline - Budget: {monthly_budget_time}h/${monthly_budget_money}</title>
+    <title>Maintenance Timeline - {monthly_budget_time}h/${monthly_budget_money}</title>
     <style>
         body {{
-            font-family: Arial, sans-serif;
-            margin: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
             background-color: #f5f5f5;
         }}
         
-        .header {{
-            text-align: center;
-            margin-bottom: 30px;
+        .timeline-controls {{
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }}
+        
+        #play-pause {{
+            background: #007ACC;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }}
+        
+        #play-pause:hover {{
+            background: #005a9e;
+        }}
+        
+        #month-slider {{
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #ddd;
+            border-radius: 3px;
+            outline: none;
+        }}
+        
+        #month-slider::-webkit-slider-thumb {{
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #007ACC;
+            border-radius: 50%;
+            cursor: pointer;
+        }}
+        
+        #current-month-display {{
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+            min-width: 80px;
         }}
         
         .timeline-container {{
             background: white;
-            border-radius: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }}
-        
-        .timeline-controls {{
-            margin-bottom: 20px;
-            text-align: center;
-        }}
-        
-        .timeline-slider {{
-            width: 80%;
-            margin: 0 10px;
         }}
         
         .month-display {{
-            font-size: 24px;
-            font-weight: bold;
-            margin: 20px 0;
             text-align: center;
-            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
         }}
         
-        .tasks-grid {{
-            display: grid;
-            /* auto-resize cards to fit 2×2 layout */
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 15px;
-            min-height: 200px;
-            padding: 20px;
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            margin-bottom: 20px;
+        #month-title {{
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 24px;
         }}
-        .sections-grid {{
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
+        
+        .budget-info {{
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 14px;
+            color: #666;
+        }}
+        
+        .budget-item {{
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 4px;
+        }}
+        
+        .task-columns {{
+            display: flex;
             gap: 20px;
-            margin-bottom: 20px;
+            min-height: 500px;
         }}
         
-        .tasks-section {{
-            margin-bottom: 30px;
+        .completed-column, .deferred-column {{
+            flex: 1;
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 15px;
         }}
         
-        .section-title {{
-            font-size: 18px;
-            font-weight: bold;
-            margin: 10px 0;
-            color: #333;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 5px;
+        .completed-column h3, .deferred-column h3 {{
+            margin: 0 0 15px 0;
+            text-align: center;
+            padding: 10px;
+            border-radius: 4px;
+            color: white;
         }}
         
-        .section-title:nth-of-type(2) {{
-            border-bottom-color: #dc3545;
+        .completed-column h3 {{
+            background: #4CAF50;
+        }}
+        
+        .deferred-column h3 {{
+            background: #FF9800;
+        }}
+        
+        .task-list {{
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 400px;
         }}
         
         .task-card {{
-            padding: 8px;
-             border-radius: 8px;
-             border: 2px solid #333;
-             transition: all 0.5s ease;
-             transform-origin: center;
-             cursor: pointer;
-             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            background: white;
+            border-radius: 6px;
+            padding: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            opacity: 1;
+            transform: translateY(0);
         }}
         
         .task-card:hover {{
-            transform: scale(1.05);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transform: translateY(-1px);
         }}
         
-        .task-card.pending {{
-            background-color: #fff3cd;
-            border-color: #ffc107;
-            color: #856404;
-        }}
-        
-        .task-card.completed {{
-            background-color: #d4edda;
-            border-color: #28a745;
-            color: #155724;
-        }}
-        
-        .task-card.deferred {{
-            background-color: #f8d7da;
-            border-color: #dc3545;
-            color: #721c24;
-        }}
-        
-        .task-card.new-deferred {{
-            background-color: #fff3cd;
-            border-color: #ffc107;
-            color: #856404;
+        .task-card.new-completed {{
+            border-left-color: #4CAF50;
+            background: #f8fff8;
         }}
         
         .task-card.deferred-completed {{
-            background-color: #d1ecf1;
-            border-color: #17a2b8;
-            color: #0c5460;
+            border-left-color: #81C784;
+            background: #f0f8f0;
         }}
         
-        .task-id {{
+        .task-card.new-deferred {{
+            border-left-color: #FF9800;
+            background: #fff8f0;
+        }}
+        
+        .task-card.deferred-deferred {{
+            border-left-color: #F44336;
+            background: #fff0f0;
+        }}
+        
+        .task-header {{
             font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 6px;
+            color: #333;
+        }}
+        
+        .task-details {{
             font-size: 12px;
-             margin-bottom: 5px;
+            color: #666;
+            line-height: 1.3;
         }}
         
-        .task-equipment {{
-            font-size: 10px;
-             opacity: 0.8;
-             margin-bottom: 3px;
-        }}
-        
-        .task-type {{
-            font-size: 9px;
-             text-transform: uppercase;
-             letter-spacing: 0.5px;
+        .task-costs {{
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 11px;
+            color: #888;
         }}
         
         .deferred-badge {{
-            background: #dc3545;
+            background: #ff4444;
             color: white;
             padding: 2px 6px;
             border-radius: 10px;
             font-size: 10px;
-            margin-top: 5px;
-            display: inline-block;
+            font-weight: bold;
+            margin-left: 8px;
         }}
         
-        .legend {{
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-bottom: 20px;
+        .task-card.moving {{
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
         }}
         
-        .legend-item {{
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .task-card.cross-column {{
+            transition: all 1s ease-in-out;
+            z-index: 15;
         }}
         
-        .legend-color {{
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            border: 2px solid #333;
+        .task-card.fade-in {{
+            animation: fadeIn 0.6s ease-in;
         }}
         
-        .play-controls {{
-            margin-top: 10px;
+        .task-card.fade-out {{
+            animation: fadeOut 0.6s ease-out;
         }}
         
-        .play-button {{
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 0 5px;
+        .task-card.slide-enter {{
+            animation: slideEnter 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }}
         
-        .play-button:hover {{
-            background: #0056b3;
+        .task-card.position-change {{
+            transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }}
+        
+        @keyframes fadeIn {{
+            from {{ opacity: 0; transform: translateY(-30px) scale(0.95); }}
+            to {{ opacity: 1; transform: translateY(0) scale(1); }}
+        }}
+        
+        @keyframes fadeOut {{
+            from {{ opacity: 1; transform: translateY(0) scale(1); }}
+            to {{ opacity: 0; transform: translateY(30px) scale(0.95); }}
+        }}
+        
+        @keyframes slideEnter {{
+            from {{ 
+                opacity: 0; 
+                transform: translateX(-100px) translateY(-20px) scale(0.9); 
+            }}
+            to {{ 
+                opacity: 1; 
+                transform: translateX(0) translateY(0) scale(1); 
+            }}
+        }}
+        
+        /* Position containers for smooth transitions */
+        .task-list {{
+            position: relative;
+        }}
+        
+        .task-card.absolute-positioned {{
+            position: absolute;
+            width: calc(100% - 16px);
+        }}
+        
+        .empty-state {{
+            text-align: center;
+            color: #999;
+            font-style: italic;
+            padding: 40px 20px;
         }}
     </style>
-    <!-- Include Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="header">
-        <h1>Maintenance Schedule Timeline</h1>
-        <p>Monthly Budget: {monthly_budget_time} hours / ${monthly_budget_money} | Cards represent tasks categorized by their completion and deferral status for each month.</p>
+    <div class="timeline-controls">
+        <button id="play-pause">▶ Play</button>
+        <input type="range" id="month-slider" min="0" max="{len(all_months)-1}" value="0" step="1">
+        <span id="current-month-display">{all_months[0] if all_months else 'N/A'}</span>
     </div>
     
     <div class="timeline-container">
-        <div class="timeline-controls">
-            <label for="timelineSlider">Timeline: </label>
-            <input type="range" id="timelineSlider" class="timeline-slider" 
-                   min="0" max="{len(all_months)-1}" value="0" step="1">
-            <div class="play-controls">
-                <button class="play-button" onclick="playAnimation()">▶ Play</button>
-                <button class="play-button" onclick="pauseAnimation()">⏸ Pause</button>
-                <button class="play-button" onclick="resetAnimation()">⏮ Reset</button>
+        <div class="month-display">
+            <div class="budget-info">
+                <h2 id="month-title">{all_months[0] if all_months else 'No Data'}</h2>
+                <div class="budget-item">
+                    <strong>Time:</strong> <span id="time-used">0</span>/{monthly_budget_time} hours
+                    (<span id="time-percent">0%</span>)
+                </div>
+                <div class="budget-item">
+                    <strong>Money:</strong> $<span id="money-used">0</span>/${monthly_budget_money}
+                    (<span id="money-percent">0%</span>)
+                </div>
             </div>
         </div>
         
-        <div class="month-display" id="monthDisplay">{all_months[0] if all_months else 'No Data'}</div>
-        <div class="chart-container" style="height:150px; width:100%; margin-bottom:20px;">
-            <canvas id="categoryChart"></canvas>
-        </div>
-        <div class="sections-grid">
-        
-        <div class="tasks-section">
-            <h3 class="section-title" style="border-bottom-color: #28a745;">New Completed Tasks</h3>
-            <div class="tasks-grid" id="newCompletedGrid">
-                <!-- New completed tasks will be populated by JavaScript -->
+        <div class="task-columns">
+            <div class="completed-column">
+                <h3>✓ Completed Tasks (<span id="completed-count">0</span>)</h3>
+                <div id="completed-tasks" class="task-list">
+                    <div class="empty-state">No completed tasks</div>
+                </div>
+            </div>
+            <div class="deferred-column">
+                <h3>⏸ Deferred Tasks (<span id="deferred-count">0</span>)</h3>
+                <div id="deferred-tasks" class="task-list">
+                    <div class="empty-state">No deferred tasks</div>
+                </div>
             </div>
         </div>
-        
-        <div class="tasks-section">
-            <h3 class="section-title" style="border-bottom-color: #ffc107;">New Deferred Tasks</h3>
-            <div class="tasks-grid" id="newDeferredGrid">
-                <!-- New deferred tasks will be populated by JavaScript -->
-            </div>
-        </div>
-        
-        <div class="tasks-section">
-            <h3 class="section-title" style="border-bottom-color: #17a2b8;">Previously Deferred - Now Completed</h3>
-            <div class="tasks-grid" id="deferredCompletedGrid">
-                <!-- Previously deferred, now completed tasks will be populated by JavaScript -->
-            </div>
-        </div>
-        
-        <div class="tasks-section">
-            <h3 class="section-title" style="border-bottom-color: #dc3545;">Still Deferred Tasks</h3>
-            <div class="tasks-grid" id="deferredDeferredGrid">
-                <!-- Still deferred tasks will be populated by JavaScript -->
-            </div>
-        </div>
-        </div>  <!-- end .sections-grid -->
     </div>
 
     <script>
-        // Initialize Chart.js bar chart for category counts
-        const ctx = document.getElementById('categoryChart').getContext('2d');
-        let categoryChart = new Chart(ctx, {{
-            type: 'bar',
-            data: {{
-                labels: ['New Completed', 'New Deferred', 'Previously Deferred - Completed', 'Still Deferred'],
-                datasets: [{{
-                    label: 'Task Count',
-                    data: [0, 0, 0, 0],
-                    backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#dc3545']
-                }}]
-            }},
-            options: {{
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {{ y: {{ beginAtZero: true, ticks: {{ stepSize: 1 }} }} }}
-            }}
-        }});
-
-        const monthData = {json.dumps(month_data, indent=2)};
-        const months = {json.dumps(all_months)};
+        // Timeline data
+        const timelineData = {json.dumps(timeline_data, indent=8)};
         
         let currentMonthIndex = 0;
         let isPlaying = false;
-        let animationInterval = null;
+        let playInterval = null;
+        const animationSpeed = 2000; // ms between months
         
-        const slider = document.getElementById('timelineSlider');
-        const monthDisplay = document.getElementById('monthDisplay');
-        const newCompletedGrid = document.getElementById('newCompletedGrid');
-        const newDeferredGrid = document.getElementById('newDeferredGrid');
-        const deferredCompletedGrid = document.getElementById('deferredCompletedGrid');
-        const deferredDeferredGrid = document.getElementById('deferredDeferredGrid');
+        // DOM elements
+        const playPauseBtn = document.getElementById('play-pause');
+        const monthSlider = document.getElementById('month-slider');
+        const currentMonthDisplay = document.getElementById('current-month-display');
+        const monthTitle = document.getElementById('month-title');
+        const timeUsed = document.getElementById('time-used');
+        const timePercent = document.getElementById('time-percent');
+        const moneyUsed = document.getElementById('money-used');
+        const moneyPercent = document.getElementById('money-percent');
+        const completedTasksList = document.getElementById('completed-tasks');
+        const deferredTasksList = document.getElementById('deferred-tasks');
+        const completedCount = document.getElementById('completed-count');
+        const deferredCount = document.getElementById('deferred-count');
         
         function createTaskCard(task, category) {{
-            const taskCard = document.createElement('div');
+            const card = document.createElement('div');
+            card.className = `task-card ${{category}}`;
+            card.dataset.taskId = task.task_instance_id;
             
-            // Set card style based on category
-            let cardClass = 'task-card ';
-            switch(category) {{
-                case 'new_completed':
-                    cardClass += 'completed';
-                    break;
-                case 'new_deferred':
-                    cardClass += 'new-deferred';
-                    break;
-                case 'deferred_completed':
-                    cardClass += 'deferred-completed';
-                    break;
-                case 'deferred_deferred':
-                    cardClass += 'deferred';
-                    break;
-            }}
-            
-            taskCard.className = cardClass;
-            taskCard.style.animationDelay = `${{Math.random() * 0.5}}s`;
-            
-            let deferredBadge = '';
             const monthsDeferred = task.months_deferred || 0;
-            if (monthsDeferred > 0) {{
-                deferredBadge = `<div class="deferred-badge">Deferred ${{monthsDeferred}} months</div>`;
-            }}
+            const deferredBadge = monthsDeferred > 0 ? 
+                `<span class="deferred-badge">${{monthsDeferred}}mo</span>` : '';
             
-            let costInfo = '';
-            if (task.time_cost || task.money_cost) {{
-                costInfo = `<div style="font-size: 10px; margin-top: 5px; opacity: 0.7;">
-                    ${{task.time_cost || 0}}h / $$${{task.money_cost || 0}}
-                </div>`;
-            }}
-            
-            taskCard.innerHTML = `
-                <div class="task-id">${{task.task_instance_id}}</div>
-                <div class="task-equipment">${{task.equipment_id}} - ${{task.equipment_type}}</div>
-                <div class="task-type">${{task.task_type}}</div>
-                ${{deferredBadge}}
-                ${{costInfo}}
+            card.innerHTML = `
+                <div class="task-details">
+                    <b>Task ID: ${{task.task_instance_id}}${{deferredBadge}}</b> | Type: ${{task.task_type}} | Status: ${{task.status}} | Time: ${{(task.time_cost || 0).toFixed(1)}}h | Cost: ${{(task.money_cost || 0).toFixed(0)}}
+                </div>
             `;
             
-            // Add entrance animation
-            taskCard.style.opacity = '0';
-            taskCard.style.transform = 'scale(0.8)';
-            
-            return taskCard;
+            return card;
         }}
         
-        function updateDisplay() {{
-            const currentMonth = months[currentMonthIndex];
-            // Update bar chart with current counts
-            const counts = [
-                monthData[currentMonth]?.new_completed.length || 0,
-                monthData[currentMonth]?.new_deferred.length || 0,
-                monthData[currentMonth]?.deferred_completed.length || 0,
-                monthData[currentMonth]?.deferred_deferred.length || 0
-            ];
-            categoryChart.data.datasets[0].data = counts;
-            categoryChart.update();
-            monthDisplay.textContent = currentMonth;
-            slider.value = currentMonthIndex;
-            
-            // Clear existing tasks
-            newCompletedGrid.innerHTML = '';
-            newDeferredGrid.innerHTML = '';
-            deferredCompletedGrid.innerHTML = '';
-            deferredDeferredGrid.innerHTML = '';
-            
-            // Get data for current month
-            const currentMonthData = monthData[currentMonth] || {{
-                new_completed: [],
-                new_deferred: [],
-                deferred_completed: [],
-                deferred_deferred: []
-            }};
-            
-            // Populate each category
-            const categories = [
-                {{ tasks: currentMonthData.new_completed, grid: newCompletedGrid, category: 'new_completed' }},
-                {{ tasks: currentMonthData.new_deferred, grid: newDeferredGrid, category: 'new_deferred' }},
-                {{ tasks: currentMonthData.deferred_completed, grid: deferredCompletedGrid, category: 'deferred_completed' }},
-                {{ tasks: currentMonthData.deferred_deferred, grid: deferredDeferredGrid, category: 'deferred_deferred' }}
-            ];
-            
-            categories.forEach(categoryData => {{
-                categoryData.tasks.forEach((task, index) => {{
-                    const taskCard = createTaskCard(task, categoryData.category);
-                    categoryData.grid.appendChild(taskCard);
-                    
-                    // Trigger entrance animation for all tasks simultaneously
-                    setTimeout(() => {{
-                        taskCard.style.opacity = '1';
-                        taskCard.style.transform = 'scale(1)';
-                    }}, 50); // Small delay just to ensure DOM is ready
-                }});
+        function sortTasksByPriority(tasks) {{
+            return tasks.sort((a, b) => {{
+                const scoreA = a.node_risk_score || 0;
+                const scoreB = b.node_risk_score || 0;
+                return scoreB - scoreA; // Higher risk first
             }});
         }}
         
-        function playAnimation() {{
-            if (!isPlaying) {{
-                isPlaying = true;
-                animationInterval = setInterval(() => {{
-                    if (currentMonthIndex < months.length - 1) {{
-                        currentMonthIndex++;
-                        updateDisplay();
+        function renderMonth(monthIndex, animate = true) {{
+            if (monthIndex < 0 || monthIndex >= timelineData.months.length) return;
+            
+            const month = timelineData.months[monthIndex];
+            const monthData = timelineData.data[month];
+            
+            // Update header
+            monthTitle.textContent = month;
+            currentMonthDisplay.textContent = month;
+            
+            // Update budget info
+            const budgetUsed = monthData.budget_used;
+            const budget = timelineData.budget;
+            
+            timeUsed.textContent = budgetUsed.time.toFixed(1);
+            timePercent.textContent = ((budgetUsed.time / budget.time) * 100).toFixed(1) + '%';
+            moneyUsed.textContent = budgetUsed.money.toFixed(0);
+            moneyPercent.textContent = ((budgetUsed.money / budget.money) * 100).toFixed(1) + '%';
+            
+            // Prepare task lists
+            const completedTasks = [
+                ...sortTasksByPriority(monthData.tasks.new_completed || []),
+                ...sortTasksByPriority(monthData.tasks.deferred_completed || [])
+            ];
+            
+            const deferredTasks = [
+                ...sortTasksByPriority(monthData.tasks.new_deferred || []),
+                ...sortTasksByPriority(monthData.tasks.deferred_deferred || [])
+            ];
+            
+            // Clear existing content
+            completedTasksList.innerHTML = '';
+            deferredTasksList.innerHTML = '';
+            
+            // Update counters
+            completedCount.textContent = completedTasks.length;
+            deferredCount.textContent = deferredTasks.length;
+            
+            // Render completed tasks
+            if (completedTasks.length === 0) {{
+                completedTasksList.innerHTML = '<div class="empty-state">No completed tasks</div>';
+            }} else {{
+                completedTasks.forEach((task, index) => {{
+                    const category = (monthData.tasks.new_completed || []).includes(task) ? 
+                        'new-completed' : 'deferred-completed';
+                    const card = createTaskCard(task, category);
+                    
+                    if (animate) {{
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(-20px)';
+                        completedTasksList.appendChild(card);
+                        
+                        setTimeout(() => {{
+                            card.style.transition = 'all 0.3s ease';
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }}, index * 50);
                     }} else {{
-                        pauseAnimation();
+                        completedTasksList.appendChild(card);
                     }}
-                }}, 2000); // 2 seconds per month
+                }});
+            }}
+            
+            // Render deferred tasks
+            if (deferredTasks.length === 0) {{
+                deferredTasksList.innerHTML = '<div class="empty-state">No deferred tasks</div>';
+            }} else {{
+                deferredTasks.forEach((task, index) => {{
+                    const category = (monthData.tasks.new_deferred || []).includes(task) ? 
+                        'new-deferred' : 'deferred-deferred';
+                    const card = createTaskCard(task, category);
+                    
+                    if (animate) {{
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(-20px)';
+                        deferredTasksList.appendChild(card);
+                        
+                        setTimeout(() => {{
+                            card.style.transition = 'all 0.3s ease';
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }}, index * 50);
+                    }} else {{
+                        deferredTasksList.appendChild(card);
+                    }}
+                }});
             }}
         }}
         
-        function pauseAnimation() {{
+        function updateControls() {{
+            monthSlider.value = currentMonthIndex;
+            playPauseBtn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+        }}
+        
+        function play() {{
+            if (isPlaying) return;
+            
+            isPlaying = true;
+            updateControls();
+            
+            playInterval = setInterval(() => {{
+                if (currentMonthIndex < timelineData.months.length - 1) {{
+                    currentMonthIndex++;
+                    renderMonth(currentMonthIndex);
+                    updateControls();
+                }} else {{
+                    pause();
+                }}
+            }}, animationSpeed);
+        }}
+        
+        function pause() {{
             isPlaying = false;
-            if (animationInterval) {{
-                clearInterval(animationInterval);
-                animationInterval = null;
+            if (playInterval) {{
+                clearInterval(playInterval);
+                playInterval = null;
             }}
+            updateControls();
         }}
         
-        function resetAnimation() {{
-            pauseAnimation();
-            currentMonthIndex = 0;
-            updateDisplay();
+        function goToMonth(index) {{
+            pause();
+            currentMonthIndex = Math.max(0, Math.min(index, timelineData.months.length - 1));
+            renderMonth(currentMonthIndex);
+            updateControls();
         }}
         
-        // Slider event listener
-        slider.addEventListener('input', function() {{
-            pauseAnimation();
-            currentMonthIndex = parseInt(this.value);
-            updateDisplay();
+        // Event listeners
+        playPauseBtn.addEventListener('click', () => {{
+            if (isPlaying) {{
+                pause();
+            }} else {{
+                play();
+            }}
+        }});
+        
+        monthSlider.addEventListener('input', (e) => {{
+            goToMonth(parseInt(e.target.value));
         }});
         
         // Keyboard controls
-        document.addEventListener('keydown', function(e) {{
-            switch(e.key) {{
+        document.addEventListener('keydown', (e) => {{
+            switch(e.code) {{
+                case 'Space':
+                    e.preventDefault();
+                    if (isPlaying) pause(); else play();
+                    break;
                 case 'ArrowLeft':
-                    if (currentMonthIndex > 0) {{
-                        pauseAnimation();
-                        currentMonthIndex--;
-                        updateDisplay();
-                    }}
+                    e.preventDefault();
+                    goToMonth(currentMonthIndex - 1);
                     break;
                 case 'ArrowRight':
-                    if (currentMonthIndex < months.length - 1) {{
-                        pauseAnimation();
-                        currentMonthIndex++;
-                        updateDisplay();
-                    }}
-                    break;
-                case ' ':
                     e.preventDefault();
-                    if (isPlaying) {{
-                        pauseAnimation();
-                    }} else {{
-                        playAnimation();
-                    }}
+                    goToMonth(currentMonthIndex + 1);
                     break;
             }}
         }});
         
-        // Initialize display
-        updateDisplay();
+        // Initialize
+        if (timelineData.months.length > 0) {{
+            renderMonth(0, false);
+            updateControls();
+        }}
     </script>
 </body>
 </html>"""
@@ -866,7 +981,7 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
             for dt in new_deferred + deferred_deferred:
                 print(f"  - {dt['task_instance_id']} (months deferred: {dt['months_deferred']})")
 
-    animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule, calendar_schedule=calendar_schedule)
+    animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule)
 
     return prioritized_schedule
 
