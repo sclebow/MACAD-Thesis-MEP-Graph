@@ -1016,7 +1016,9 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
                 print(f"  - {dt['task_instance_id']} (months deferred: {dt['months_deferred']})")
 
     # Remove the last month since it's not needed
-    prioritized_schedule = prioritized_schedule[:-1]
+    if prioritized_schedule:
+        last_month = list(prioritized_schedule.keys())[-1]
+        del prioritized_schedule[last_month]
 
     animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule)
 
