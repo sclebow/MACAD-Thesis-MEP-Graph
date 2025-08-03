@@ -44,12 +44,19 @@
         
         .tasks-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            /* auto-resize cards to fit 2×2 layout */
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             gap: 15px;
             min-height: 200px;
             padding: 20px;
             border: 2px dashed #ddd;
             border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .sections-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
             margin-bottom: 20px;
         }
         
@@ -71,13 +78,13 @@
         }
         
         .task-card {
-            padding: 15px;
-            border-radius: 8px;
-            border: 2px solid #333;
-            transition: all 0.5s ease;
-            transform-origin: center;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 8px;
+             border-radius: 8px;
+             border: 2px solid #333;
+             transition: all 0.5s ease;
+             transform-origin: center;
+             cursor: pointer;
+             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         
         .task-card:hover {
@@ -117,20 +124,20 @@
         
         .task-id {
             font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 5px;
+            font-size: 12px;
+             margin-bottom: 5px;
         }
         
         .task-equipment {
-            font-size: 12px;
-            opacity: 0.8;
-            margin-bottom: 3px;
+            font-size: 10px;
+             opacity: 0.8;
+             margin-bottom: 3px;
         }
         
         .task-type {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 9px;
+             text-transform: uppercase;
+             letter-spacing: 0.5px;
         }
         
         .deferred-badge {
@@ -181,12 +188,13 @@
             background: #0056b3;
         }
     </style>
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="header">
         <h1>Maintenance Schedule Timeline</h1>
-        <p>Monthly Budget: 5 hours / $50</p>
-        <p>Cards represent tasks categorized by their completion and deferral status for each month.</p>
+        <p>Monthly Budget: 5 hours / $50 | Cards represent tasks categorized by their completion and deferral status for each month.</p>
     </div>
     
     <div class="timeline-container">
@@ -202,6 +210,10 @@
         </div>
         
         <div class="month-display" id="monthDisplay">2025-11</div>
+        <div class="chart-container" style="height:150px; width:100%; margin-bottom:20px;">
+            <canvas id="categoryChart"></canvas>
+        </div>
+        <div class="sections-grid">
         
         <div class="tasks-section">
             <h3 class="section-title" style="border-bottom-color: #28a745;">New Completed Tasks</h3>
@@ -230,9 +242,29 @@
                 <!-- Still deferred tasks will be populated by JavaScript -->
             </div>
         </div>
+        </div>  <!-- end .sections-grid -->
     </div>
 
     <script>
+        // Initialize Chart.js bar chart for category counts
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        let categoryChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['New Completed', 'New Deferred', 'Previously Deferred - Completed', 'Still Deferred'],
+                datasets: [{
+                    label: 'Task Count',
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#dc3545']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+
         const monthData = {
   "2025-11": {
     "new_completed": [
@@ -75534,6 +75566,7 @@
   }
 };
         const months = ["2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12", "2027-01", "2027-02", "2027-03", "2027-04", "2027-05", "2027-06", "2027-07", "2027-08", "2027-09", "2027-10", "2027-11", "2027-12", "2028-01", "2028-02", "2028-03", "2028-04", "2028-05", "2028-06", "2028-07", "2028-08", "2028-09", "2028-10", "2028-11"];
+        
         let currentMonthIndex = 0;
         let isPlaying = false;
         let animationInterval = null;
@@ -75598,6 +75631,15 @@
         
         function updateDisplay() {
             const currentMonth = months[currentMonthIndex];
+            // Update bar chart with current counts
+            const counts = [
+                monthData[currentMonth]?.new_completed.length || 0,
+                monthData[currentMonth]?.new_deferred.length || 0,
+                monthData[currentMonth]?.deferred_completed.length || 0,
+                monthData[currentMonth]?.deferred_deferred.length || 0
+            ];
+            categoryChart.data.datasets[0].data = counts;
+            categoryChart.update();
             monthDisplay.textContent = currentMonth;
             slider.value = currentMonthIndex;
             

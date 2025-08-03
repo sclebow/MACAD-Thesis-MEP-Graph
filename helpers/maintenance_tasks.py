@@ -302,12 +302,19 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         
         .tasks-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            /* auto-resize cards to fit 2×2 layout */
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             gap: 15px;
             min-height: 200px;
             padding: 20px;
             border: 2px dashed #ddd;
             border-radius: 8px;
+            margin-bottom: 20px;
+        }}
+        .sections-grid {{
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
             margin-bottom: 20px;
         }}
         
@@ -329,13 +336,13 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         }}
         
         .task-card {{
-            padding: 15px;
-            border-radius: 8px;
-            border: 2px solid #333;
-            transition: all 0.5s ease;
-            transform-origin: center;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 8px;
+             border-radius: 8px;
+             border: 2px solid #333;
+             transition: all 0.5s ease;
+             transform-origin: center;
+             cursor: pointer;
+             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }}
         
         .task-card:hover {{
@@ -375,20 +382,20 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         
         .task-id {{
             font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 5px;
+            font-size: 12px;
+             margin-bottom: 5px;
         }}
         
         .task-equipment {{
-            font-size: 12px;
-            opacity: 0.8;
-            margin-bottom: 3px;
+            font-size: 10px;
+             opacity: 0.8;
+             margin-bottom: 3px;
         }}
         
         .task-type {{
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 9px;
+             text-transform: uppercase;
+             letter-spacing: 0.5px;
         }}
         
         .deferred-badge {{
@@ -439,12 +446,13 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
             background: #0056b3;
         }}
     </style>
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="header">
         <h1>Maintenance Schedule Timeline</h1>
-        <p>Monthly Budget: {monthly_budget_time} hours / ${monthly_budget_money}</p>
-        <p>Cards represent tasks categorized by their completion and deferral status for each month.</p>
+        <p>Monthly Budget: {monthly_budget_time} hours / ${monthly_budget_money} | Cards represent tasks categorized by their completion and deferral status for each month.</p>
     </div>
     
     <div class="timeline-container">
@@ -460,6 +468,10 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         </div>
         
         <div class="month-display" id="monthDisplay">{all_months[0] if all_months else 'No Data'}</div>
+        <div class="chart-container" style="height:150px; width:100%; margin-bottom:20px;">
+            <canvas id="categoryChart"></canvas>
+        </div>
+        <div class="sections-grid">
         
         <div class="tasks-section">
             <h3 class="section-title" style="border-bottom-color: #28a745;">New Completed Tasks</h3>
@@ -488,11 +500,32 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
                 <!-- Still deferred tasks will be populated by JavaScript -->
             </div>
         </div>
+        </div>  <!-- end .sections-grid -->
     </div>
 
     <script>
+        // Initialize Chart.js bar chart for category counts
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        let categoryChart = new Chart(ctx, {{
+            type: 'bar',
+            data: {{
+                labels: ['New Completed', 'New Deferred', 'Previously Deferred - Completed', 'Still Deferred'],
+                datasets: [{{
+                    label: 'Task Count',
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#dc3545']
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {{ y: {{ beginAtZero: true, ticks: {{ stepSize: 1 }} }} }}
+            }}
+        }});
+
         const monthData = {json.dumps(month_data, indent=2)};
         const months = {json.dumps(all_months)};
+        
         let currentMonthIndex = 0;
         let isPlaying = false;
         let animationInterval = null;
@@ -557,6 +590,15 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         
         function updateDisplay() {{
             const currentMonth = months[currentMonthIndex];
+            // Update bar chart with current counts
+            const counts = [
+                monthData[currentMonth]?.new_completed.length || 0,
+                monthData[currentMonth]?.new_deferred.length || 0,
+                monthData[currentMonth]?.deferred_completed.length || 0,
+                monthData[currentMonth]?.deferred_deferred.length || 0
+            ];
+            categoryChart.data.datasets[0].data = counts;
+            categoryChart.update();
             monthDisplay.textContent = currentMonth;
             slider.value = currentMonthIndex;
             
@@ -780,7 +822,7 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
                     calendar_schedule[next_month].append(future_task)
 
             else:
-                # Task cannot be completed - defer to next month
+            # Task cannot be completed - defer to next month
                 next_month_date = datetime.datetime.strptime(month, '%Y-%m') + relativedelta(months=1)
                 next_month = next_month_date.strftime('%Y-%m')
 
