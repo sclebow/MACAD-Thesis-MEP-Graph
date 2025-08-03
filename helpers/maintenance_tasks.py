@@ -588,6 +588,10 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
                     <strong>Money:</strong> $<span id="money-used">0</span>/${monthly_budget_money}
                     (<span id="money-percent">0%</span>)
                 </div>
+                <div class="budget-item">
+                    <strong>Tasks:</strong> <span id="tasks-completed">0</span>/<span id="tasks-total">0</span>
+                    (<span id="tasks-percent">0%</span>)
+                </div>
             </div>
         </div>
         
@@ -629,6 +633,9 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         const deferredTasksList = document.getElementById('deferred-tasks');
         const completedCount = document.getElementById('completed-count');
         const deferredCount = document.getElementById('deferred-count');
+        const tasksCompleted = document.getElementById('tasks-completed');
+        const tasksTotal = document.getElementById('tasks-total');
+        const tasksPercent = document.getElementById('tasks-percent');
         
         function createTaskCard(task, category) {{
             const card = document.createElement('div');
@@ -674,6 +681,19 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
             timePercent.textContent = ((budgetUsed.time / budget.time) * 100).toFixed(1) + '%';
             moneyUsed.textContent = budgetUsed.money.toFixed(0);
             moneyPercent.textContent = ((budgetUsed.money / budget.money) * 100).toFixed(1) + '%';
+            
+            // Calculate task completion statistics
+            const totalTasksScheduled = (monthData.tasks.new_completed || []).length + 
+                                      (monthData.tasks.deferred_completed || []).length +
+                                      (monthData.tasks.new_deferred || []).length + 
+                                      (monthData.tasks.deferred_deferred || []).length;
+            const totalTasksCompleted = (monthData.tasks.new_completed || []).length + 
+                                      (monthData.tasks.deferred_completed || []).length;
+            
+            tasksCompleted.textContent = totalTasksCompleted;
+            tasksTotal.textContent = totalTasksScheduled;
+            tasksPercent.textContent = totalTasksScheduled > 0 ? 
+                ((totalTasksCompleted / totalTasksScheduled) * 100).toFixed(1) + '%' : '0%';
             
             // Prepare task lists
             const completedTasks = [
