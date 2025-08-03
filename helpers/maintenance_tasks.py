@@ -264,10 +264,10 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
     
     # Collect task data organized by month and category
     month_data = {}
-    all_months = sorted(prioritized_schedule.keys())
+    all_months = sorted(prioritized_schedule.keys())[:-1]  # Exclude the last month if it has no tasks
     
     # Process data for each month
-    for month in all_months:
+    for index, month in enumerate(all_months):
         month_tasks = prioritized_schedule[month]
         
         # Calculate budget usage for this month
@@ -276,6 +276,7 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         total_money_used = sum(task.get('money_cost', 0) for task in all_completed)
         
         month_data[month] = {
+            'index': index,
             'budget_used': {
                 'time': total_time_used,
                 'money': total_money_used
@@ -578,7 +579,7 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
     <div class="timeline-container">
         <div class="month-display">
             <div class="budget-info">
-                <h2 id="month-title">{all_months[0] if all_months else 'No Data'}</h2>
+                <h2 id="month-title">Month 1: {all_months[0] if all_months else 'No Data'}</h2>
                 <div class="budget-item">
                     <strong>Time:</strong> <span id="time-used">0</span>/{monthly_budget_time} hours
                     (<span id="time-percent">0%</span>)
@@ -662,7 +663,7 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
             const monthData = timelineData.data[month];
             
             // Update header
-            monthTitle.textContent = month;
+            monthTitle.textContent = `Month ${{monthIndex + 1}}: ${{month}}`;
             currentMonthDisplay.textContent = month;
             
             // Update budget info
@@ -758,7 +759,7 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
             playInterval = setInterval(() => {{
                 if (currentMonthIndex < timelineData.months.length - 1) {{
                     currentMonthIndex++;
-                    renderMonth(currentMonthIndex);
+                    renderMonth(currentMonthIndex, true);
                     updateControls();
                 }} else {{
                     pause();
@@ -778,7 +779,7 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         function goToMonth(index) {{
             pause();
             currentMonthIndex = Math.max(0, Math.min(index, timelineData.months.length - 1));
-            renderMonth(currentMonthIndex);
+            renderMonth(currentMonthIndex, true);
             updateControls();
         }}
         
