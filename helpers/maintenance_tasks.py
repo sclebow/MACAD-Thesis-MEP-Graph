@@ -153,8 +153,8 @@ def generate_maintenance_tasks_from_graph(graph, tasks) -> List[Dict[str, Any]]:
                 'time_cost': template['time_cost'],
                 'money_cost': money_cost,
                 'status': 'pending',
-                'notes': template.get('notes', ''),
-                'description': template.get('description', ''),
+                'notes': template.get('notes'),
+                'description': template.get('description'),
                 'task_id': task_id,
                 'recommended_frequency_months': freq_months,
                 'node_risk_score': attrs.get('risk_score'),
@@ -259,7 +259,7 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
             task_timeline[task_id]['months'].append({
                 'month': month,
                 'status': task['status'],
-                'months_deferred': task.get('months_deferred', 0)
+                'months_deferred': task.get('months_deferred')
             })
     
     # Create HTML content
@@ -663,7 +663,7 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
         
         # Get tasks for this month and sort by risk score (descending - highest risk first)
         month_tasks = calendar_schedule[month][:]  # Make a copy
-        month_tasks.sort(key=lambda t: t.get('node_risk_score', 0), reverse=True)
+        month_tasks.sort(key=lambda t: t.get('node_risk_score'), reverse=True)
         
         # Track budgets for this month
         remaining_time = monthly_budget_time
@@ -674,8 +674,8 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
         
         # Select tasks until budget is exceeded
         for task in month_tasks:
-            task_time = task.get('time_cost', 0) or 0
-            task_money = task.get('money_cost', 0) or 0
+            task_time = task.get('time_cost') or 0
+            task_money = task.get('money_cost') or 0
             
             # Check if task fits in remaining budget
             if task_time <= remaining_time and task_money <= remaining_money:
@@ -690,7 +690,7 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
                 
                 # Generate future maintenance task
                 current_date = datetime.datetime.strptime(task['scheduled_date'], '%Y-%m-%d')
-                frequency_months = task.get('recommended_frequency_months', 12)
+                frequency_months = task.get('recommended_frequency_months')
                 next_date = current_date + relativedelta(months=frequency_months)
                 next_month = next_date.strftime('%Y-%m')
                 
@@ -717,7 +717,7 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
                     deferred_task = task.copy()
                     deferred_task['scheduled_date'] = next_month_date.strftime('%Y-%m-%d')
                     deferred_task['status'] = 'deferred'
-                    deferred_task['months_deferred'] = deferred_task.get('months_deferred', 0) + 1
+                    deferred_task['months_deferred'] = deferred_task.get('months_deferred') + 1
                     deferred_tasks.append(deferred_task)
                     
                     # Add to next month in calendar_schedule
