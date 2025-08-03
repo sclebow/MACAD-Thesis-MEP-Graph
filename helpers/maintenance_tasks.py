@@ -504,6 +504,16 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
             margin-left: 8px;
         }}
         
+        .risk-badge {{
+            background: #2196F3;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 8px;
+        }}
+        
         .task-card.moving {{
             transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 10;
@@ -646,9 +656,12 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
             const deferredBadge = monthsDeferred > 0 ? 
                 `<span class="deferred-badge">${{monthsDeferred}}mo</span>` : '';
             
+            const riskScore = task.node_risk_score || 0;
+            const riskBadge = `<span class="risk-badge">Risk: ${{riskScore.toFixed(3)}}</span>`;
+            
             card.innerHTML = `
                 <div class="task-details">
-                    <b>Task ID: ${{task.task_instance_id}}${{deferredBadge}}</b> | Type: ${{task.task_type}} | Status: ${{task.status}} | Time: ${{(task.time_cost || 0).toFixed(1)}}h | Cost: ${{(task.money_cost || 0).toFixed(0)}}
+                    <b>Task ID: ${{task.task_instance_id}}${{deferredBadge}}</b> | Type: ${{task.task_type}} | Status: ${{task.status}} | Time: ${{(task.time_cost || 0).toFixed(1)}}h | Cost: ${{(task.money_cost || 0).toFixed(0)}} | ${{riskBadge}}
                 </div>
             `;
             
