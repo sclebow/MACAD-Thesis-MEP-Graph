@@ -264,7 +264,7 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
     
     # Collect task data organized by month and category
     month_data = {}
-    all_months = sorted(prioritized_schedule.keys())[:-1]  # Exclude the last month if it has no tasks
+    all_months = sorted(prioritized_schedule.keys())
     
     # Process data for each month
     for index, month in enumerate(all_months):
@@ -1014,6 +1014,9 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
             print(f"Deferred task details:")
             for dt in new_deferred + deferred_deferred:
                 print(f"  - {dt['task_instance_id']} (months deferred: {dt['months_deferred']})")
+
+    # Remove the last month since it's not needed
+    prioritized_schedule = prioritized_schedule[:-1]
 
     animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule)
 
