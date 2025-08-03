@@ -643,57 +643,64 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
     - A dictionary containing the prioritized tasks grouped by month.
     """
     prioritized_schedule = {}
-    
+
     # Get all months and sort them chronologically
     all_months = sorted(calendar_schedule.keys())
-    
+
     # Calculate the cutoff month based on months_to_schedule
     if all_months:
         start_month = datetime.datetime.strptime(all_months[0], '%Y-%m')
         cutoff_month = (start_month + relativedelta(months=months_to_schedule)).strftime('%Y-%m')
     else:
         cutoff_month = None
-    
+
     # Process each month in chronological order
     for index, month in enumerate(all_months):
         if cutoff_month and month > cutoff_month:
             break
-            
+
         print(f"\n--- Processing month {index} {month} ---")
-        
+
         # Get tasks for this month and sort by risk score (descending - highest risk first)
         month_tasks = calendar_schedule[month][:]  # Make a copy
         month_tasks.sort(key=lambda t: t.get('node_risk_score'), reverse=True)
-        
+
         # Track budgets for this month
         remaining_time = monthly_budget_time
         remaining_money = monthly_budget_money
-        
-        completed_tasks = []
-        deferred_tasks = []
-        
+
+        # Four categories
+        new_completed = []
+        new_deferred = []
+        deferred_completed = []
+        deferred_deferred = []
+
         # Select tasks until budget is exceeded
         for task in month_tasks:
             task_time = task.get('time_cost') or 0
             task_money = task.get('money_cost') or 0
-            
+            is_deferred = task.get('months_deferred', 0) > 0
+
             # Check if task fits in remaining budget
             if task_time <= remaining_time and task_money <= remaining_money:
                 # Task can be completed
                 remaining_time -= task_time
                 remaining_money -= task_money
-                
-                # Mark as completed and add to completed list
+
+                # Mark as completed and add to appropriate list
                 task_copy = task.copy()
                 task_copy['status'] = 'completed'
-                completed_tasks.append(task_copy)
-                
+                if is_deferred:
+                    deferred_completed.append(task_copy)
+                else:
+                    new_completed.append(task_copy)
+
                 # Generate future maintenance task
                 current_date = datetime.datetime.strptime(task['scheduled_date'], '%Y-%m-%d')
                 frequency_months = task.get('recommended_frequency_months')
                 next_date = current_date + relativedelta(months=frequency_months)
                 next_month = next_date.strftime('%Y-%m')
-                
+
                 # Only schedule if within the months_to_schedule limit
                 if not cutoff_month or next_month <= cutoff_month:
                     future_task = task.copy()
@@ -701,47 +708,57 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
                     future_task['last_maintenance_date'] = task['scheduled_date']
                     future_task['status'] = 'pending'
                     future_task['months_deferred'] = 0
-                    
+
                     # Add to appropriate month in calendar_schedule
                     if next_month not in calendar_schedule:
                         calendar_schedule[next_month] = []
                     calendar_schedule[next_month].append(future_task)
-                    
+
             else:
                 # Task cannot be completed - defer to next month
                 next_month_date = datetime.datetime.strptime(month, '%Y-%m') + relativedelta(months=1)
                 next_month = next_month_date.strftime('%Y-%m')
-                
+
                 # Only defer if within the months_to_schedule limit
                 if not cutoff_month or next_month <= cutoff_month:
                     deferred_task = task.copy()
                     deferred_task['scheduled_date'] = next_month_date.strftime('%Y-%m-%d')
                     deferred_task['status'] = 'deferred'
-                    deferred_task['months_deferred'] = deferred_task.get('months_deferred') + 1
-                    deferred_tasks.append(deferred_task)
-                    
+                    deferred_task['months_deferred'] = deferred_task.get('months_deferred', 0) + 1
+                    if is_deferred:
+                        deferred_deferred.append(deferred_task)
+                    else:
+                        new_deferred.append(deferred_task)
+
                     # Add to next month in calendar_schedule
                     if next_month not in calendar_schedule:
                         calendar_schedule[next_month] = []
                     calendar_schedule[next_month].append(deferred_task)
-        
-        # Store the prioritized tasks for this month
-        prioritized_schedule[month] = completed_tasks
-        
+
+        # Store the prioritized tasks for this month in four categories
+        prioritized_schedule[month] = {
+            'new_completed': new_completed,
+            'new_deferred': new_deferred,
+            'deferred_completed': deferred_completed,
+            'deferred_deferred': deferred_deferred
+        }
+
         # Print summary for this month
         total_time_used = monthly_budget_time - remaining_time
         total_money_used = monthly_budget_money - remaining_money
-        
-        print(f"Completed tasks: {len(completed_tasks)}")
-        print(f"Deferred tasks: {len(deferred_tasks)}")
+
+        print(f"New completed tasks: {len(new_completed)}")
+        print(f"New deferred tasks: {len(new_deferred)}")
+        print(f"Deferred completed tasks: {len(deferred_completed)}")
+        print(f"Deferred deferred tasks: {len(deferred_deferred)}")
         print(f"Time used: {total_time_used:.1f}/{monthly_budget_time:.1f} hours ({total_time_used/monthly_budget_time*100:.1f}%)")
         print(f"Money used: ${total_money_used:.2f}/${monthly_budget_money:.2f} ({total_money_used/monthly_budget_money*100:.1f}%)")
-        
-        if deferred_tasks:
+
+        if new_deferred or deferred_deferred:
             print(f"Deferred task details:")
-            for dt in deferred_tasks:
+            for dt in new_deferred + deferred_deferred:
                 print(f"  - {dt['task_instance_id']} (months deferred: {dt['months_deferred']})")
-    
+
     animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule, calendar_schedule=calendar_schedule)
 
     return prioritized_schedule
