@@ -14,8 +14,8 @@ import datetime
 
 # Import helper files
 # Import helper files
-from helpers.node_risk import *
-from helpers.rul_helper import apply_rul_to_graph
+# from helpers.node_risk import *
+# from helpers.rul_helper import apply_rul_to_graph
 # Import MEP graph generator
 from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes
 from graph_generator.mepg_generator import clean_graph_none_values
@@ -550,7 +550,7 @@ def file_input_callback(event):
             file_bytes = io.BytesIO(file_input.value)
             G = nx.read_graphml(file_bytes)
             # Add risk scores to the graph
-            G = add_risk_scores(G)
+            # G = add_risk_scores(G)
             fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
             plot_pane.object = fig
             fig_risk = visualize_graph_two_d_risk(G, use_full_names=name_toggle.value)
@@ -569,26 +569,26 @@ def file_input_callback(event):
             edge_info_pane.object = "Failed to load graph."
             pn.state.notifications.error(f"Failed to load graph: {e}")
 
-def add_risk_scores(graph):
-    # Process risk scores and remaining useful life with error handling
-    try:
-        print("Calculating risk scores...")
-        graph = apply_risk_scores_to_graph(graph)
-        print("Risk scores calculated successfully.")
-    except Exception as risk_error:
-        print(f"Warning: Failed to calculate risk scores: {risk_error}")
-        # Continue without risk scores
+# def add_risk_scores(graph):
+#     # Process risk scores and remaining useful life with error handling
+#     try:
+#         print("Calculating risk scores...")
+#         graph = apply_risk_scores_to_graph(graph)
+#         print("Risk scores calculated successfully.")
+#     except Exception as risk_error:
+#         print(f"Warning: Failed to calculate risk scores: {risk_error}")
+#         # Continue without risk scores
 
-    # Apply remaining useful life attribute
-    try:
-        print("Applying remaining useful life...")
-        graph = apply_rul_to_graph(graph)
-        print("Remaining useful life applied.")
-    except Exception as rul_error:
-        print(f"Warning: Failed to apply remaining useful life: {rul_error}")
-        # Continue without RUL
+#     # Apply remaining useful life attribute
+#     try:
+#         print("Applying remaining useful life...")
+#         graph = apply_rul_to_graph(graph)
+#         print("Remaining useful life applied.")
+#     except Exception as rul_error:
+#         print(f"Warning: Failed to apply remaining useful life: {rul_error}")
+#         # Continue without RUL
 
-    return graph
+#     return graph
 
 
 def autoload_example_graph():
@@ -608,7 +608,7 @@ def autoload_example_graph():
                 three_d_pane.object = three_d_fig
                 current_graph[0] = G
 
-                G = add_risk_scores(G)
+                # G = add_risk_scores(G)
 
                 update_dropdowns(G)
         except Exception as e:
@@ -677,7 +677,7 @@ def generate_graph_callback(event):
         G = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info, end_loads, cluster_strength)
         
         # Add risk scores to the generated graph
-        G = add_risk_scores(G)
+        # G = add_risk_scores(G)
         
         # Update visualizations
         fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
