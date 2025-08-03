@@ -222,10 +222,11 @@ def create_calendar_schedule(tasks: List[Dict[str, Any]]):
 def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule, calendar_schedule=None):
     """Create an interactive HTML timeline visualization of the prioritized maintenance schedule.
     
-    Shows tasks as colored cards that move between months:
-    - Yellow: Pending tasks
-    - Green: Completed tasks  
-    - Red: Deferred tasks
+    Shows tasks as colored cards organized into four categories:
+    - New Completed: Green cards for newly completed tasks
+    - New Deferred: Orange cards for newly deferred tasks
+    - Deferred Completed: Light green cards for previously deferred tasks that are now completed
+    - Deferred Deferred: Red cards for tasks that remain deferred
     
     Saves as an interactive HTML file with timeline slider controls.
     """
@@ -234,8 +235,8 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
     
     print("Creating animated timeline visualization...")
     
-    # Collect all unique tasks and their status changes over time
-    task_timeline = {}
+    # Collect task data organized by month and category
+    month_data = {}
     
     all_months = sorted(prioritized_schedule.keys())
     
@@ -246,21 +247,13 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         all_months = [m for m in all_months if m <= cutoff_month]
     
     for month in all_months:
-        for task in prioritized_schedule[month]:
-            task_id = task['task_instance_id']
-            if task_id not in task_timeline:
-                task_timeline[task_id] = {
-                    'equipment_id': task['equipment_id'],
-                    'task_type': task['task_type'],
-                    'equipment_type': task['equipment_type'],
-                    'months': []
-                }
-            
-            task_timeline[task_id]['months'].append({
-                'month': month,
-                'status': task['status'],
-                'months_deferred': task.get('months_deferred')
-            })
+        month_categories = prioritized_schedule[month]
+        month_data[month] = {
+            'new_completed': month_categories.get('new_completed', []),
+            'new_deferred': month_categories.get('new_deferred', []),
+            'deferred_completed': month_categories.get('deferred_completed', []),
+            'deferred_deferred': month_categories.get('deferred_deferred', [])
+        }
     
     # Create HTML content
     html_content = f"""
@@ -368,6 +361,18 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
             color: #721c24;
         }}
         
+        .task-card.new-deferred {{
+            background-color: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }}
+        
+        .task-card.deferred-completed {{
+            background-color: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }}
+        
         .task-id {{
             font-weight: bold;
             font-size: 14px;
@@ -439,7 +444,7 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
     <div class="header">
         <h1>Maintenance Schedule Timeline</h1>
         <p>Monthly Budget: {monthly_budget_time} hours / ${monthly_budget_money}</p>
-        <p>Cards represent tasks that have been scheduled for maintenance in the specified month.</p>
+        <p>Cards represent tasks categorized by their completion and deferral status for each month.</p>
     </div>
     
     <div class="timeline-container">
@@ -457,22 +462,36 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         <div class="month-display" id="monthDisplay">{all_months[0] if all_months else 'No Data'}</div>
         
         <div class="tasks-section">
-            <h3 class="section-title">New Tasks This Month</h3>
-            <div class="tasks-grid" id="newTasksGrid">
-                <!-- New tasks will be populated by JavaScript -->
+            <h3 class="section-title" style="border-bottom-color: #28a745;">New Completed Tasks</h3>
+            <div class="tasks-grid" id="newCompletedGrid">
+                <!-- New completed tasks will be populated by JavaScript -->
             </div>
         </div>
         
         <div class="tasks-section">
-            <h3 class="section-title">Deferred Tasks (Carried Over)</h3>
-            <div class="tasks-grid" id="deferredTasksGrid">
-                <!-- Deferred tasks will be populated by JavaScript -->
+            <h3 class="section-title" style="border-bottom-color: #ffc107;">New Deferred Tasks</h3>
+            <div class="tasks-grid" id="newDeferredGrid">
+                <!-- New deferred tasks will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="tasks-section">
+            <h3 class="section-title" style="border-bottom-color: #17a2b8;">Previously Deferred - Now Completed</h3>
+            <div class="tasks-grid" id="deferredCompletedGrid">
+                <!-- Previously deferred, now completed tasks will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="tasks-section">
+            <h3 class="section-title" style="border-bottom-color: #dc3545;">Still Deferred Tasks</h3>
+            <div class="tasks-grid" id="deferredDeferredGrid">
+                <!-- Still deferred tasks will be populated by JavaScript -->
             </div>
         </div>
     </div>
 
     <script>
-        const taskData = {json.dumps(task_timeline, indent=2)};
+        const monthData = {json.dumps(month_data, indent=2)};
         const months = {json.dumps(all_months)};
         let currentMonthIndex = 0;
         let isPlaying = false;
@@ -480,8 +499,61 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
         
         const slider = document.getElementById('timelineSlider');
         const monthDisplay = document.getElementById('monthDisplay');
-        const newTasksGrid = document.getElementById('newTasksGrid');
-        const deferredTasksGrid = document.getElementById('deferredTasksGrid');
+        const newCompletedGrid = document.getElementById('newCompletedGrid');
+        const newDeferredGrid = document.getElementById('newDeferredGrid');
+        const deferredCompletedGrid = document.getElementById('deferredCompletedGrid');
+        const deferredDeferredGrid = document.getElementById('deferredDeferredGrid');
+        
+        function createTaskCard(task, category) {{
+            const taskCard = document.createElement('div');
+            
+            // Set card style based on category
+            let cardClass = 'task-card ';
+            switch(category) {{
+                case 'new_completed':
+                    cardClass += 'completed';
+                    break;
+                case 'new_deferred':
+                    cardClass += 'new-deferred';
+                    break;
+                case 'deferred_completed':
+                    cardClass += 'deferred-completed';
+                    break;
+                case 'deferred_deferred':
+                    cardClass += 'deferred';
+                    break;
+            }}
+            
+            taskCard.className = cardClass;
+            taskCard.style.animationDelay = `${{Math.random() * 0.5}}s`;
+            
+            let deferredBadge = '';
+            const monthsDeferred = task.months_deferred || 0;
+            if (monthsDeferred > 0) {{
+                deferredBadge = `<div class="deferred-badge">Deferred ${{monthsDeferred}} months</div>`;
+            }}
+            
+            let costInfo = '';
+            if (task.time_cost || task.money_cost) {{
+                costInfo = `<div style="font-size: 10px; margin-top: 5px; opacity: 0.7;">
+                    ${{task.time_cost || 0}}h / $$${{task.money_cost || 0}}
+                </div>`;
+            }}
+            
+            taskCard.innerHTML = `
+                <div class="task-id">${{task.task_instance_id}}</div>
+                <div class="task-equipment">${{task.equipment_id}} - ${{task.equipment_type}}</div>
+                <div class="task-type">${{task.task_type}}</div>
+                ${{deferredBadge}}
+                ${{costInfo}}
+            `;
+            
+            // Add entrance animation
+            taskCard.style.opacity = '0';
+            taskCard.style.transform = 'scale(0.8)';
+            
+            return taskCard;
+        }}
         
         function updateDisplay() {{
             const currentMonth = months[currentMonthIndex];
@@ -489,45 +561,38 @@ def animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, mont
             slider.value = currentMonthIndex;
             
             // Clear existing tasks
-            newTasksGrid.innerHTML = '';
-            deferredTasksGrid.innerHTML = '';
+            newCompletedGrid.innerHTML = '';
+            newDeferredGrid.innerHTML = '';
+            deferredCompletedGrid.innerHTML = '';
+            deferredDeferredGrid.innerHTML = '';
             
-            // Find tasks for current month and separate new vs deferred
-            Object.keys(taskData).forEach(taskId => {{
-                const task = taskData[taskId];
-                const monthData = task.months.find(m => m.month === currentMonth);
-                
-                if (monthData) {{
-                    const taskCard = document.createElement('div');
-                    taskCard.className = `task-card ${{monthData.status}}`;
-                    taskCard.style.animationDelay = `${{Math.random() * 0.5}}s`;
+            // Get data for current month
+            const currentMonthData = monthData[currentMonth] || {{
+                new_completed: [],
+                new_deferred: [],
+                deferred_completed: [],
+                deferred_deferred: []
+            }};
+            
+            // Populate each category
+            const categories = [
+                {{ tasks: currentMonthData.new_completed, grid: newCompletedGrid, category: 'new_completed' }},
+                {{ tasks: currentMonthData.new_deferred, grid: newDeferredGrid, category: 'new_deferred' }},
+                {{ tasks: currentMonthData.deferred_completed, grid: deferredCompletedGrid, category: 'deferred_completed' }},
+                {{ tasks: currentMonthData.deferred_deferred, grid: deferredDeferredGrid, category: 'deferred_deferred' }}
+            ];
+            
+            categories.forEach(categoryData => {{
+                categoryData.tasks.forEach((task, index) => {{
+                    const taskCard = createTaskCard(task, categoryData.category);
+                    categoryData.grid.appendChild(taskCard);
                     
-                    let deferredBadge = '';
-                    if (monthData.months_deferred > 0) {{
-                        deferredBadge = `<div class="deferred-badge">Deferred ${{monthData.months_deferred}} months</div>`;
-                    }}
-                    
-                    taskCard.innerHTML = `
-                        <div class="task-id">${{taskId}}</div>
-                        <div class="task-equipment">${{task.equipment_id}} - ${{task.equipment_type}}</div>
-                        <div class="task-type">${{task.task_type}}</div>
-                        ${{deferredBadge}}
-                    `;
-                    
-                    // Add entrance animation
-                    taskCard.style.opacity = '0';
-                    taskCard.style.transform = 'scale(0.8)';
-                    
-                    // Determine which grid to add to based on deferral status
-                    const targetGrid = monthData.months_deferred > 0 ? deferredTasksGrid : newTasksGrid;
-                    targetGrid.appendChild(taskCard);
-                    
-                    // Trigger animation
+                    // Trigger entrance animation for all tasks simultaneously
                     setTimeout(() => {{
                         taskCard.style.opacity = '1';
                         taskCard.style.transform = 'scale(1)';
-                    }}, Math.random() * 300);
-                }}
+                    }}, 50); // Small delay just to ensure DOM is ready
+                }});
             }});
         }}
         
