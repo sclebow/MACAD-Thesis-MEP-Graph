@@ -458,15 +458,15 @@ def main():
     # Prioritize calendar tasks
     calendar_schedule = prioritize_calendar_tasks(graph=G, calendar_schedule=calendar_schedule, monthly_budget_time=10, monthly_budget_money=100)
 
-    # Save to CSV
-    output_dir = "./maintenance_tasks/"
-    filenname = "example_detailed_maintenance_tasks.csv"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    output_path = os.path.join(output_dir, filenname)
-    print(f"Exporting tasks to: {output_path}")
-    export_tasks_to_csv(tasks, output_path)
-    print(f"Tasks exported successfully to {output_path}")
+    # # Save to CSV
+    # output_dir = "./maintenance_tasks/"
+    # filenname = "example_detailed_maintenance_tasks.csv"
+    # if not os.path.exists(output_dir):
+    #     os.makedirs(output_dir)
+    # output_path = os.path.join(output_dir, filenname)
+    # print(f"Exporting tasks to: {output_path}")
+    # export_tasks_to_csv(tasks, output_path)
+    # print(f"Tasks exported successfully to {output_path}")
 
 if __name__ == "__main__":
     main()
