@@ -226,7 +226,7 @@ def create_calendar_schedule(tasks: List[Dict[str, Any]]):
     
     return calendar_schedule
 
-def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]], monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int=36) -> Dict[str, List[Dict[str, Any]]]:
+def prioritize_calendar_tasks(graph, calendar_schedule: Dict[str, List[Dict[str, Any]]], monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int=36) -> Dict[str, List[Dict[str, Any]]]:
     """
     Prioritize tasks in the calendar schedule based on time and money budgets.
     Use the 'node_risk_score' to influence priority.
@@ -246,6 +246,7 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
     Print a summary of the prioritized tasks for each month, including total time and money costs and the number of deferred tasks.
 
     Parameters:
+    - graph: The MEP graph, used to calculate remaining useful life (RUL) of nodes based on the deferred tasks.
     - calendar_schedule: The calendar schedule containing tasks grouped by month.
     - monthly_budget_time: The maximum time budget for each month.
     - monthly_budget_money: The maximum money budget for each month.
@@ -253,6 +254,12 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
     Returns:
     - A dictionary containing the prioritized tasks grouped by month.
     """
+
+    try: 
+        from rul_helper import apply_rul_to_graph
+    except ImportError: 
+        from helpers.rul_helper import apply_rul_to_graph
+
     prioritized_schedule = {}
 
     # Get all months and sort them chronologically
@@ -291,6 +298,11 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
             task_time = task.get('time_cost') or 0
             task_money = task.get('money_cost') or 0
             is_deferred = task.get('months_deferred', 0) > 0
+
+            matching_node = graph.nodes.get(task['equipment_id'])
+            # Check if matching node has a 'tasks_deferred_count' attribute
+            if matching_node.get('tasks_deferred_count') is None:
+                matching_node['tasks_deferred_count'] = 0
 
             # Check if task fits in remaining budget
             if task_time <= remaining_time and task_money <= remaining_money:
@@ -345,30 +357,39 @@ def prioritize_calendar_tasks(calendar_schedule: Dict[str, List[Dict[str, Any]]]
                     if next_month not in calendar_schedule:
                         calendar_schedule[next_month] = []
                     calendar_schedule[next_month].append(deferred_task)
+                
+                # Update the node's deferred task count
+                matching_node['tasks_deferred_count'] += 1
+
+        # Update the remaining useful life (RUL) of nodes based on deferred tasks
+        # The current_date is the first day of the next month
+        current_date = datetime.datetime.strptime(month, '%Y-%m') + relativedelta(months=1)
+        graph = apply_rul_to_graph(graph, current_date=current_date)
 
         # Store the prioritized tasks for this month in four categories
         prioritized_schedule[month] = {
             'new_completed': new_completed,
             'new_deferred': new_deferred,
             'deferred_completed': deferred_completed,
-            'deferred_deferred': deferred_deferred
+            'deferred_deferred': deferred_deferred,
+            'graph_snapshot': graph.copy(),  # Store a snapshot of the graph state
         }
 
         # Print summary for this month
-        total_time_used = monthly_budget_time - remaining_time
-        total_money_used = monthly_budget_money - remaining_money
+        # total_time_used = monthly_budget_time - remaining_time
+        # total_money_used = monthly_budget_money - remaining_money
 
-        print(f"New completed tasks: {len(new_completed)}")
-        print(f"New deferred tasks: {len(new_deferred)}")
-        print(f"Deferred completed tasks: {len(deferred_completed)}")
-        print(f"Deferred deferred tasks: {len(deferred_deferred)}")
-        print(f"Time used: {total_time_used:.1f}/{monthly_budget_time:.1f} hours ({total_time_used/monthly_budget_time*100:.1f}%)")
-        print(f"Money used: ${total_money_used:.2f}/${monthly_budget_money:.2f} ({total_money_used/monthly_budget_money*100:.1f}%)")
+        # print(f"New completed tasks: {len(new_completed)}")
+        # print(f"New deferred tasks: {len(new_deferred)}")
+        # print(f"Deferred completed tasks: {len(deferred_completed)}")
+        # print(f"Deferred deferred tasks: {len(deferred_deferred)}")
+        # print(f"Time used: {total_time_used:.1f}/{monthly_budget_time:.1f} hours ({total_time_used/monthly_budget_time*100:.1f}%)")
+        # print(f"Money used: ${total_money_used:.2f}/${monthly_budget_money:.2f} ({total_money_used/monthly_budget_money*100:.1f}%)")
 
-        if new_deferred or deferred_deferred:
-            print(f"Deferred task details:")
-            for dt in new_deferred + deferred_deferred:
-                print(f"  - {dt['task_instance_id']} (months deferred: {dt['months_deferred']})")
+        # if new_deferred or deferred_deferred:
+        #     print(f"Deferred task details:")
+        #     for dt in new_deferred + deferred_deferred:
+        #         print(f"  - {dt['task_instance_id']} (months deferred: {dt['months_deferred']})")
 
     # Remove the last month since it's not needed
     if prioritized_schedule:
@@ -424,18 +445,18 @@ def main():
 
     # Create a calendar schedule for the tasks
     calendar_schedule = create_calendar_schedule(tasks)
-    print("Generated calendar schedule for tasks:")
-    for month, tasks in calendar_schedule.items():
-        print(f"{month}: {len(tasks)} tasks")
-        for task in tasks:
-            print(f"  - {task['task_instance_id']} ({task['equipment_id']}) - {task['task_type']} on {task['scheduled_date']}")
+    # print("Generated calendar schedule for tasks:")
+    # for month, tasks in calendar_schedule.items():
+    #     print(f"{month}: {len(tasks)} tasks")
+    #     for task in tasks:
+    #         print(f"  - {task['task_instance_id']} ({task['equipment_id']}) - {task['task_type']} on {task['scheduled_date']}")
         
-        print(f"Total time cost for {month}: {sum(t['time_cost'] for t in tasks if t['time_cost'] is not None)} hours")
-        print(f"Total money cost for {month}: ${sum(t['money_cost'] for t in tasks if t['money_cost'] is not None):.2f}")
-        print()
+    #     print(f"Total time cost for {month}: {sum(t['time_cost'] for t in tasks if t['time_cost'] is not None)} hours")
+    #     print(f"Total money cost for {month}: ${sum(t['money_cost'] for t in tasks if t['money_cost'] is not None):.2f}")
+    #     print()
 
     # Prioritize calendar tasks
-    calendar_schedule = prioritize_calendar_tasks(calendar_schedule=calendar_schedule, monthly_budget_time=10, monthly_budget_money=100)
+    calendar_schedule = prioritize_calendar_tasks(graph=G, calendar_schedule=calendar_schedule, monthly_budget_time=10, monthly_budget_money=100)
 
     # Save to CSV
     output_dir = "./maintenance_tasks/"
