@@ -13,7 +13,7 @@ import math
 import datetime
 
 # Import helper files
-# Import helper files
+from helpers.maintenance_tasks import process_maintenance_tasks
 # from helpers.node_risk import *
 # from helpers.rul_helper import apply_rul_to_graph
 # Import MEP graph generator
@@ -940,6 +940,40 @@ save_button.on_click(save_graph_callback)
 
 save_row = pn.Row(filename_input, save_button)
 app.append(pn.Column("### Save Graph", save_row, save_status, sizing_mode='stretch_width'))
+
+# Process the maintenance tasks
+# Add inputs for maintenance task parameters
+def process_tasks_callback(event):
+    tasks_file_path = maintenance_task_panel[2].value
+    if not tasks_file_path:
+        tasks_file_path = "./tables/example_maintenance_list.csv"
+    if current_graph[0] is not None:
+        process_maintenance_tasks(
+            tasks_file_path=tasks_file_path,
+            graph=current_graph[0],
+            monthly_budget_time=float(maintenance_task_panel[0][0].value),
+            monthly_budget_money=float(maintenance_task_panel[0][1].value),
+            months_to_schedule=int(maintenance_task_panel[1][0].value)
+        )
+    else:
+        pn.state.notifications.error("No graph loaded. Please load or generate a graph first.")
+
+maintenance_task_panel = pn.Column(
+    pn.Row(pn.widgets.TextInput(name="Monthly Budget (Time)", value="40"), pn.widgets.TextInput(name="Monthly Budget (Money)", value="10000")),
+    pn.Row(pn.widgets.TextInput(name="Months to Schedule", value="36")),
+    pn.widgets.FileInput(name="Tasks File", accept='.csv'),
+    pn.widgets.Button(name="Process Tasks", button_type="primary")
+)
+
+# Set up the button callback
+maintenance_task_panel[3].on_click(process_tasks_callback)
+
+app.append(pn.Column(
+    "### Process Maintenance Tasks",
+    maintenance_task_panel,
+    sizing_mode='stretch_width'
+))
+
 
 print("Starting MEP System Graph Viewer...")
 app.servable()

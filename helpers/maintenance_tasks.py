@@ -226,7 +226,7 @@ def create_calendar_schedule(tasks: List[Dict[str, Any]]):
     
     return calendar_schedule
 
-def prioritize_calendar_tasks(graph, calendar_schedule: Dict[str, List[Dict[str, Any]]], monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int=36) -> Dict[str, List[Dict[str, Any]]]:
+def prioritize_calendar_tasks(graph, calendar_schedule: Dict[str, List[Dict[str, Any]]], monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int=36, animate=False) -> Dict[str, List[Dict[str, Any]]]:
     """
     Prioritize tasks in the calendar schedule based on time and money budgets.
     Use the 'node_risk_score' to influence priority.
@@ -396,8 +396,25 @@ def prioritize_calendar_tasks(graph, calendar_schedule: Dict[str, List[Dict[str,
         last_month = list(prioritized_schedule.keys())[-1]
         del prioritized_schedule[last_month]
 
-    animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule)
+    # If animation is enabled, animate the prioritized schedule
+    if animate:
+        animate_prioritized_schedule(prioritized_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule)
 
+    return prioritized_schedule
+
+def process_maintenance_tasks(tasks_file_path: str, graph, monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int = 36, animate=False) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Process the maintenance tasks and prioritize them based on the graph and budgets.
+    Returns a prioritized schedule of tasks grouped by month.
+    """
+    # Create a calendar schedule from the tasks
+    tasks = load_maintenance_tasks(tasks_file_path)
+    tasks = generate_maintenance_tasks_from_graph(graph, tasks)
+    calendar_schedule = create_calendar_schedule(tasks)
+    
+    # Prioritize the tasks in the calendar schedule
+    prioritized_schedule = prioritize_calendar_tasks(graph, calendar_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule, animate=animate)
+    
     return prioritized_schedule
 
 # Simple test main function
