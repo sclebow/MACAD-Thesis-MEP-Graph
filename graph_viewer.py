@@ -17,6 +17,7 @@ import datetime
 # from helpers.node_risk import *
 # from helpers.rul_helper import apply_rul_to_graph
 # Import MEP graph generator
+from helpers.rul_helper import apply_maintenance_log_to_graph
 from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes
 from graph_generator.mepg_generator import clean_graph_none_values
 
@@ -899,6 +900,26 @@ edge_column = pn.Column("### Edge Selection", edge_dropdown, edge_info_pane, edg
 selection_row = pn.Row(node_column, edge_column, sizing_mode='stretch_width')
 app.append(selection_row)
 
+# --- Load Maintenance log ---
+maintenance_log_input = pn.widgets.FileInput(accept='.csv')
+
+def maintenance_log_callback(event):
+    if event.new is not None:
+        try:
+            file_bytes = io.BytesIO(event.new)
+            df = pd.read_csv(file_bytes)
+            apply_maintenance_log_to_graph(df, current_graph[0])
+            pn.state.notifications.success("Maintenance log applied and RUL updated.")
+        except Exception as e:
+            pn.state.notifications.error(f"Failed to load maintenance log: {e}")
+
+maintenance_log_input.param.watch(maintenance_log_callback, 'value')
+
+app.append(pn.Column(
+    "### Upload Maintenance Log (.csv)",
+    maintenance_log_input,
+    sizing_mode='stretch_width'
+))
 
 # --- Save Graph UI ---
 import datetime

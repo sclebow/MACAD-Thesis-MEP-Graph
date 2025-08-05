@@ -1,4 +1,5 @@
 # Helper functions for Remaining Useful Life (RUL) calculations and graph attribute assignment
+import pandas as pd
 import networkx as nx
 import datetime
 from dateutil.relativedelta import relativedelta
@@ -8,7 +9,6 @@ def calculate_remaining_useful_life(graph):
     Calculate Remaining Useful Life (RUL) for each node using provided formula.
     Returns a dict mapping node to RUL in days.
     """
-    import datetime
     rul_dict = {}
     current_date = datetime.datetime.now()
     for node, attrs in graph.nodes(data=True):
@@ -56,3 +56,22 @@ def apply_rul_to_graph(graph, current_date=None):
         graph.nodes[node]['remaining_useful_life_days'] = rul
         graph.nodes[node]['remaining_useful_life_years'] = rul / 365.25  # Convert days to years
     return graph
+
+def apply_maintenance_log_to_graph(df: pd.DataFrame, graph):
+    """
+    Updates graph node attributes based on maintenance log DataFrame,
+    and triggers a re-computation of RUL.
+    
+    Expected DataFrame format:
+        node_id,last_maintenance_date,operating_hours
+    """
+    for _, row in df.iterrows():
+        node_id = row.get('node_id')
+        if node_id in graph.nodes:
+            if pd.notna(row.get('last_maintenance_date')):
+                graph.nodes[node_id]['last_maintenance_date'] = str(row['last_maintenance_date'])
+            if pd.notna(row.get('operating_hours')):
+                graph.nodes[node_id]['operating_hours'] = int(row['operating_hours'])
+
+    # Recalculate RUL after graph update
+    apply_rul_to_graph(graph)
