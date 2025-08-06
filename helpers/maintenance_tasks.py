@@ -62,6 +62,9 @@ import datetime
 from dateutil.relativedelta import relativedelta
 import json
 import os
+import copy
+import networkx as nx
+import sys
 
 try:
     from helpers.animate_maintenance_tasks import animate_prioritized_schedule
@@ -226,7 +229,7 @@ def create_calendar_schedule(tasks: List[Dict[str, Any]]):
     
     return calendar_schedule
 
-def prioritize_calendar_tasks(graph, calendar_schedule: Dict[str, List[Dict[str, Any]]], monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int=36, animate=False) -> Dict[str, List[Dict[str, Any]]]:
+def prioritize_calendar_tasks(graph, calendar_schedule: Dict[str, List[Dict[str, Any]]], monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int=36, animate=False, remove_nodes_with_no_rul=False) -> Dict[str, List[Dict[str, Any]]]:
     """
     Prioritize tasks in the calendar schedule based on time and money budgets.
     Use the 'node_risk_score' to influence priority.
@@ -261,6 +264,12 @@ def prioritize_calendar_tasks(graph, calendar_schedule: Dict[str, List[Dict[str,
         from helpers.rul_helper import apply_rul_to_graph
 
     prioritized_schedule = {}
+
+    # Remove end_load nodes from the graph
+    for node in list(graph.nodes):
+        if graph.nodes[node].get('type') == 'end_load':
+            graph.remove_node(node)
+            print(f"Removed end_load node: {node}")
 
     # Get all months and sort them chronologically
     all_months = sorted(calendar_schedule.keys())
@@ -300,6 +309,8 @@ def prioritize_calendar_tasks(graph, calendar_schedule: Dict[str, List[Dict[str,
             is_deferred = task.get('months_deferred', 0) > 0
 
             matching_node = graph.nodes.get(task['equipment_id'])
+            if matching_node is None:
+                continue
             # Check if matching node has a 'tasks_deferred_count' attribute
             if matching_node.get('tasks_deferred_count') is None:
                 matching_node['tasks_deferred_count'] = 0
@@ -366,13 +377,25 @@ def prioritize_calendar_tasks(graph, calendar_schedule: Dict[str, List[Dict[str,
         current_date = datetime.datetime.strptime(month, '%Y-%m') + relativedelta(months=1)
         graph = apply_rul_to_graph(graph, current_date=current_date)
 
+        rul_values = {n: graph.nodes[n].get('remaining_useful_life_days') for n in graph.nodes}
+        # Debug: print RUL values for this month
+        # print(f"\n\n[DEBUG] Node RUL values for {month}: {rul_values}")
+
+        if remove_nodes_with_no_rul:
+            # Remove nodes with no remaining useful life
+            # This is a safety check to ensure we don't keep tasks for nodes that are no longer useful
+            for node in list(graph.nodes):
+                if rul_values.get(node) is None or rul_values[node] <= 0:
+                    graph.remove_node(node)
+                    print(f"Removed node {node} with no remaining useful life.")
+
         # Store the prioritized tasks for this month in four categories
         prioritized_schedule[month] = {
             'new_completed': new_completed,
             'new_deferred': new_deferred,
             'deferred_completed': deferred_completed,
             'deferred_deferred': deferred_deferred,
-            'graph_snapshot': graph.copy(),  # Store a snapshot of the graph state
+            'graph_snapshot': copy.deepcopy(graph),  # Store a true snapshot of the graph state
         }
 
         # Print summary for this month
@@ -407,6 +430,9 @@ def process_maintenance_tasks(tasks_file_path: str, graph, monthly_budget_time: 
     Process the maintenance tasks and prioritize them based on the graph and budgets.
     Returns a prioritized schedule of tasks grouped by month.
     """
+    # Make a copy of the graph to avoid modifying the original
+    graph = copy.deepcopy(graph)
+
     # Create a calendar schedule from the tasks
     tasks = load_maintenance_tasks(tasks_file_path)
     tasks = generate_maintenance_tasks_from_graph(graph, tasks)
@@ -419,10 +445,6 @@ def process_maintenance_tasks(tasks_file_path: str, graph, monthly_budget_time: 
 
 # Simple test main function
 def main():
-    import networkx as nx
-    import sys
-    import os
-
     # This is a helper script that lives in a subdirectory of the project.
     # We need to adjust the directory to be the parent directory
     current_dir = os.path.dirname(os.path.abspath(__file__))
