@@ -13,7 +13,7 @@ import math
 import datetime
 
 # Import helper files
-# Import helper files
+from helpers.maintenance_tasks import process_maintenance_tasks
 # from helpers.node_risk import *
 # from helpers.rul_helper import apply_rul_to_graph
 # Import MEP graph generator
@@ -93,7 +93,7 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
 
 # Visualization functions
 
-def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=None, color_palette=None, colorbar_title=None, showlegend=False):
+def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=None, color_palette=None, colorbar_title=None, showlegend=False, colorbar_range=None):
     # Shared logic for 2D graph visualization
     try:
         # Select a valid root node (first node in the graph)
@@ -180,6 +180,18 @@ def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=Non
         # Use provided values and palette
         color_vals = [node_color_values.get(n, 0) for n in graph.nodes]
         palette = color_palette or 'Viridis'
+        colorbar_dict = dict(title=colorbar_title or 'Value')
+        marker_dict = dict(
+            color=color_vals,
+            colorscale=palette,
+            size=node_sizes,
+            colorbar=colorbar_dict,
+            line_width=2,
+            opacity=0.85
+        )
+        if colorbar_range:
+            marker_dict['cmin'] = colorbar_range[0]
+            marker_dict['cmax'] = colorbar_range[1]
         node_trace = go.Scatter(
             x=node_x,
             y=node_y,
@@ -187,14 +199,7 @@ def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=Non
             text=names,
             textposition="top center",
             hoverinfo='text',
-            marker=dict(
-                color=color_vals,
-                colorscale=palette,
-                size=node_sizes,
-                colorbar=dict(title=colorbar_title or 'Value'),
-                line_width=2,
-                opacity=0.85
-            ),
+            marker=marker_dict,
             hovertext=node_text,
             name='Nodes'
         )
@@ -961,6 +966,112 @@ save_button.on_click(save_graph_callback)
 
 save_row = pn.Row(filename_input, save_button)
 app.append(pn.Column("### Save Graph", save_row, save_status, sizing_mode='stretch_width'))
+
+prioritized_schedule = None
+
+# Process the maintenance tasks
+# Add inputs for maintenance task parameters
+def process_tasks_callback(event):
+    tasks_file_path = maintenance_task_panel[2].value
+    if not tasks_file_path:
+        tasks_file_path = "./tables/example_maintenance_list.csv"
+    prioritized_schedule = process_maintenance_tasks(
+        tasks_file_path=tasks_file_path,
+        graph=current_graph[0],
+        monthly_budget_time=float(maintenance_task_panel[0][0].value),
+        monthly_budget_money=float(maintenance_task_panel[0][1].value),
+        months_to_schedule=int(maintenance_task_panel[1][0].value)
+    )
+
+    if prioritized_schedule:
+        print("Prioritized maintenance schedule generated successfully.")
+
+        number_of_graphs = len(prioritized_schedule)
+        print(f"Number of graphs in the prioritized schedule: {number_of_graphs}")
+
+        months = list(prioritized_schedule.keys())
+
+        # Update the graph slider to match the number of graphs
+        graph_slider.end = number_of_graphs
+
+        def visualize_rul_graph(graph, use_full_names=False):
+            """
+            Visualizes a NetworkX graph in 2D with Remaining Useful Life (RUL) coloring.
+            Uses the x, y coordinates of nodes for 2D positioning.
+            """
+            # Get RUL values for coloring
+            rul_values = {n: graph.nodes[n].get('remaining_useful_life_days') for n in graph.nodes}
+            # Get max RUL from first month's graph for consistent color scale
+            first_month_graph = prioritized_schedule[months[0]].get('graph_snapshot')
+            first_month_rul_values = [first_month_graph.nodes[n].get('remaining_useful_life_days', 0) for n in first_month_graph.nodes]
+            max_rul = max(first_month_rul_values)
+
+            return _generate_2d_graph_figure(
+                graph,
+                use_full_names=use_full_names,
+                node_color_values=rul_values,
+                color_palette='Agsunset',
+                colorbar_title='Remaining Useful Life (RUL)',
+                showlegend=False,
+                colorbar_range=[0, max_rul]  # <-- Add this argument
+            )
+        def update_graph(event):
+            graph_index = event.new - 1
+            if 0 <= graph_index < number_of_graphs:
+                month = months[graph_index]
+                current_month_pane.object = f"**Current Month:** {month}"
+                # Get the graph snapshot and convert to Plotly figure
+                graph_snapshot = prioritized_schedule[month].get('graph_snapshot')
+                fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value)
+                graph_pane.object = fig
+
+        graph_slider.param.watch(update_graph, 'value')
+
+        # Display the first graph by default
+        if number_of_graphs > 0:
+            month = months[0]
+            current_month_pane.object = f"**Current Month:** {month}"
+            graph_snapshot = prioritized_schedule[month].get('graph_snapshot')
+            fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value)
+            graph_pane.object = fig
+
+# Create a slider with number from 1 to number_of_graphs
+graph_slider = pn.widgets.IntSlider(
+    name="Select Graph",
+    start=1,
+    end=36,  # Default end value, will be updated later
+    value=1,
+    step=1
+)
+
+# Create a pane to display the selected graph
+current_month_pane = pn.pane.Markdown(f"**Current Month:**")
+graph_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
+
+app.append(pn.Column(
+    "### Prioritized Maintenance Schedule",
+    graph_slider,
+    current_month_pane,
+    graph_pane,
+    sizing_mode='stretch_width'
+))
+
+maintenance_task_panel = pn.Column(
+    pn.Row(pn.widgets.TextInput(name="Monthly Budget (Time)", value="40"), pn.widgets.TextInput(name="Monthly Budget (Money)", value="10000")),
+    pn.Row(pn.widgets.TextInput(name="Months to Schedule", value="36")),
+    pn.widgets.FileInput(name="Tasks File", accept='.csv'),
+    pn.widgets.Button(name="Process Tasks", button_type="primary")
+)
+
+# Set up the button callback
+maintenance_task_panel[3].on_click(process_tasks_callback)
+
+app.append(pn.Column(
+    "### Process Maintenance Tasks",
+    maintenance_task_panel,
+    sizing_mode='stretch_width'
+))
+
 
 print("Starting MEP System Graph Viewer...")
 app.servable()

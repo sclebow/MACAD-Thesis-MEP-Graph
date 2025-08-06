@@ -21,7 +21,6 @@ def calculate_remaining_useful_life(graph):
         last_maintenance_date = datetime.datetime.strptime(last_maintenance_date, '%Y-%m-%d')
 
         operating_hours = attrs.get('operating_hours')
-        maintenance_frequency = attrs.get('maintenance_frequency')  # in days
         expected_lifespan_years = attrs.get('expected_lifespan')  # in years, default 10 years
         expected_end_date = installation_date + relativedelta(years=expected_lifespan_years)
 
@@ -29,9 +28,9 @@ def calculate_remaining_useful_life(graph):
 
         time_since_maintenance = (current_date - last_maintenance_date).days
 
-        # Overdue days and factor
-        overdue_days = time_since_maintenance - maintenance_frequency
-        overdue_factor = min(overdue_days / 30, 1.0) if overdue_days > 0 else 0.0
+        # Calculate overdue_factor using tasks_deferred_count
+        tasks_deferred_count = attrs.get('tasks_deferred_count', 0)
+        overdue_factor = tasks_deferred_count * 0.04  # Example: each deferred task increases factor by 0.1
 
         # RUL baseline (in days)
         RUL_baseline_days = expected_lifespan_days - operating_hours
@@ -40,6 +39,10 @@ def calculate_remaining_useful_life(graph):
 
         # Ensure RUL is not negative
         RUL_adjusted = max(RUL_adjusted, 0)
+        if RUL_adjusted < 30:
+            print(f"Warning: Node {node} has critically low RUL of {RUL_adjusted} days.")
+        if RUL_adjusted == 0:
+            print(f"Alert: Node {node} has reached end of life (RUL = 0 days). Immediate action required.")
         rul_dict[node] = RUL_adjusted
     return rul_dict
 
