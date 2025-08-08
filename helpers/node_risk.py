@@ -18,7 +18,7 @@ def calculate_risk_scores(graph):
         raise ValueError("The graph must be a directed graph.")
 
     # Calculate total load (sum of all node loads)
-    total_load = sum(graph.nodes[n].get('propagated_power', 0) for n in graph.nodes)
+    total_load = sum(graph.nodes[n].get('propagated_power') for n in graph.nodes)
     if total_load == 0:
         total_load = 1  # Prevent division by zero
 
@@ -35,7 +35,7 @@ def calculate_risk_scores(graph):
         max_descendants = 1
 
     for node in graph.nodes:
-        propagated_power = graph.nodes[node].get('propagated_power', 0)
+        propagated_power = graph.nodes[node].get('propagated_power')
         norm_power = propagated_power / total_load
         descendants_count = filtered_descendants_count(graph, node)
         norm_descendants = descendants_count / max_descendants

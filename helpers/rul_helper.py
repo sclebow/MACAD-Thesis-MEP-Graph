@@ -14,8 +14,11 @@ def calculate_remaining_useful_life(graph, current_date):
         # Extract attributes, with defaults if missing
         installation_date = attrs.get('installation_date')
         # installation_date is in YYYY-MM-DD format
-        installation_date = datetime.datetime.strptime(installation_date, '%Y-%m-%d') 
-        
+        if installation_date is None:
+            print(f"Warning: Node {node} has no installation date. Skipping RUL calculation.")
+            continue
+        installation_date = datetime.datetime.strptime(installation_date, '%Y-%m-%d')
+
         expected_lifespan_years = attrs.get('expected_lifespan')  # in years, default 10 years
         if attrs.get('expected_lifespan_days') is None:
             attrs['expected_lifespan_days'] = expected_lifespan_years * 365.25  # Convert years to days
