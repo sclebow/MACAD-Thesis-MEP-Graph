@@ -1027,9 +1027,59 @@ graph_slider = pn.widgets.IntSlider(
 current_month_pane = pn.pane.Markdown(f"**Current Month:**")
 graph_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
 
+
+# --- Play/Pause Animation Controls for graph_slider ---
+play_button = pn.widgets.Button(name="Play", button_type="success", width=80)
+pause_button = pn.widgets.Button(name="Pause", button_type="warning", width=80, disabled=True)
+
+# Animation state
+animation_running = {"value": False, "callback": None}
+
+
+def animate_slider():
+    total_animation_time = 2000  # 2 seconds (in milliseconds)
+    timeout = total_animation_time / (graph_slider.end - graph_slider.start)
+    if not animation_running["value"]:
+        return
+    # Increment slider value if not at end
+    if graph_slider.value < graph_slider.end:
+        graph_slider.value += 1
+        # Schedule next callback using Panel's curdoc
+        animation_running["callback"] = pn.state.curdoc.add_timeout_callback(animate_slider, timeout)
+    else:
+        # Reset to start
+        graph_slider.value = graph_slider.start
+        animate_slider()
+        # stop_animation()
+
+def start_animation(event=None):
+    if not animation_running["value"]:
+        animation_running["value"] = True
+        play_button.disabled = True
+        pause_button.disabled = False
+        animate_slider()
+
+
+def stop_animation(event=None):
+    animation_running["value"] = False
+    play_button.disabled = False
+    pause_button.disabled = True
+    # Remove any pending callback
+    if animation_running["callback"] is not None:
+        try:
+            pn.state.curdoc.remove_timeout_callback(animation_running["callback"])
+        except Exception:
+            pass
+        animation_running["callback"] = None
+
+play_button.on_click(start_animation)
+pause_button.on_click(stop_animation)
+
+animation_controls = pn.Row(play_button, pause_button, width=200)
+
 app.append(pn.Column(
     "### Prioritized Maintenance Schedule",
-    graph_slider,
+    pn.Row(graph_slider, animation_controls),
     current_month_pane,
     graph_pane,
     sizing_mode='stretch_width'
