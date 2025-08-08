@@ -47,6 +47,7 @@ pip install --upgrade pip
 # Install dependencies
 echo "Installing dependencies..."
 pip install -r requirements.txt
+plotly_get_chrome
 
 echo "Setup complete!"
 echo ""

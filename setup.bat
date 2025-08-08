@@ -28,6 +28,8 @@ REM Install dependencies
 echo Installing dependencies...
 pip install -r requirements.txt
 
+plotly_get_chrome
+
 echo.
 echo Setup complete!
 echo.

@@ -656,15 +656,17 @@ name_toggle.param.watch(name_toggle_callback, 'value')
 
 # --- Graph Generator Panel ---
 def generate_graph_callback(event):
-    try:
+    # try:
         # Collect parameters from widgets
+        construction_year = int(construction_year_slider.value)
+        
         building_attributes = {
             "total_load": int(total_load_slider.value),
             "building_length": building_length_slider.value,
             "building_width": building_width_slider.value,
             "num_floors": int(num_floors_slider.value),
             "floor_height": floor_height_slider.value,
-            "construction_year": int(construction_year_slider.value)
+            "construction_date": datetime.datetime(construction_year, 1, 1).strftime("%Y-%m-%d"),
         }
         
         # Set seed if provided
@@ -684,7 +686,14 @@ def generate_graph_callback(event):
         
         # Add risk scores to the generated graph
         # G = add_risk_scores(G)
-        
+            # Apply risk scores and RUL to the graph
+
+        from helpers.node_risk import apply_risk_scores_to_graph
+        from helpers.rul_helper import apply_rul_to_graph
+
+        G = apply_risk_scores_to_graph(G)
+        G = apply_rul_to_graph(G)
+
         # Update visualizations
         fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
         plot_pane.object = fig
@@ -707,11 +716,11 @@ def generate_graph_callback(event):
         G = clean_graph_none_values(G)
         nx.write_graphml(G, output_path)
 
-    except Exception as e:
-        print(f"Error generating graph: {e}")
-        generator_status.object = f"**Error generating graph:** {e}"
-        generator_status.visible = True
-        # pn.state.notifications.error(f"Failed to generate graph: {e}")
+    # except Exception as e:
+    #     print(f"Error generating graph: {e}")
+    #     generator_status.object = f"**Error generating graph:** {e}"
+    #     generator_status.visible = True
+    #     # pn.state.notifications.error(f"Failed to generate graph: {e}")
 
 # Generator input widgets with help text
 total_load_slider = pn.widgets.IntSlider(
@@ -862,6 +871,57 @@ def edge_attr_df_callback(event):
             three_d_pane.object = visualize_graph_three_d(current_graph[0], use_full_names=name_toggle.value)
 edge_attr_df.param.watch(edge_attr_df_callback, 'value')
 
+# Create a pane to display the selected graph
+current_month_pane = pn.pane.Markdown(f"**Current Month:**")
+graph_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
+
+# --- Play/Pause Animation Controls for graph_slider ---
+play_button = pn.widgets.Button(name="Play", button_type="success", width=80)
+pause_button = pn.widgets.Button(name="Pause", button_type="warning", width=80, disabled=True)
+
+# Animation state
+animation_running = {"value": False, "callback": None}
+
+def animate_slider():
+    total_animation_time = 2000  # 2 seconds (in milliseconds)
+    timeout = total_animation_time / (graph_slider.end - graph_slider.start)
+    if not animation_running["value"]:
+        return
+    # Increment slider value if not at end
+    if graph_slider.value < graph_slider.end:
+        graph_slider.value += 1
+        # Schedule next callback using Panel's curdoc
+        animation_running["callback"] = pn.state.curdoc.add_timeout_callback(animate_slider, timeout)
+    else:
+        # Reset to start
+        graph_slider.value = graph_slider.start
+        animate_slider()
+        # stop_animation()
+
+def start_animation(event=None):
+    if not animation_running["value"]:
+        animation_running["value"] = True
+        play_button.disabled = True
+        pause_button.disabled = False
+        animate_slider()
+
+def stop_animation(event=None):
+    animation_running["value"] = False
+    play_button.disabled = False
+    pause_button.disabled = True
+    # Remove any pending callback
+    if animation_running["callback"] is not None:
+        try:
+            pn.state.curdoc.remove_timeout_callback(animation_running["callback"])
+        except Exception:
+            pass
+        animation_running["callback"] = None
+
+play_button.on_click(start_animation)
+pause_button.on_click(stop_animation)
+
+animation_controls = pn.Row(play_button, pause_button, width=200)
+
 app.append(generator_accordion)
 
 app.append(pn.Column(
@@ -991,8 +1051,11 @@ def process_tasks_callback(event):
 
         months = list(prioritized_schedule.keys())
 
-        # Update the graph slider to match the number of graphs
+        # Update slider and number input
         graph_slider.end = number_of_graphs
+        graph_number_input.end = number_of_graphs
+        graph_number_input.start = 1
+        graph_number_input.value = graph_slider.value
 
         def visualize_rul_graph(graph, use_full_names=False):
             """
@@ -1013,9 +1076,12 @@ def process_tasks_callback(event):
                 color_palette='Agsunset',
                 colorbar_title='Remaining Useful Life (RUL)',
                 showlegend=False,
-                colorbar_range=[0, max_rul]  # <-- Add this argument
+                colorbar_range=[0, max_rul]
             )
         def update_graph(event):
+            # Keep number input in sync with slider
+            if graph_number_input.value != event.new:
+                graph_number_input.value = event.new
             graph_index = event.new - 1
             if 0 <= graph_index < number_of_graphs:
                 month = months[graph_index]
@@ -1024,9 +1090,12 @@ def process_tasks_callback(event):
                 graph_snapshot = prioritized_schedule[month].get('graph_snapshot')
                 fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value)
                 graph_pane.object = fig
-
+        def update_number_input(event):
+            # Keep slider in sync with number input
+            if graph_slider.value != event.new:
+                graph_slider.value = event.new
         graph_slider.param.watch(update_graph, 'value')
-
+        graph_number_input.param.watch(update_number_input, 'value')
         # Display the first graph by default
         if number_of_graphs > 0:
             month = months[0]
@@ -1035,7 +1104,7 @@ def process_tasks_callback(event):
             fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value)
             graph_pane.object = fig
 
-# Create a slider with number from 1 to number_of_graphs
+# Create a slider and number input for graph selection
 graph_slider = pn.widgets.IntSlider(
     name="Select Graph",
     start=1,
@@ -1043,14 +1112,18 @@ graph_slider = pn.widgets.IntSlider(
     value=1,
     step=1
 )
+graph_number_input = pn.widgets.IntInput(
+    name="Graph #",
+    value=1,
+    step=1,
+    start=1,
+    end=36
+)
 
-# Create a pane to display the selected graph
-current_month_pane = pn.pane.Markdown(f"**Current Month:**")
-graph_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
-
+# Show both slider and number input together
 app.append(pn.Column(
     "### Prioritized Maintenance Schedule",
-    graph_slider,
+    pn.Row(graph_slider, graph_number_input, animation_controls),
     current_month_pane,
     graph_pane,
     sizing_mode='stretch_width'

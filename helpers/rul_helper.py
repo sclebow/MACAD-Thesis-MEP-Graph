@@ -4,36 +4,37 @@ import networkx as nx
 import datetime
 from dateutil.relativedelta import relativedelta
 
-def calculate_remaining_useful_life(graph):
+def calculate_remaining_useful_life(graph, current_date):
     """
     Calculate Remaining Useful Life (RUL) for each node using provided formula.
     Returns a dict mapping node to RUL in days.
     """
     rul_dict = {}
-    current_date = datetime.datetime.now()
     for node, attrs in graph.nodes(data=True):
         # Extract attributes, with defaults if missing
         installation_date = attrs.get('installation_date')
         # installation_date is in YYYY-MM-DD format
-        installation_date = datetime.datetime.strptime(installation_date, '%Y-%m-%d') 
-        
-        last_maintenance_date = attrs.get('last_maintenance_date')
-        last_maintenance_date = datetime.datetime.strptime(last_maintenance_date, '%Y-%m-%d')
+        if installation_date is None:
+            print(f"Warning: Node {node} has no installation date. Skipping RUL calculation.")
+            continue
+        installation_date = datetime.datetime.strptime(installation_date, '%Y-%m-%d')
 
-        operating_hours = attrs.get('operating_hours')
         expected_lifespan_years = attrs.get('expected_lifespan')  # in years, default 10 years
+        if attrs.get('expected_lifespan_days') is None:
+            attrs['expected_lifespan_days'] = expected_lifespan_years * 365.25  # Convert years to days
         expected_end_date = installation_date + relativedelta(years=expected_lifespan_years)
 
         expected_lifespan_days = (expected_end_date - installation_date).days
 
-        time_since_maintenance = (current_date - last_maintenance_date).days
+        # Calculate operating days using installation_date and current_date
+        operating_days = (current_date - installation_date).days
 
         # Calculate overdue_factor using tasks_deferred_count
         tasks_deferred_count = attrs.get('tasks_deferred_count', 0)
         overdue_factor = tasks_deferred_count * 0.04  # Example: each deferred task increases factor by 0.1
 
         # RUL baseline (in days)
-        RUL_baseline_days = expected_lifespan_days - operating_hours
+        RUL_baseline_days = expected_lifespan_days - operating_days
         # Adjusted RUL
         RUL_adjusted = RUL_baseline_days * (1 - 0.2 * overdue_factor)
 
@@ -54,7 +55,7 @@ def apply_rul_to_graph(graph, current_date=None):
     import datetime
     if current_date is None:
         current_date = datetime.datetime.now()
-    rul_dict = calculate_remaining_useful_life(graph)
+    rul_dict = calculate_remaining_useful_life(graph, current_date)
     for node, rul in rul_dict.items():
         graph.nodes[node]['remaining_useful_life_days'] = rul
         graph.nodes[node]['remaining_useful_life_years'] = rul / 365.25  # Convert days to years

@@ -291,8 +291,6 @@ def create_full_node_id(eq_type, floor=None, riser=None, voltage=None, load_type
 
 def get_baseline_attributes(equipment_type, building_attrs):
     """Get baseline attributes for new equipment based on type and construction year."""
-    import datetime
-    construction_year = building_attrs.get('construction_year')
     construction_date = building_attrs.get('construction_date')
 
     # Get baseline attributes for this equipment type
@@ -303,28 +301,29 @@ def get_baseline_attributes(equipment_type, building_attrs):
 
     attributes = {
         'installation_date': construction_date,  # Use construction date as installation date
-        'last_maintenance_date': construction_date,  # Assume commissioning counts as first maintenance
-        'maintenance_frequency': baseline['maintenance_frequency'],
-        'operating_hours': 0,  # Start at 0 for new equipment
         'expected_lifespan': baseline['expected_lifespan'],
-        'mean_time_to_failure': baseline['mean_time_to_failure'],
-        'failure_count': baseline['failure_count']
     }
     return attributes
 
 # Utility: Clean None values from graph attributes for GraphML compatibility
 def clean_graph_none_values(G):
     """
-    Replace None values in node and edge attributes with empty strings for GraphML compatibility.
+    Replace None values in node, edge, and graph attributes with empty strings for GraphML compatibility.
     """
+    # Clean node attributes
     for n, attrs in G.nodes(data=True):
         for k, v in list(attrs.items()):
             if v is None:
                 G.nodes[n][k] = ""
+    # Clean edge attributes
     for u, v, attrs in G.edges(data=True):
         for k, val in list(attrs.items()):
             if val is None:
                 G.edges[u, v][k] = ""
+    # Clean graph-level attributes
+    for k, v in list(G.graph.items()):
+        if v is None:
+            G.graph[k] = ""
     return G
 
 def main():
