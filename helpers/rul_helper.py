@@ -157,6 +157,7 @@ def _assess_risk_level(rul_years: float, condition: float) -> str:
     else:
         return "LOW"
 
+
 def apply_rul_to_graph(graph, current_date=None):
     """
     Apply calculated RUL values to graph nodes as 'remaining_useful_life' attribute.
@@ -179,8 +180,89 @@ def apply_maintenance_log_to_graph(df: pd.DataFrame, graph):
     Expected DataFrame format:
         node_id,last_maintenance_date,operating_hours
     """
+    """debug code
+    print(f"=== CSV Processing Debug ===")
+    print(f"CSV rows: {len(df)}")
+    print(f"CSV columns: {list(df.columns)}")
+    print("CSV contents:")
+    for index, row in df.iterrows():
+        print(f"  Row {index}: {dict(row)}")
+    print("=== End CSV Debug ===")"""
+    
     for _, row in df.iterrows():
-        node_id = row.get('node_id')
+        node_id = row.get('node_id') or row.get('component_id')
+        maintenance_type = row.get('maintenance_type', row.get('type', 'routine')).lower()
+        """debug code
+        print(f"=== Processing Row ===")
+        print(f"  Looking for node_id: '{node_id}'")
+        print(f"  Maintenance type: '{maintenance_type}'")
+        print(f"  Node in graph: {node_id in graph.nodes if node_id else False}")"""
+
+        if pd.notna(maintenance_type) and node_id in graph.nodes:
+            """debug code
+            print(f"  ✅ PROCESSING MAINTENANCE for {node_id}")"""
+            # Get current condition
+            current_condition = graph.nodes[node_id].get('current_condition', RULConfig.DEFAULT_INITIAL_CONDITION)
+                
+            # Determine condition improvement based on maintenance type
+            if maintenance_type in ['scheduled', 'routine', 'preventive', 'pm']:
+                # Routine maintenance - modest improvement
+                condition_improvement = 0.05  # 5% improvement
+                new_condition = min(1.0, current_condition + condition_improvement)
+                reason = f"Scheduled maintenance: {maintenance_type}"
+                    
+            elif maintenance_type in ['major', 'overhaul', 'rebuild', 'refurbishment']:
+                # Major maintenance - significant improvement
+                condition_improvement = 0.30  # 30% improvement
+                new_condition = min(1.0, current_condition + condition_improvement)
+                reason = f"Major maintenance: {maintenance_type}"
+                    
+            elif maintenance_type in ['replacement', 'new', 'install']:
+                # Full replacement - like new condition
+                new_condition = 1.0
+                reason = f"Equipment replacement: {maintenance_type}"
+                    
+                # Reset installation date for replacements
+                maintenance_date = row.get('maintenance_date', row.get('date'))
+                if pd.notna(maintenance_date):
+                    graph.nodes[node_id]['installation_date'] = str(maintenance_date)[:10]  # YYYY-MM-DD format
+                        
+            elif maintenance_type in ['repair', 'corrective', 'emergency', 'breakdown']:
+                # Repair after breakdown - limited improvement
+                condition_improvement = 0.15  # 15% improvement
+                new_condition = min(1.0, current_condition + condition_improvement)
+                reason = f"Corrective maintenance: {maintenance_type}"
+                    
+            elif maintenance_type in ['inspection', 'testing', 'diagnostic']:
+                # Inspection only - minimal improvement
+                condition_improvement = 0.02  # 2% improvement
+                new_condition = min(1.0, current_condition + condition_improvement)
+                reason = f"Inspection: {maintenance_type}"
+                    
+            else:
+                # Unknown maintenance type - small default improvement
+                condition_improvement = 0.03  # 3% improvement
+                new_condition = min(1.0, current_condition + condition_improvement)
+                reason = f"General maintenance: {maintenance_type}"
+                
+            # Update the component condition
+            graph.nodes[node_id]['current_condition'] = new_condition
+                
+            # Track condition history
+            if 'condition_history' not in graph.nodes[node_id]:
+                graph.nodes[node_id]['condition_history'] = []
+                
+            graph.nodes[node_id]['condition_history'].append({
+                'date': str(row.get('maintenance_date', row.get('date', datetime.datetime.now().date()))),
+                'old_condition': current_condition,
+                'new_condition': new_condition,
+                'reason': reason,
+                'maintenance_type': maintenance_type
+            })
+                
+            if RULConfig.ENABLE_DEBUG_OUTPUT:
+                print(f"Maintenance applied to {node_id}: {current_condition:.2f} → {new_condition:.2f} ({reason})")
+    # Now apply RUL calculations with updated conditions
         if node_id in graph.nodes:
             if pd.notna(row.get('last_maintenance_date')):
                 graph.nodes[node_id]['last_maintenance_date'] = str(row['last_maintenance_date'])

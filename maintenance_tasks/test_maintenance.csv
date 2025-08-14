@@ -1,0 +1,7 @@
+component_id,maintenance_date,maintenance_type,description
+UT,2024-01-15,scheduled,Annual utility transformer inspection
+MP0.0,2024-02-20,major,Main panel breaker replacement and refurbishment
+TR0.0.208.L,2024-03-10,replacement,Full transformer replacement
+SP0.0.480.L,2024-04-15,repair,Emergency repair - cooling fan replacement
+TR1.0.208.R,2024-05-20,major,Transformer overhaul and testing
+SP1.0.208.H,2024-06-25,scheduled,Routine panel maintenance

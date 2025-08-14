@@ -573,7 +573,7 @@ def file_input_callback(event):
             edge_dropdown.options = []
             node_info_pane.object = "Failed to load graph."
             edge_info_pane.object = "Failed to load graph."
-            pn.state.notifications.error(f"Failed to load graph: {e}")
+            print(f"❌ Error loading maintenance log: {e}")
 
 # def add_risk_scores(graph):
 #     # Process risk scores and remaining useful life with error handling
@@ -974,9 +974,25 @@ def maintenance_log_callback(event):
             file_bytes = io.BytesIO(event.new)
             df = pd.read_csv(file_bytes)
             apply_maintenance_log_to_graph(df, current_graph[0])
-            pn.state.notifications.success("Maintenance log applied and RUL updated.")
+            """debug code
+            print("=== ALL Component Conditions After Maintenance ===")
+            maintenance_processed = 0
+            for node_id, attrs in current_graph[0].nodes(data=True):
+                node_type = attrs.get('type', 'unknown')
+                condition = attrs.get('current_condition', 1.0)
+                condition_history = attrs.get('condition_history', [])
+                
+                # Show all equipment (skip end loads)
+                if node_type != 'end_load':
+                    print(f"{node_id} ({node_type}): condition = {condition:.2f}, history entries = {len(condition_history)}")
+                    maintenance_processed += 1
+        
+            print(f"=== Total equipment processed: {maintenance_processed} ===")
+            print("=== End Component Status ===")"""
+
+            print("✅ Maintenance log applied successfully")
         except Exception as e:
-            pn.state.notifications.error(f"Failed to load maintenance log: {e}")
+            print(f"❌ Error loading maintenance log: {e}")
 
 maintenance_log_input.param.watch(maintenance_log_callback, 'value')
 
