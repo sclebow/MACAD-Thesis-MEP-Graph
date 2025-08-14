@@ -262,7 +262,9 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], num_months
             continue
 
         # Simulate task execution and budget consumption
-        # TODO: Implement budget management and task execution simulation
+        # TODO: Prioritize tasks based on the graph node's risk score
+        # TODO: Update node RUL after each processed month
+
         print(f"Processing month {month} with {len(tasks_for_month)} tasks")
         for index, task in tasks_for_month.iterrows():
             task_time_cost = task['time_cost']
