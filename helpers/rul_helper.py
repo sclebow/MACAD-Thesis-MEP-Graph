@@ -40,10 +40,10 @@ def calculate_remaining_useful_life(graph, current_date):
 
         # Ensure RUL is not negative
         RUL_adjusted = max(RUL_adjusted, 0)
-        if RUL_adjusted < 30:
-            print(f"Warning: Node {node} has critically low RUL of {RUL_adjusted} days.")
-        if RUL_adjusted == 0:
-            print(f"Alert: Node {node} has reached end of life (RUL = 0 days). Immediate action required.")
+        # if RUL_adjusted < 30:
+        #     print(f"Warning: Node {node} has critically low RUL of {RUL_adjusted} days.")
+        # if RUL_adjusted == 0:
+        #     print(f"Alert: Node {node} has reached end of life (RUL = 0 days). Immediate action required.")
         rul_dict[node] = RUL_adjusted
     return rul_dict
 
