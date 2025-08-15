@@ -30,7 +30,7 @@ def calculate_remaining_useful_life(graph, current_date):
         operating_days = (current_date - installation_date).days
 
         # Calculate overdue_factor using tasks_deferred_count
-        tasks_deferred_count = attrs.get('tasks_deferred_count', 0)
+        tasks_deferred_count = attrs.get('tasks_deferred_count')
         overdue_factor = tasks_deferred_count * 0.04  # Example: each deferred task increases factor by 0.1
 
         # RUL baseline (in days)
@@ -44,6 +44,7 @@ def calculate_remaining_useful_life(graph, current_date):
         #     print(f"Warning: Node {node} has critically low RUL of {RUL_adjusted} days.")
         # if RUL_adjusted == 0:
         #     print(f"Alert: Node {node} has reached end of life (RUL = 0 days). Immediate action required.")
+        # print(f"Node {node} has RUL of {RUL_adjusted} days.")
         rul_dict[node] = RUL_adjusted
     return rul_dict
 
