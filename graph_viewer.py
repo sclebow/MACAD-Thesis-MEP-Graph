@@ -1161,6 +1161,142 @@ app.append(pn.Column(
     sizing_mode='stretch_width'
 ))
 
+if current_graph[0] is not None:
+    testing_section = pn.Column("### RUL Testing & Parameter Controls")
+    
+    # Component condition testing
+    condition_test_row = pn.Row()
+    
+    test_component_select = pn.widgets.Select(
+        name="Select Component",
+        options=[n for n, d in current_graph[0].nodes(data=True) if d.get('type') != 'end_load'],
+        width=250
+    )
+    
+    test_condition_slider = pn.widgets.FloatSlider(
+        name="Set Condition (0=Broken, 1=Perfect)",
+        start=0.0, end=1.0, step=0.05, value=0.8, width=300
+    )
+    
+    test_update_btn = pn.widgets.Button(name="Update Condition", button_type="primary", width=150)
+    test_status = pn.pane.Markdown("Ready to test component conditions", width=400)
+    
+    def test_update_condition(event):
+        if test_component_select.value and current_graph[0]:
+            try:
+                from helpers.rul_helper import update_component_condition
+                success = update_component_condition(
+                    current_graph[0], 
+                    test_component_select.value, 
+                    test_condition_slider.value,
+                    "Manual test update"
+                )
+                if success:
+                    test_status.object = f"✅ Updated {test_component_select.value} condition to {test_condition_slider.value:.2f}"
+                    # Refresh visualizations
+                    plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=name_toggle.value)
+                else:
+                    test_status.object = "❌ Update failed"
+            except Exception as e:
+                test_status.object = f"❌ Error: {str(e)}"
+        else:
+            test_status.object = "❌ No component selected or graph missing"
+
+    test_update_btn.on_click(test_update_condition)
+    
+    condition_test_row.extend([test_component_select, test_condition_slider, test_update_btn])
+    
+    # Parameter adjustment controls
+    param_control_row = pn.Row()
+    
+    deferment_factor_slider = pn.widgets.FloatSlider(
+        name="Task Deferment Factor", 
+        start=0.01, end=0.10, step=0.01, value=0.04, width=250
+    )
+    
+    aging_factor_slider = pn.widgets.FloatSlider(
+        name="Aging Acceleration Factor",
+        start=0.01, end=0.05, step=0.005, value=0.02, width=250
+    )
+    
+    update_params_btn = pn.widgets.Button(name="Update Parameters", button_type="success", width=150)
+    params_status = pn.pane.Markdown("Ready to test parameters", width=400)
+    
+    def update_parameters(event):
+        try:
+            from helpers.rul_helper import adjust_rul_parameters, apply_rul_to_graph
+            changes = adjust_rul_parameters(
+                TASK_DEFERMENT_FACTOR=deferment_factor_slider.value,
+                AGING_ACCELERATION_FACTOR=aging_factor_slider.value
+            )
+            
+            # Recalculate RUL with new parameters
+            apply_rul_to_graph(current_graph[0])
+            
+            # Refresh visualization
+            plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=name_toggle.value)
+            
+            params_status.object = f"✅ Updated parameters and recalculated RUL"
+        except Exception as e:
+            params_status.object = f"❌ Error: {str(e)}"
+    
+    update_params_btn.on_click(update_parameters)
+    
+    param_control_row.extend([deferment_factor_slider, aging_factor_slider, update_params_btn])
+    
+    # Quick condition presets
+    preset_row = pn.Row()
+    
+    simulate_wear_btn = pn.widgets.Button(name="Simulate Equipment Wear", button_type="light", width=200)
+    reset_conditions_btn = pn.widgets.Button(name="Reset All to Perfect", button_type="warning", width=200)
+    preset_status = pn.pane.Markdown("Ready for quick actions", width=400)
+    
+    def simulate_wear(event):
+        try:
+            from helpers.rul_helper import update_component_condition
+            count = 0
+            for node_id, attrs in current_graph[0].nodes(data=True):
+                if attrs.get('type') != 'end_load':
+                    # Simulate random wear between 0.3 and 0.9
+                    import random
+                    wear_condition = random.uniform(0.3, 0.9)
+                    update_component_condition(current_graph[0], node_id, wear_condition, "Simulated wear")
+                    count += 1
+            
+            plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=name_toggle.value)
+            preset_status.object = f"✅ Simulated wear on {count} components"
+        except Exception as e:
+            preset_status.object = f"❌ Error: {str(e)}"
+    
+    def reset_conditions(event):
+        try:
+            from helpers.rul_helper import reset_all_conditions
+            count = reset_all_conditions(current_graph[0], 1.0, "Reset to perfect")
+            plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=name_toggle.value)
+            preset_status.object = f"✅ Reset {count} components to perfect condition"
+        except Exception as e:
+            preset_status.object = f"❌ Error: {str(e)}"
+    
+    
+    simulate_wear_btn.on_click(simulate_wear)
+    reset_conditions_btn.on_click(reset_conditions)
+    
+    preset_row.extend([simulate_wear_btn, reset_conditions_btn])
+    
+    # Assemble testing section
+    testing_section.extend([
+        "**Component Condition Testing:**",
+        condition_test_row,
+        test_status,
+        "**Parameter Controls:**", 
+        param_control_row,
+        params_status,
+        "**Quick Actions:**",
+        preset_row,
+        preset_status
+    ])
+    
+    app.append(testing_section)
 
 print("Starting MEP System Graph Viewer...")
 app.servable()
