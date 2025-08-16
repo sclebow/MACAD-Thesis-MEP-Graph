@@ -1081,7 +1081,7 @@ def process_tasks_callback(event):
             # Get RUL values for coloring
             rul_values = {n: graph.nodes[n].get('remaining_useful_life_days') for n in graph.nodes}
             # Get max RUL from first month's graph for consistent color scale
-            first_month_graph = prioritized_schedule[months[0]].get('graph_snapshot')
+            first_month_graph = prioritized_schedule[months[0]].get('graph')
             first_month_rul_values = [first_month_graph.nodes[n].get('remaining_useful_life_days', 0) for n in first_month_graph.nodes]
             max_rul = max(first_month_rul_values)
 
@@ -1103,7 +1103,7 @@ def process_tasks_callback(event):
                 month = months[graph_index]
                 current_month_pane.object = f"**Current Month:** {month}"
                 # Get the graph snapshot and convert to Plotly figure
-                graph_snapshot = prioritized_schedule[month].get('graph_snapshot')
+                graph_snapshot = prioritized_schedule[month].get('graph')
                 fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value)
                 graph_pane.object = fig
         def update_number_input(event):
@@ -1116,7 +1116,7 @@ def process_tasks_callback(event):
         if number_of_graphs > 0:
             month = months[0]
             current_month_pane.object = f"**Current Month:** {month}"
-            graph_snapshot = prioritized_schedule[month].get('graph_snapshot')
+            graph_snapshot = prioritized_schedule[month].get('graph')
             fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value)
             graph_pane.object = fig
 

@@ -95,7 +95,7 @@ def calculate_remaining_useful_life(graph, current_date):
         operating_days = (current_date - installation_date).days
 
         # Calculate overdue_factor using tasks_deferred_count
-        tasks_deferred_count = attrs.get('tasks_deferred_count', 0)
+        tasks_deferred_count = attrs.get('tasks_deferred_count')
         overdue_factor = tasks_deferred_count * RULConfig.TASK_DEFERMENT_FACTOR
 
         # RUL baseline (in days)
@@ -170,6 +170,8 @@ def apply_rul_to_graph(graph, current_date=None):
     for node, rul in rul_dict.items():
         graph.nodes[node]['remaining_useful_life_days'] = rul
         graph.nodes[node]['remaining_useful_life_years'] = rul / 365.25  # Convert days to years
+
+    print(f"Lowest RUL: {min(rul_dict.values())} days, Highest RUL: {max(rul_dict.values())} days")
     return graph
 
 def apply_maintenance_log_to_graph(df: pd.DataFrame, graph):
