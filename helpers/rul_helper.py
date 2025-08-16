@@ -42,8 +42,8 @@ def calculate_remaining_useful_life(graph, current_date):
         RUL_adjusted = max(RUL_adjusted, 0)
         # if RUL_adjusted < 30:
         #     print(f"Warning: Node {node} has critically low RUL of {RUL_adjusted} days.")
-        # if RUL_adjusted == 0:
-        #     print(f"Alert: Node {node} has reached end of life (RUL = 0 days). Immediate action required.")
+        if RUL_adjusted == 0:
+            print(f"Alert: Node {node} has reached end of life (RUL = 0 days). Immediate action required.")
         # print(f"Node {node} has RUL of {RUL_adjusted} days.")
         rul_dict[node] = RUL_adjusted
     return rul_dict
@@ -60,4 +60,6 @@ def apply_rul_to_graph(graph, current_date=None):
     for node, rul in rul_dict.items():
         graph.nodes[node]['remaining_useful_life_days'] = rul
         graph.nodes[node]['remaining_useful_life_years'] = rul / 365.25  # Convert days to years
+
+    print(f"Lowest RUL: {min(rul_dict.values())} days, Highest RUL: {max(rul_dict.values())} days")
     return graph

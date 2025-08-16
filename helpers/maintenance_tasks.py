@@ -72,7 +72,10 @@ try:
 except ImportError:
     from animate_maintenance_tasks import animate_prioritized_schedule
 
-from rul_helper import apply_rul_to_graph
+try:
+    from rul_helper import apply_rul_to_graph
+except ImportError:
+    from helpers.rul_helper import apply_rul_to_graph
 
 # Placeholder: Load maintenance tasks from a CSV file
 def load_maintenance_tasks(csv_path: str) -> List[Dict[str, Any]]:
@@ -242,7 +245,14 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
         month = earliest_month + i
         month_record = {
             'month': month,
-            'tasks': []
+            'tasks_scheduled_for_month': [],
+            'rollover_time_budget': 0.0,
+            'rollover_money_budget': 0.0,
+            'time_budget': 0.0,
+            'money_budget': 0.0,
+            'graph': None,
+            'executed_tasks': [],
+            'deferred_tasks': []
         }
         print()
 
@@ -271,19 +281,20 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
 
         # Get tasks scheduled for this month
         tasks_for_month = tasks_df[tasks_df['scheduled_month'] == month]
+        month_record['tasks_scheduled_for_month'] = tasks_for_month
 
         # If there are no tasks, continue to the next month
         if tasks_for_month.empty:
             print(f"No tasks scheduled for month {month}.")
+            # Update RUL
+            graph = apply_rul_to_graph(graph, current_date=month.start_time)
+            month_record['graph'] = graph.copy()
+            monthly_records_dict[month] = month_record
             continue
 
         # Prioritize tasks based on the graph node's risk score
         # Sort tasks by priority (reverse), then by risk (not reverse)
         tasks_for_month = tasks_for_month.sort_values(by=['priority', 'risk_score'], ascending=[True, False])
-
-        month_record['tasks_scheduled_for_month'] = tasks_for_month
-        month_record['executed_tasks'] = []
-        month_record['deferred_tasks'] = []
 
         # Simulate task execution and budget consumption
         print(f"Processing month {month} with {len(tasks_for_month)} tasks")
@@ -297,29 +308,30 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
                 money_budget_for_month -= task_money_cost
                 # Update the scheduled_month based on the recommended_frequency_months
                 tasks_df.at[index, 'scheduled_month'] = month + task['recommended_frequency_months']
-                print(f"  Executing task {task['task_instance_id']} (Time: {task_time_cost}, Cost: {task_money_cost}), Remaining Budget (Time: {time_budget_for_month}, Money: {money_budget_for_month}), Next Scheduled Month: {tasks_df.at[index, 'scheduled_month']}, Recommended Frequency: {task['recommended_frequency_months']}")
+                # print(f"  Executing task {task['task_instance_id']} (Time: {task_time_cost}, Cost: {task_money_cost}), Remaining Budget (Time: {time_budget_for_month}, Money: {money_budget_for_month}), Next Scheduled Month: {tasks_df.at[index, 'scheduled_month']}, Recommended Frequency: {task['recommended_frequency_months']}")
                 month_record['executed_tasks'].append(task)
             else:
                 # Defer task
-                print(f"  Deferring task {task['task_instance_id']} (Time: {task_time_cost}, Cost: {task_money_cost})")
+                # print(f"  Deferring task {task['task_instance_id']} (Time: {task_time_cost}, Cost: {task_money_cost})")
 
                 month_record['deferred_tasks'].append(task)
 
                 tasks_df.at[index, 'scheduled_month'] = month + 1
                 # Update the graph's tasks_deferred_count
                 graph.nodes[task['equipment_id']]['tasks_deferred_count'] += 1
-                print(f"  Updated tasks_deferred_count for node {task['equipment_id']} to {graph.nodes[task['equipment_id']]['tasks_deferred_count']}")
+                # print(f"  Updated tasks_deferred_count for node {task['equipment_id']} to {graph.nodes[task['equipment_id']]['tasks_deferred_count']}")
 
         # Update the graph's remaining useful life (RUL)
         # TODO Debug RUL calculation
-        apply_rul_to_graph(graph)
+        graph = apply_rul_to_graph(graph, current_date=month.start_time)
+        month_record['graph'] = graph.copy()
         monthly_records_dict[month] = month_record
 
         print(f"End of month {month}: Remaining Budget (Time: {time_budget_for_month}, Money: {money_budget_for_month})")
 
         # break # DEBUG the first month
-
-    return calendar_schedule
+    print("Finished processing all months.")
+    return monthly_records_dict
 
 # def prioritize_calendar_tasks(
 #     graph,
@@ -548,11 +560,10 @@ def process_maintenance_tasks(tasks_file_path: str, graph, monthly_budget_time: 
     # Create a calendar schedule from the tasks
     tasks = load_maintenance_tasks(tasks_file_path)
     tasks = generate_maintenance_tasks_from_graph(graph, tasks)
-    calendar_schedule = create_calendar_schedule(tasks)
-    
+        
     # Prioritize the tasks in the calendar schedule
-    prioritized_schedule = prioritize_calendar_tasks(graph, calendar_schedule, monthly_budget_time, monthly_budget_money, months_to_schedule, animate=animate)
-    
+    prioritized_schedule = create_prioritized_calendar_schedule(tasks, graph=graph, num_months_to_schedule=months_to_schedule, monthly_budget_time=monthly_budget_time, monthly_budget_money=monthly_budget_money)
+
     return prioritized_schedule
 
 # Simple test main function
@@ -590,7 +601,7 @@ def main():
         sys.exit(1)
 
     # Create a calendar schedule for the tasks
-    calendar_schedule = create_prioritized_calendar_schedule(detailed_tasks, graph=G, num_months_to_schedule=36, monthly_budget_time=10, monthly_budget_money=100)
+    calendar_schedule = create_prioritized_calendar_schedule(detailed_tasks, graph=G, num_months_to_schedule=36, monthly_budget_time=1000000, monthly_budget_money=1000000)
     # print("Generated calendar schedule for tasks:")
     # for month, tasks in calendar_schedule.items():
     #     print(f"{month}: {len(tasks)} tasks")
