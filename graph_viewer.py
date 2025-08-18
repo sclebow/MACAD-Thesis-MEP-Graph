@@ -1048,15 +1048,15 @@ prioritized_schedule = None
 # Process the maintenance tasks
 # Add inputs for maintenance task parameters
 def process_tasks_callback(event):
-    tasks_file_path = maintenance_task_panel[2].value
+    tasks_file_path = tasks_file_input.value
     if not tasks_file_path:
         tasks_file_path = "./tables/example_maintenance_list.csv"
     prioritized_schedule = process_maintenance_tasks(
         tasks_file_path=tasks_file_path,
         graph=current_graph[0],
-        monthly_budget_time=float(maintenance_task_panel[0][0].value),
-        monthly_budget_money=float(maintenance_task_panel[0][1].value),
-        months_to_schedule=int(maintenance_task_panel[1][0].value)
+        monthly_budget_time=float(monthly_budget_time_input.value),
+        monthly_budget_money=float(monthly_budget_money_input.value),
+        months_to_schedule=int(num_months_input.value)
     )
 
     if prioritized_schedule:
@@ -1073,11 +1073,21 @@ def process_tasks_callback(event):
         graph_number_input.start = 1
         graph_number_input.value = graph_slider.value
 
-        def visualize_rul_graph(graph, use_full_names=False):
+        def visualize_rul_graph(graph, use_full_names=False, month=None, show_end_loads=False):
             """
             Visualizes a NetworkX graph in 2D with Remaining Useful Life (RUL) coloring.
             Uses the x, y coordinates of nodes for 2D positioning.
             """
+            if not show_end_loads:
+                # If not showing end loads, filter out nodes with 'end_load' attribute
+                graph = graph.copy()
+                nodes_to_remove = []
+                for n in list(graph.nodes):
+                    if graph.nodes[n].get('type') == 'end_load':
+                        nodes_to_remove.append(n)
+                for n in nodes_to_remove:
+                    graph.remove_node(n)
+
             # Get RUL values for coloring
             rul_values = {n: graph.nodes[n].get('remaining_useful_life_days') for n in graph.nodes}
             # Get max RUL from first month's graph for consistent color scale
@@ -1085,7 +1095,7 @@ def process_tasks_callback(event):
             first_month_rul_values = [first_month_graph.nodes[n].get('remaining_useful_life_days', 0) for n in first_month_graph.nodes]
             max_rul = max(first_month_rul_values)
 
-            return _generate_2d_graph_figure(
+            fig = _generate_2d_graph_figure(
                 graph,
                 use_full_names=use_full_names,
                 node_color_values=rul_values,
@@ -1094,6 +1104,12 @@ def process_tasks_callback(event):
                 showlegend=False,
                 colorbar_range=[0, max_rul]
             )
+
+            # Add a title to the figure
+            fig.update_layout(title=f"Remaining Useful Life (RUL) - {month}")
+
+            return fig
+
         def update_graph(event):
             # Keep number input in sync with slider
             if graph_number_input.value != event.new:
@@ -1104,7 +1120,7 @@ def process_tasks_callback(event):
                 current_month_pane.object = f"**Current Month:** {month}"
                 # Get the graph snapshot and convert to Plotly figure
                 graph_snapshot = prioritized_schedule[month].get('graph')
-                fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value)
+                fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value, month=month, show_end_loads=show_end_loads_toggle.value)
                 graph_pane.object = fig
         def update_number_input(event):
             # Keep slider in sync with number input
@@ -1117,7 +1133,7 @@ def process_tasks_callback(event):
             month = months[0]
             current_month_pane.object = f"**Current Month:** {month}"
             graph_snapshot = prioritized_schedule[month].get('graph')
-            fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value)
+            fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value, month=month, show_end_loads=show_end_loads_toggle.value)
             graph_pane.object = fig
 
 # Create a slider and number input for graph selection
@@ -1145,15 +1161,22 @@ app.append(pn.Column(
     sizing_mode='stretch_width'
 ))
 
+monthly_budget_time_input = pn.widgets.TextInput(name="Monthly Budget (Time)", value="50")
+monthly_budget_money_input = pn.widgets.TextInput(name="Monthly Budget (Money)", value="20000")
+show_end_loads_toggle = pn.widgets.Checkbox(name="Show End Loads", value=False)
+num_months_input = pn.widgets.TextInput(name="Months to Schedule", value="1000")
+tasks_file_input = pn.widgets.FileInput(name="Tasks File", accept='.csv')
+process_tasks_button = pn.widgets.Button(name="Process Tasks", button_type="primary")
+
 maintenance_task_panel = pn.Column(
-    pn.Row(pn.widgets.TextInput(name="Monthly Budget (Time)", value="40"), pn.widgets.TextInput(name="Monthly Budget (Money)", value="10000")),
-    pn.Row(pn.widgets.TextInput(name="Months to Schedule", value="36")),
-    pn.widgets.FileInput(name="Tasks File", accept='.csv'),
-    pn.widgets.Button(name="Process Tasks", button_type="primary")
+    pn.Row(monthly_budget_time_input, monthly_budget_money_input, show_end_loads_toggle),
+    pn.Row(num_months_input),
+    tasks_file_input,
+    process_tasks_button
 )
 
 # Set up the button callback
-maintenance_task_panel[3].on_click(process_tasks_callback)
+process_tasks_button.on_click(process_tasks_callback)
 
 app.append(pn.Column(
     "### Process Maintenance Tasks",

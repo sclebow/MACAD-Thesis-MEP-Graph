@@ -48,6 +48,7 @@ class RULConfig:
     CRITICAL_RUL_THRESHOLD_YEARS = 1.0     # < 1 year = CRITICAL
     HIGH_RUL_THRESHOLD_YEARS = 3.0         # < 3 years = HIGH  
     MEDIUM_RUL_THRESHOLD_YEARS = 7.0       # < 7 years = MEDIUM
+    REPLACEMENT_THRESHOLD = "HIGH"         # Risk state for replacement, if set to None, accelerated replacement will not be simulated
     
     # Debug settings
     ENABLE_RUL_WARNINGS = False             # Print warnings for low RUL
@@ -141,8 +142,13 @@ def calculate_remaining_useful_life(graph, current_date):
         # Store enhanced metrics for analysis
         attrs['annual_failure_probability'] = annual_failure_probability
         attrs['base_failure_rate'] = base_failure_rate
-        attrs['risk_level'] = _assess_risk_level(RUL_adjusted / 365.25, current_condition) 
-        
+        attrs['risk_level'] = _assess_risk_level(RUL_adjusted / 365.25, current_condition)
+        if 'replacement_required' in attrs:
+            if not attrs['replacement_required']:
+                attrs['replacement_required'] = attrs['risk_level'] == RULConfig.REPLACEMENT_THRESHOLD
+        else:
+            attrs['replacement_required'] = attrs['risk_level'] == RULConfig.REPLACEMENT_THRESHOLD
+
         # Enhanced warnings using configurable thresholds
         if RULConfig.ENABLE_RUL_WARNINGS:
             rul_years = RUL_adjusted / 365.25

@@ -206,8 +206,6 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
     for node in graph.nodes:
         graph.nodes[node]['tasks_deferred_count'] = 0
 
-    calendar_schedule = {}
-
     tasks_df = pd.DataFrame(tasks)
 
     # Convert 'equipment_installation_date' to datetime, it is in the format %Y-%m-%d
@@ -282,6 +280,20 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
 
         # Get tasks scheduled for this month
         tasks_for_month = tasks_df[tasks_df['scheduled_month'] == month]
+
+        # Check if any nodes require replacement
+        for node, attrs in graph.nodes(data=True):
+            if attrs.get('replacement_required'):
+                print(f"Node {node} requires replacement, scheduling replacement task for month {month}")
+                # Check tasks for this node
+                tasks_for_node = tasks_for_month[tasks_for_month['equipment_id'] == node]
+                # Get replacement task
+                replacement_task = tasks_for_node[tasks_for_node['is_replacement'] == True]
+                if not replacement_task.empty:
+                    # If there is a replacement task, schedule it for this month
+                    replacement_task['scheduled_month'] = month
+                    tasks_for_month = pd.concat([replacement_task, tasks_for_month])
+
         month_record['tasks_scheduled_for_month'] = tasks_for_month
 
         # If there are no tasks, continue to the next month
@@ -305,12 +317,21 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
 
             if time_budget_for_month >= task_time_cost and money_budget_for_month >= task_money_cost:
                 if task['is_replacement']:
+                    print(f"  Executing replacement task {task['task_instance_id']} for equipment {task['equipment_id']}")
                     # Update the installation date for replacement tasks
                     graph.nodes[task['equipment_id']]['installation_date'] = month.start_time.strftime('%Y-%m-%d')
                     task['equipment_installation_date'] = month.start_time.strftime('%Y-%m-%d')
                     # Reset deferred count for replacement tasks
                     graph.nodes[task['equipment_id']]['tasks_deferred_count'] = 0
-                    # print(f"  Replacing equipment {task['equipment_id']} with new installation date {task['equipment_installation_date']}")
+                    # Reset replacement_required
+                    graph.nodes[task['equipment_id']]['replacement_required'] = False
+                    # Remove the following attributes from the nodes: age_years, current_condition, aging_factor, condition_factor
+                    for attr in ['age_years', 'current_condition', 'aging_factor', 'condition_factor']:
+                        if attr in graph.nodes[task['equipment_id']]:
+                            del graph.nodes[task['equipment_id']][attr]
+                    print(f"  Replacing equipment {task['equipment_id']} with new installation date {task['equipment_installation_date']}")
+                else:
+                    print(f"  Executing task {task['task_instance_id']} for equipment {task['equipment_id']}")
                 # Execute task
                 time_budget_for_month -= task_time_cost
                 money_budget_for_month -= task_money_cost
