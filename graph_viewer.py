@@ -1073,6 +1073,13 @@ def process_tasks_callback(event):
         graph_number_input.start = 1
         graph_number_input.value = graph_slider.value
 
+        # Get the max amount of tasks from any month
+        max_tasks_scheduled_for_month = max(len(prioritized_schedule[month].get('tasks_scheduled_for_month', [])) for month in months)
+        max_tasks_executed_for_month = max(len(prioritized_schedule[month].get('executed_tasks', [])) for month in months)
+        max_tasks_deferred_for_month = max(len(prioritized_schedule[month].get('deferred_tasks', [])) for month in months)
+
+        max_tasks = max(max_tasks_scheduled_for_month, max_tasks_executed_for_month, max_tasks_deferred_for_month)
+
         def visualize_rul_graph(graph, use_full_names=False, month=None, show_end_loads=False):
             """
             Visualizes a NetworkX graph in 2D with Remaining Useful Life (RUL) coloring.
@@ -1122,11 +1129,38 @@ def process_tasks_callback(event):
                 graph_snapshot = prioritized_schedule[month].get('graph')
                 fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value, month=month, show_end_loads=show_end_loads_toggle.value)
                 graph_pane.object = fig
+
+        def _generate_task_list_figure(scheduled_tasks, executed_tasks, deferred_tasks, max_tasks):
+            # Create a figure for the task list
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=['Scheduled', 'Executed', 'Deferred'],
+                                 y=[len(scheduled_tasks), len(executed_tasks), len(deferred_tasks)],
+                                 marker_color=['blue', 'green', 'red']))
+            fig.update_layout(title='Task List Overview', barmode='stack')
+
+            # Set the y-axis range
+            fig.update_yaxes(range=[0, max_tasks + 10])
+
+            return fig
+
+        def update_task_pane(event):
+            # Update the task list pane based on the selected month
+            if graph_number_input.value != event.new:
+                graph_number_input.value = event.new
+            graph_index = event.new - 1
+            if 0 <= graph_index < number_of_graphs:
+                month = months[graph_index]
+                tasks_scheduled_for_month = prioritized_schedule[month].get('tasks_scheduled_for_month')
+                executed_tasks = prioritized_schedule[month].get('executed_tasks')
+                deferred_tasks = prioritized_schedule[month].get('deferred_tasks')
+                task_list_pane.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
+
         def update_number_input(event):
             # Keep slider in sync with number input
             if graph_slider.value != event.new:
                 graph_slider.value = event.new
         graph_slider.param.watch(update_graph, 'value')
+        graph_slider.param.watch(update_task_pane, 'value')
         graph_number_input.param.watch(update_number_input, 'value')
         # Display the first graph by default
         if number_of_graphs > 0:
@@ -1135,6 +1169,12 @@ def process_tasks_callback(event):
             graph_snapshot = prioritized_schedule[month].get('graph')
             fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value, month=month, show_end_loads=show_end_loads_toggle.value)
             graph_pane.object = fig
+
+            # Update the task list pane
+            tasks_scheduled_for_month = prioritized_schedule[month].get('tasks_scheduled_for_month')
+            executed_tasks = prioritized_schedule[month].get('executed_tasks')
+            deferred_tasks = prioritized_schedule[month].get('deferred_tasks')
+            task_list_pane.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
 
 # Create a slider and number input for graph selection
 graph_slider = pn.widgets.IntSlider(
@@ -1151,13 +1191,14 @@ graph_number_input = pn.widgets.IntInput(
     start=1,
     end=36
 )
+task_list_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
 
 # Show both slider and number input together
 app.append(pn.Column(
     "### Prioritized Maintenance Schedule",
     pn.Row(graph_slider, graph_number_input, animation_controls),
     current_month_pane,
-    graph_pane,
+    pn.Row(graph_pane, task_list_pane),
     sizing_mode='stretch_width'
 ))
 
