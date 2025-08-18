@@ -48,10 +48,13 @@ class RULConfig:
     CRITICAL_RUL_THRESHOLD_YEARS = 1.0     # < 1 year = CRITICAL
     HIGH_RUL_THRESHOLD_YEARS = 3.0         # < 3 years = HIGH  
     MEDIUM_RUL_THRESHOLD_YEARS = 7.0       # < 7 years = MEDIUM
+    REPLACEMENT_THRESHOLD = "HIGH"         # Risk state for replacement, if set to None, accelerated replacement will not be simulated
     
     # Debug settings
-    ENABLE_RUL_WARNINGS = True             # Print warnings for low RUL
+    ENABLE_RUL_WARNINGS = False             # Print warnings for low RUL
     ENABLE_DEBUG_OUTPUT = False            # Detailed calculation output
+    IGNORE_UTILITY_TRANSFORMERS = True      # Ignore utility transformers in RUL calculations
+    IGNORE_END_LOADS = True                 # Ignore end loads in RUL calculations
 
 # Helper functions for parameters
 def get_equipment_lifespan(equipment_type: str) -> float:
@@ -76,9 +79,14 @@ def calculate_remaining_useful_life(graph, current_date):
     """
     rul_dict = {}
     for node, attrs in graph.nodes(data=True):
+        if RULConfig.IGNORE_UTILITY_TRANSFORMERS and attrs.get('type') == 'utility_transformer':
+            continue
+        if RULConfig.IGNORE_END_LOADS and attrs.get('type') == 'end_load':
+            continue
+
         # Extract attributes, with defaults if missing
         installation_date = attrs.get('installation_date')
-        # installation_date is in YYYY-MM-DD format
+        # installation_date is in YYYY-MM-DD format 
         if installation_date is None:
             print(f"Warning: Node {node} has no installation date. Skipping RUL calculation.")
             continue
@@ -134,8 +142,13 @@ def calculate_remaining_useful_life(graph, current_date):
         # Store enhanced metrics for analysis
         attrs['annual_failure_probability'] = annual_failure_probability
         attrs['base_failure_rate'] = base_failure_rate
-        attrs['risk_level'] = _assess_risk_level(RUL_adjusted / 365.25, current_condition) 
-        
+        attrs['risk_level'] = _assess_risk_level(RUL_adjusted / 365.25, current_condition)
+        if 'replacement_required' in attrs:
+            if not attrs['replacement_required']:
+                attrs['replacement_required'] = attrs['risk_level'] == RULConfig.REPLACEMENT_THRESHOLD
+        else:
+            attrs['replacement_required'] = attrs['risk_level'] == RULConfig.REPLACEMENT_THRESHOLD
+
         # Enhanced warnings using configurable thresholds
         if RULConfig.ENABLE_RUL_WARNINGS:
             rul_years = RUL_adjusted / 365.25
@@ -171,7 +184,7 @@ def apply_rul_to_graph(graph, current_date=None):
         graph.nodes[node]['remaining_useful_life_days'] = rul
         graph.nodes[node]['remaining_useful_life_years'] = rul / 365.25  # Convert days to years
 
-    print(f"Lowest RUL: {min(rul_dict.values())} days, Highest RUL: {max(rul_dict.values())} days")
+    # print(f"Lowest RUL: {min(rul_dict.values())} days, Highest RUL: {max(rul_dict.values())} days")
     return graph
 
 def apply_maintenance_log_to_graph(df: pd.DataFrame, graph):

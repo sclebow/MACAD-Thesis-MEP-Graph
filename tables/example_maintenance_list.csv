@@ -9,3 +9,8 @@ P-02,panel,test grounding,12,Test panel grounding and bonding connections.,1,0.5
 P-03,panel,test gfci,6,Test all GFCI breakers and receptacles for proper operation.,1,0.25,10,Document any failed devices.
 P-04,panel,inspect breakers,9,Inspect all breakers for signs of wear or damage.,2,0.5,15,Replace any defective breakers.
 P-05,panel,replacement,-1,Replace panel at end of service life or if failed.,1,6,-1,Label all circuits after replacement.
+S-01,switchboard,visual inspection,6,"Visually inspect switchboard for signs of overheating, corrosion, or damage.",2,2,60,Check for missing or loose covers.
+S-02,switchboard,test grounding,12,Test switchboard grounding and bonding connections.,1,2,40,Verify all ground lugs are tight.
+S-03,switchboard,test circuit breakers,6,Test all circuit breakers for proper operation.,1,1,20,Document any failed devices.
+S-04,switchboard,test voltage,12,Test switchboard voltage levels.,1,1,30,Ensure all voltage levels are within specifications.
+S-05,switchboard,replacement,-1,Replace switchboard at end of service life or if failed.,1,48,-1,Coordinate with utility if required.

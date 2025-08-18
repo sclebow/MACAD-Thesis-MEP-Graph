@@ -575,28 +575,6 @@ def file_input_callback(event):
             edge_info_pane.object = "Failed to load graph."
             print(f"❌ Error loading maintenance log: {e}")
 
-# def add_risk_scores(graph):
-#     # Process risk scores and remaining useful life with error handling
-#     try:
-#         print("Calculating risk scores...")
-#         graph = apply_risk_scores_to_graph(graph)
-#         print("Risk scores calculated successfully.")
-#     except Exception as risk_error:
-#         print(f"Warning: Failed to calculate risk scores: {risk_error}")
-#         # Continue without risk scores
-
-#     # Apply remaining useful life attribute
-#     try:
-#         print("Applying remaining useful life...")
-#         graph = apply_rul_to_graph(graph)
-#         print("Remaining useful life applied.")
-#     except Exception as rul_error:
-#         print(f"Warning: Failed to apply remaining useful life: {rul_error}")
-#         # Continue without RUL
-
-#     return graph
-
-
 def autoload_example_graph():
     example_path = 'example_graph.mepg'
     if os.path.exists(example_path):
@@ -715,12 +693,6 @@ def generate_graph_callback(event):
         # Clean None values before saving
         G = clean_graph_none_values(G)
         nx.write_graphml(G, output_path)
-
-    # except Exception as e:
-    #     print(f"Error generating graph: {e}")
-    #     generator_status.object = f"**Error generating graph:** {e}"
-    #     generator_status.visible = True
-    #     # pn.state.notifications.error(f"Failed to generate graph: {e}")
 
 # Generator input widgets with help text
 total_load_slider = pn.widgets.IntSlider(
@@ -874,6 +846,7 @@ edge_attr_df.param.watch(edge_attr_df_callback, 'value')
 # Create a pane to display the selected graph
 current_month_pane = pn.pane.Markdown(f"**Current Month:**")
 graph_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
+bar_chart_pane = pn.pane.Plotly(height=300, sizing_mode='stretch_width')
 
 # --- Play/Pause Animation Controls for graph_slider ---
 play_button = pn.widgets.Button(name="Play", button_type="success", width=80)
@@ -1047,16 +1020,16 @@ prioritized_schedule = None
 
 # Process the maintenance tasks
 # Add inputs for maintenance task parameters
-def process_tasks_callback(event):
-    tasks_file_path = maintenance_task_panel[2].value
+def process_tasks_callback(event=None):
+    tasks_file_path = tasks_file_input.value
     if not tasks_file_path:
         tasks_file_path = "./tables/example_maintenance_list.csv"
     prioritized_schedule = process_maintenance_tasks(
         tasks_file_path=tasks_file_path,
         graph=current_graph[0],
-        monthly_budget_time=float(maintenance_task_panel[0][0].value),
-        monthly_budget_money=float(maintenance_task_panel[0][1].value),
-        months_to_schedule=int(maintenance_task_panel[1][0].value)
+        monthly_budget_time=float(monthly_budget_time_input.value),
+        monthly_budget_money=float(monthly_budget_money_input.value),
+        months_to_schedule=int(num_months_input.value)
     )
 
     if prioritized_schedule:
@@ -1073,11 +1046,28 @@ def process_tasks_callback(event):
         graph_number_input.start = 1
         graph_number_input.value = graph_slider.value
 
-        def visualize_rul_graph(graph, use_full_names=False):
+        # Get the max amount of tasks from any month
+        max_tasks_scheduled_for_month = max(len(prioritized_schedule[month].get('tasks_scheduled_for_month', [])) for month in months)
+        max_tasks_executed_for_month = max(len(prioritized_schedule[month].get('executed_tasks', [])) for month in months)
+        max_tasks_deferred_for_month = max(len(prioritized_schedule[month].get('deferred_tasks', [])) for month in months)
+
+        max_tasks = max(max_tasks_scheduled_for_month, max_tasks_executed_for_month, max_tasks_deferred_for_month)
+
+        def visualize_rul_graph(graph, use_full_names=False, month=None, show_end_loads=False):
             """
             Visualizes a NetworkX graph in 2D with Remaining Useful Life (RUL) coloring.
             Uses the x, y coordinates of nodes for 2D positioning.
             """
+            if not show_end_loads:
+                # If not showing end loads, filter out nodes with 'end_load' attribute
+                graph = graph.copy()
+                nodes_to_remove = []
+                for n in list(graph.nodes):
+                    if graph.nodes[n].get('type') == 'end_load':
+                        nodes_to_remove.append(n)
+                for n in nodes_to_remove:
+                    graph.remove_node(n)
+
             # Get RUL values for coloring
             rul_values = {n: graph.nodes[n].get('remaining_useful_life_days') for n in graph.nodes}
             # Get max RUL from first month's graph for consistent color scale
@@ -1085,7 +1075,7 @@ def process_tasks_callback(event):
             first_month_rul_values = [first_month_graph.nodes[n].get('remaining_useful_life_days', 0) for n in first_month_graph.nodes]
             max_rul = max(first_month_rul_values)
 
-            return _generate_2d_graph_figure(
+            fig = _generate_2d_graph_figure(
                 graph,
                 use_full_names=use_full_names,
                 node_color_values=rul_values,
@@ -1094,6 +1084,12 @@ def process_tasks_callback(event):
                 showlegend=False,
                 colorbar_range=[0, max_rul]
             )
+
+            # Add a title to the figure
+            fig.update_layout(title=f"Remaining Useful Life (RUL) - {month}")
+
+            return fig
+
         def update_graph(event):
             # Keep number input in sync with slider
             if graph_number_input.value != event.new:
@@ -1104,21 +1100,99 @@ def process_tasks_callback(event):
                 current_month_pane.object = f"**Current Month:** {month}"
                 # Get the graph snapshot and convert to Plotly figure
                 graph_snapshot = prioritized_schedule[month].get('graph')
-                fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value)
+                fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value, month=month, show_end_loads=show_end_loads_toggle.value)
                 graph_pane.object = fig
+
+        def _generate_task_list_figure(scheduled_tasks, executed_tasks, deferred_tasks, max_tasks):
+            # Create a figure for the task list
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=['Scheduled', 'Executed', 'Deferred'],
+                                 y=[len(scheduled_tasks), len(executed_tasks), len(deferred_tasks)],
+                                 marker_color=['blue', 'green', 'red']))
+            fig.update_layout(title='Task List Overview', barmode='stack')
+
+            # Set the y-axis range
+            fig.update_yaxes(range=[0, max_tasks + 10])
+
+            return fig
+
+        def _generate_bar_chart_figure(prioritized_schedule):
+            """
+            Creates a bar chart figure for task status over time.
+            X-axis: Time
+            Y-axis: Number of Tasks
+            Bars:
+              - Number of Scheduled Tasks for this Month
+              - Number of Executed Tasks for this Month
+              - Number of Deferred Tasks for this Month
+            """
+            fig = go.Figure()
+
+            numbers_of_scheduled = []
+            numbers_of_executed = []
+            numbers_of_deferred = []
+
+            month_datetime_periods = prioritized_schedule.keys()
+            month_names = [month.start_time.strftime("%Y-%m") for month in month_datetime_periods]
+            # for m in month_names[:10]:
+            #     print(f"Month: {m}")
+
+            for month in prioritized_schedule:
+                numbers_of_scheduled.append(len(prioritized_schedule[month].get('tasks_scheduled_for_month')))
+                numbers_of_executed.append(len(prioritized_schedule[month].get('executed_tasks')))
+                numbers_of_deferred.append(len(prioritized_schedule[month].get('deferred_tasks')))
+
+            print(f"Most Scheduled Tasks: {max(numbers_of_scheduled)}")
+            print(f"Most Executed Tasks: {max(numbers_of_executed)}")
+            print(f"Most Deferred Tasks: {max(numbers_of_deferred)}")
+
+            fig.add_trace(go.Bar(x=month_names, y=numbers_of_scheduled, name='Scheduled', marker_color='blue'))
+            fig.add_trace(go.Bar(x=month_names, y=numbers_of_executed, name='Executed', marker_color='green'))
+            fig.add_trace(go.Bar(x=month_names, y=numbers_of_deferred, name='Deferred', marker_color='red'))
+
+            fig.update_layout(title='Task Status Over Time', xaxis_title='Time', yaxis_title='Number of Tasks')
+            fig.update_yaxes(range=[0, max_tasks + 10])
+
+            # Show no x axis tick marks
+            fig.update_xaxes(showticklabels=False)
+
+            return fig
+
+        def update_task_pane(event):
+            # Update the task list pane based on the selected month
+            if graph_number_input.value != event.new:
+                graph_number_input.value = event.new
+            graph_index = event.new - 1
+            if 0 <= graph_index < number_of_graphs:
+                month = months[graph_index]
+                tasks_scheduled_for_month = prioritized_schedule[month].get('tasks_scheduled_for_month')
+                executed_tasks = prioritized_schedule[month].get('executed_tasks')
+                deferred_tasks = prioritized_schedule[month].get('deferred_tasks')
+                task_list_pane.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
+
         def update_number_input(event):
             # Keep slider in sync with number input
             if graph_slider.value != event.new:
                 graph_slider.value = event.new
         graph_slider.param.watch(update_graph, 'value')
+        graph_slider.param.watch(update_task_pane, 'value')
         graph_number_input.param.watch(update_number_input, 'value')
         # Display the first graph by default
         if number_of_graphs > 0:
             month = months[0]
             current_month_pane.object = f"**Current Month:** {month}"
             graph_snapshot = prioritized_schedule[month].get('graph')
-            fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value)
+            fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value, month=month, show_end_loads=show_end_loads_toggle.value)
             graph_pane.object = fig
+
+            # Update the task list pane
+            tasks_scheduled_for_month = prioritized_schedule[month].get('tasks_scheduled_for_month')
+            executed_tasks = prioritized_schedule[month].get('executed_tasks')
+            deferred_tasks = prioritized_schedule[month].get('deferred_tasks')
+            task_list_pane.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
+
+            # Update the line chart pane
+            bar_chart_pane.object = _generate_bar_chart_figure(prioritized_schedule)
 
 # Create a slider and number input for graph selection
 graph_slider = pn.widgets.IntSlider(
@@ -1135,25 +1209,35 @@ graph_number_input = pn.widgets.IntInput(
     start=1,
     end=36
 )
+task_list_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
 
 # Show both slider and number input together
 app.append(pn.Column(
     "### Prioritized Maintenance Schedule",
     pn.Row(graph_slider, graph_number_input, animation_controls),
     current_month_pane,
-    graph_pane,
+    bar_chart_pane,
+    pn.Row(graph_pane, task_list_pane),
     sizing_mode='stretch_width'
 ))
 
+monthly_budget_time_input = pn.widgets.TextInput(name="Monthly Budget (Time)", value="50")
+monthly_budget_money_input = pn.widgets.TextInput(name="Monthly Budget (Money)", value="20000")
+show_end_loads_toggle = pn.widgets.Checkbox(name="Show End Loads", value=False)
+num_months_input = pn.widgets.TextInput(name="Months to Schedule", value="1000")
+tasks_file_input = pn.widgets.FileInput(name="Tasks File", accept='.csv')
+process_tasks_button = pn.widgets.Button(name="Process Tasks", button_type="primary")
+
 maintenance_task_panel = pn.Column(
-    pn.Row(pn.widgets.TextInput(name="Monthly Budget (Time)", value="40"), pn.widgets.TextInput(name="Monthly Budget (Money)", value="10000")),
-    pn.Row(pn.widgets.TextInput(name="Months to Schedule", value="36")),
-    pn.widgets.FileInput(name="Tasks File", accept='.csv'),
-    pn.widgets.Button(name="Process Tasks", button_type="primary")
+    pn.Row(monthly_budget_time_input, monthly_budget_money_input, show_end_loads_toggle),
+    pn.Row(num_months_input),
+    tasks_file_input,
+    process_tasks_button
 )
 
 # Set up the button callback
-maintenance_task_panel[3].on_click(process_tasks_callback)
+process_tasks_button.on_click(process_tasks_callback)
+process_tasks_callback() # Initial call to populate the app
 
 app.append(pn.Column(
     "### Process Maintenance Tasks",
