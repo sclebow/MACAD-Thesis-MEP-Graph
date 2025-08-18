@@ -109,29 +109,61 @@ Using this workflow, we will have a framework that can be extended to include ot
 
 ### Mermaid Diagram of the Prototype Workflow
 ```mermaid
-graph TD
-    %% Color classes
-    classDef input fill:#dbeafe,stroke:#2563eb,stroke-width:2px;
-    classDef process fill:#fef9c3,stroke:#eab308,stroke-width:2px;
-    classDef data fill:#dcfce7,stroke:#16a34a,stroke-width:2px;
-    classDef gui fill:#f3e8ff,stroke:#a21caf,stroke-width:2px;
-    classDef analysis fill:#fee2e2,stroke:#dc2626,stroke-width:2px;
-    classDef update fill:#e0e7ff,stroke:#6366f1,stroke-width:2px;
+---
+config:
+  theme: 'base'
+  themeVariables:
+    background: '#000000'
+    fontSize: 30px
+    lineColor: '#eeeeee'
+---
+
+flowchart LR
+    A[Building Maintenance Strategy] --> D[Generate a Detailed Tasks from Task Template for Each Node in Graph, by Matching Node Type]
+
+    D --> DA((For Each Detailed Task))
     
-    A[BIM Software]:::input --> B[MEP System Extraction Script]:::process
-    B --> C["Knowledge Graph File (GraphML)"]:::data
-    C --> J["Load Updated GraphML into BIM Software"]:::process
-    C --> D[Web-based GUI]:::gui
-    D --> E[Visualization & Analysis]:::analysis
-    D --> F[Filtering/Task-specific Views]:::analysis
-    E --> G[User Insights/Decisions]:::analysis
-    F --> G
-    G --> H[MEP System Updates]:::update
-    H --> C
-    %% Optional: Design Tool Path
-    I["Simple Design Tool (optional)"]:::input --> C
-    %% New: Load updated file back into BIM software
-    J --> A
+    DA --> DC[Determine Money Cost]
+    DC --> DD{Task Is Equipment Replacement}
+    DA --> DF
+    DF[Determine Task Frequency] --> DE{Task Is Equipment Replacement}
+    DD -->|Yes| J[Use Replacement Cost]
+    DD -->|No| I[Use Standard Cost]
+    DE -->|Yes| F[Use Template Task Frequency]
+    DE -->|No| G[Use Equipment Lifespan for Task Frequency]
+    
+    F --> K
+    G --> K
+    J --> K
+    I --> K[Schedule First Occurance of Each Detailed Task by Month]
+    K -->|Repeat| DA
+
+
+    DA --> L[Simulate Maintenance with Budgets]
+
+    M[Monthly Time Budget] --> L
+    N[Monthly Money Budget] --> L
+
+    L --> |All Months Scheduled| O((For Each Mondth))
+
+    O --> P[Prioritize Scheduled Tasks by Node Risk and Task Priority]
+    P --> Q[Exectute Tasks Until Budgets are Expended]
+    Q --> |Budget Expended| R[Defer all Other Tasks to Next Month]
+    R --> S[Update RUL for all Equipment]
+    S --> T[Save Graph Snapshot] -->|Repeat| O
+
+    O ------> |All Months Processed| U[Visualize Graphs in UI]
+
+    %% Styling
+    classDef strategy fill:#e8f5e8
+    classDef decision fill:#fff8dc
+    classDef outcome fill:#e6f3ff
+    
+    class A,D,L,U strategy
+    class DD,DE,O decision
+    class DC,DF,J,I,F,G,K,M,N,P,Q,R,S,T outcome
+
+    linkStyle default stroke-width:16px
 ```
 
 ### Tools Used
