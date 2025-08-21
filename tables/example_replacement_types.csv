@@ -1,0 +1,13 @@
+task_id,equipment_type,task_name,description,time_cost,money_cost,condition_level,rul_percentage_effect,notes
+T-01,transformer,routine repair,"Perform routine maintenance and repairs on transformer components.",2,100,0.9,+0.05,"Schedule during off-peak hours."
+P-01,panel,routine repair,"Perform routine maintenance and repairs on panel components.",2,80,0.9,+0.05,"Schedule during off-peak hours."
+S-01,switchboard,routine repair,"Perform routine maintenance and repairs on switchboard components.",2,120,0.9,+0.05,"Schedule during off-peak hours."
+T-02,transformer,emergency repair,"Address emergency repairs for transformer failures.",4,200,0.5,+0.15,"Prioritize based on failure impact."
+P-02,panel,emergency repair,"Address emergency repairs for panel failures.",4,150,0.5,+0.15,"Prioritize based on failure impact."
+S-02,switchboard,emergency repair,"Address emergency repairs for switchboard failures.",4,250,0.5,+0.15,"Prioritize based on failure impact."
+T-03,transformer,major refurbishment,"Perform major refurbishment on transformer components.",8,400,0.2,+0.3,"Schedule during planned outages."
+P-03,panel,major refurbishment,"Perform major refurbishment on panel components.",8,300,0.2,+0.3,"Schedule during planned outages."
+S-03,switchboard,major refurbishment,"Perform major refurbishment on switchboard components.",8,500,0.2,+0.3,"Schedule during planned outages."
+T-04,transformer,full replacement,"Replace transformer at end of service life or if failed.",12,800,0.0,+1.0,"Full replacement required."
+P-04,panel,full replacement,"Replace panel at end of service life or if failed.",12,600,0.0,+1.0,"Full replacement required."
+S-04,switchboard,full replacement,"Replace switchboard at end of service life or if failed.",12,1000,0.0,+1.0,"Full replacement required."
