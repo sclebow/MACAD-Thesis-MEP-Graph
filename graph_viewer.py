@@ -1168,7 +1168,7 @@ def process_tasks_callback(event=None):
                 tasks_scheduled_for_month = prioritized_schedule[month].get('tasks_scheduled_for_month')
                 executed_tasks = prioritized_schedule[month].get('executed_tasks')
                 deferred_tasks = prioritized_schedule[month].get('deferred_tasks')
-                task_list_pane.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
+                task_list_plot.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
 
         def update_number_input(event):
             # Keep slider in sync with number input
@@ -1189,7 +1189,7 @@ def process_tasks_callback(event=None):
             tasks_scheduled_for_month = prioritized_schedule[month].get('tasks_scheduled_for_month')
             executed_tasks = prioritized_schedule[month].get('executed_tasks')
             deferred_tasks = prioritized_schedule[month].get('deferred_tasks')
-            task_list_pane.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
+            task_list_plot.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
 
             # Update the line chart pane
             bar_chart_pane.object = _generate_bar_chart_figure(prioritized_schedule)
@@ -1209,7 +1209,7 @@ graph_number_input = pn.widgets.IntInput(
     start=1,
     end=36
 )
-task_list_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
+task_list_plot = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
 
 # Show both slider and number input together
 app.append(pn.Column(
@@ -1217,7 +1217,7 @@ app.append(pn.Column(
     pn.Row(graph_slider, graph_number_input, animation_controls),
     current_month_pane,
     bar_chart_pane,
-    pn.Row(graph_pane, task_list_pane),
+    pn.Row(graph_pane, task_list_plot),
     sizing_mode='stretch_width'
 ))
 
