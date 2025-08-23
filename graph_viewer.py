@@ -26,6 +26,363 @@ print("\n" * 5)
 pn.extension('plotly')
 pn.extension('jsoneditor')
 
+class GraphController:
+    def __init__(self):
+        self.current_graph = [None]  # Keep existing format for compatibility
+        self.view_settings = {
+            'use_full_names': False,
+            'visualization_type': '2d_type'
+        }
+    
+    def load_graph_from_file(self, file_bytes):
+        """Load graph from file bytes and apply processing"""
+        try:
+            file_buffer = io.BytesIO(file_bytes)
+            G = nx.read_graphml(file_buffer)
+            
+            # Validate and clean graph data
+            self._validate_graph_data(G)
+            
+            # Apply risk scores and RUL with error handling
+            try:
+                from helpers.node_risk import apply_risk_scores_to_graph
+                G = apply_risk_scores_to_graph(G)
+            except Exception as e:
+                print(f"Warning: Risk score calculation failed: {e}")
+            
+            try:
+                from helpers.rul_helper import apply_rul_to_graph
+                G = apply_rul_to_graph(G)
+            except Exception as e:
+                print(f"Warning: RUL calculation failed: {e}")
+            
+            self.current_graph[0] = G
+            return {'success': True, 'message': 'Graph loaded successfully'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    def _validate_graph_data(self, graph):
+        """Validate and clean graph data"""
+        for node_id, attrs in graph.nodes(data=True):
+            # Ensure numeric values are not None
+            for key, value in attrs.items():
+                if value is None and key in ['x', 'y', 'z', 'propagated_power', 'power_rating']:
+                    attrs[key] = 0.0
+                    print(f"Warning: Set {key} to 0.0 for node {node_id}")
+        
+        for edge in graph.edges(data=True):
+            edge_attrs = edge[2]
+            for key, value in edge_attrs.items():
+                if value is None and key in ['voltage', 'current_rating', 'power']:
+                    edge_attrs[key] = 0.0
+                    print(f"Warning: Set {key} to 0.0 for edge {edge[0]}-{edge[1]}")
+    
+    def generate_new_graph(self, building_params):
+        """Generate new graph with given parameters"""
+        try:
+            construction_year = int(building_params['construction_year'])
+            
+            building_attributes = {
+                "total_load": int(building_params['total_load']),
+                "building_length": building_params['building_length'],
+                "building_width": building_params['building_width'],
+                "num_floors": int(building_params['num_floors']),
+                "floor_height": building_params['floor_height'],
+                "construction_date": datetime.datetime(construction_year, 1, 1).strftime("%Y-%m-%d"),
+            }
+            
+            # Set seed if provided
+            if building_params.get('seed'):
+                random.seed(int(building_params['seed']))
+            
+            # Generate the graph using existing functions
+            building_attrs = define_building_characteristics(building_attributes)
+            num_risers = determine_number_of_risers(building_attrs)
+            riser_locations = locate_risers(building_attrs, num_risers)
+            voltage_info = determine_voltage_level(building_attrs)
+            floor_loads, end_loads = distribute_loads(building_attrs, voltage_info)
+            riser_floor_attributes = determine_riser_attributes(building_attrs, riser_locations, floor_loads, end_loads, voltage_info)
+            distribution_equipment = place_distribution_equipment(building_attrs, riser_floor_attributes, voltage_info)
+            cluster_strength = building_params.get('cluster_strength', 0.95)
+            G = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info, end_loads, cluster_strength)
+            
+            # Apply risk scores and RUL
+            from helpers.node_risk import apply_risk_scores_to_graph
+            from helpers.rul_helper import apply_rul_to_graph
+            
+            G = apply_risk_scores_to_graph(G)
+            G = apply_rul_to_graph(G)
+            G = clean_graph_none_values(G)
+            
+            self.current_graph[0] = G
+            return {'success': True, 'graph': G}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    def get_visualization_data(self, viz_type=None):
+        """Get visualization figure for current graph"""
+        if not self.current_graph[0]:
+            return None
+        
+        viz_type = viz_type or self.view_settings['visualization_type']
+        use_full_names = self.view_settings['use_full_names']
+        
+        if viz_type == '2d_type':
+            return visualize_graph_two_d(self.current_graph[0], use_full_names)
+        elif viz_type == '2d_risk':
+            return visualize_graph_two_d_risk(self.current_graph[0], use_full_names)
+        elif viz_type == '3d':
+            return visualize_graph_three_d(self.current_graph[0], use_full_names)
+        
+        return None
+    
+    def get_component_data(self):
+        """Get lists of nodes and edges for dropdowns"""
+        if not self.current_graph[0]:
+            return {'nodes': [], 'edges': []}
+        
+        return {
+            'nodes': list(self.current_graph[0].nodes()),
+            'edges': [f"{u} - {v}" for u, v in self.current_graph[0].edges()]
+        }
+    
+    def update_node_attributes(self, node_id, attributes_dict):
+        """Update node attributes from dataframe"""
+        if not self.current_graph[0] or node_id not in self.current_graph[0].nodes:
+            return {'success': False, 'error': 'Invalid node'}
+        
+        for k, v in attributes_dict.items():
+            if k in ["x", "y", "z"]:
+                try:
+                    self.current_graph[0].nodes[node_id][k] = float(v)
+                except Exception:
+                    self.current_graph[0].nodes[node_id][k] = v
+            else:
+                self.current_graph[0].nodes[node_id][k] = v
+        
+        return {'success': True}
+    
+    def save_graph_to_file(self, filename):
+        """Save current graph to file"""
+        if not self.current_graph[0]:
+            return {'success': False, 'error': 'No graph loaded'}
+        
+        try:
+            if not filename.lower().endswith('.mepg'):
+                filename += '.mepg'
+            
+            output_dir = 'graph_outputs'
+            os.makedirs(output_dir, exist_ok=True)
+            output_path = os.path.join(output_dir, filename)
+            
+            self.current_graph[0].graph["source"] = "Panel Graph Viewer Export"
+            nx.write_graphml(self.current_graph[0], output_path)
+            
+            return {'success': True, 'path': output_path}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+class SystemViewController:
+    def __init__(self, graph_controller):
+        self.graph_controller = graph_controller
+        self.widgets = {}
+        
+    def register_widgets(self, widgets_dict):
+        """Register UI widgets for event handling"""
+        self.widgets.update(widgets_dict)
+    
+    def setup_callbacks(self):
+        """Set up all event callbacks"""
+        # File operations
+        if 'file_input' in self.widgets:
+            self.widgets['file_input'].param.watch(self.handle_file_load, 'value')
+        if 'save_button' in self.widgets:
+            self.widgets['save_button'].on_click(self.handle_save_graph)
+        
+        # Visualization controls
+        if 'name_toggle' in self.widgets:
+            self.widgets['name_toggle'].param.watch(self.handle_name_toggle, 'value')
+        
+        # Node/edge selection
+        if 'node_dropdown' in self.widgets:
+            self.widgets['node_dropdown'].param.watch(self.handle_node_selection, 'value')
+        if 'edge_dropdown' in self.widgets:
+            self.widgets['edge_dropdown'].param.watch(self.handle_edge_selection, 'value')
+        if 'node_attr_df' in self.widgets:
+            self.widgets['node_attr_df'].param.watch(self.handle_node_attr_change, 'value')
+        if 'edge_attr_df' in self.widgets:
+            self.widgets['edge_attr_df'].param.watch(self.handle_edge_attr_change, 'value')
+    
+    def handle_file_load(self, event):
+        """Handle file upload"""
+        if event.new is not None:
+            result = self.graph_controller.load_graph_from_file(event.new)
+            if result['success']:
+                self.refresh_all_displays()
+                print("Graph loaded successfully")
+            else:
+                print(f"Error loading graph: {result['error']}")
+    
+    def handle_save_graph(self, event):
+        """Handle save graph button"""
+        if 'save_input' in self.widgets:
+            filename = self.widgets['save_input'].value or "graph.mepg"
+            result = self.graph_controller.save_graph_to_file(filename)
+            if result['success']:
+                if 'save_status' in self.widgets:
+                    self.widgets['save_status'].object = f"**Graph saved to `{result['path']}`**"
+                    self.widgets['save_status'].visible = True
+                print(f"Graph saved to {result['path']}")
+            else:
+                if 'save_status' in self.widgets:
+                    self.widgets['save_status'].object = f"**Error saving graph:** {result['error']}"
+                    self.widgets['save_status'].visible = True
+                print(f"Error saving graph: {result['error']}")
+    
+    def handle_name_toggle(self, event):
+        """Handle name display toggle"""
+        self.graph_controller.view_settings['use_full_names'] = event.new
+        self.update_all_visualizations()
+    
+    def handle_node_selection(self, event):
+        """Handle node dropdown selection"""
+        if event.new and self.graph_controller.current_graph[0]:
+            self.update_node_info(event.new)
+    
+    def handle_edge_selection(self, event):
+        """Handle edge dropdown selection"""
+        if event.new and self.graph_controller.current_graph[0]:
+            self.update_edge_info(event.new)
+    
+    def handle_node_attr_change(self, event):
+        """Handle node attribute dataframe changes"""
+        if 'node_dropdown' in self.widgets:
+            node = self.widgets['node_dropdown'].value
+            if node and event.new is not None:
+                df = event.new
+                if len(df) > 0:
+                    attrs = dict(zip(df["Attribute"], df["Value"]))
+                    result = self.graph_controller.update_node_attributes(node, attrs)
+                    if result['success']:
+                        self.update_all_visualizations()
+    
+    def handle_edge_attr_change(self, event):
+        """Handle edge attribute dataframe changes"""
+        if 'edge_dropdown' in self.widgets:
+            edge_str = self.widgets['edge_dropdown'].value
+            if edge_str and " - " in edge_str and event.new is not None:
+                u, v = edge_str.split(" - ", 1)
+                edge_tuple = (u, v)
+                if edge_tuple in self.graph_controller.current_graph[0].edges:
+                    df = event.new
+                    if len(df) > 0:
+                        attrs = dict(zip(df["Attribute"], df["Value"]))
+                        for k, v in attrs.items():
+                            self.graph_controller.current_graph[0].edges[edge_tuple][k] = v
+                        self.update_all_visualizations()
+    
+    def refresh_all_displays(self):
+        """Refresh all UI displays after data change"""
+        self.update_all_visualizations()
+        self.update_dropdowns()
+        # Automatically process maintenance tasks when graph is loaded
+        self.auto_process_maintenance_tasks()
+    
+    def auto_process_maintenance_tasks(self):
+        """Automatically trigger maintenance task processing if a graph is loaded"""
+        try:
+            if self.graph_controller.current_graph[0] is not None:
+                # Call the global process_tasks_callback function
+                process_tasks_callback()
+        except Exception as e:
+            print(f"Warning: Auto maintenance processing failed: {e}")
+    
+    def update_all_visualizations(self):
+        """Update all visualization panes"""
+        if 'plot_pane' in self.widgets:
+            fig = self.graph_controller.get_visualization_data('2d_type')
+            if fig:
+                self.widgets['plot_pane'].object = fig
+        
+        if 'plot_risk_pane' in self.widgets:
+            fig = self.graph_controller.get_visualization_data('2d_risk')
+            if fig:
+                self.widgets['plot_risk_pane'].object = fig
+        
+        if 'three_d_pane' in self.widgets:
+            fig = self.graph_controller.get_visualization_data('3d')
+            if fig:
+                self.widgets['three_d_pane'].object = fig
+    
+    def update_dropdowns(self):
+        """Update node and edge dropdown options"""
+        data = self.graph_controller.get_component_data()
+        
+        if 'node_dropdown' in self.widgets:
+            self.widgets['node_dropdown'].options = data['nodes']
+            if data['nodes']:
+                self.widgets['node_dropdown'].value = data['nodes'][0]
+        
+        if 'edge_dropdown' in self.widgets:
+            self.widgets['edge_dropdown'].options = data['edges']
+            if data['edges']:
+                self.widgets['edge_dropdown'].value = data['edges'][0]
+    
+    def update_node_info(self, node_id):
+        """Update node info display and attribute table"""
+        if not self.graph_controller.current_graph[0]:
+            return
+            
+        if node_id and node_id in self.graph_controller.current_graph[0].nodes:
+            attrs = self.graph_controller.current_graph[0].nodes[node_id]
+            
+            if 'node_info_pane' in self.widgets:
+                self.widgets['node_info_pane'].object = f"**Node:** {node_id}"
+            
+            if 'node_attr_df' in self.widgets:
+                if attrs:
+                    df = pd.DataFrame(list(attrs.items()), columns=["Attribute", "Value"])
+                    self.widgets['node_attr_df'].value = df.copy()
+                else:
+                    self.widgets['node_attr_df'].value = pd.DataFrame(columns=["Attribute", "Value"])
+        else:
+            # Handle case where node doesn't exist
+            if 'node_info_pane' in self.widgets:
+                self.widgets['node_info_pane'].object = f"**Node not found:** {node_id}"
+            if 'node_attr_df' in self.widgets:
+                self.widgets['node_attr_df'].value = pd.DataFrame(columns=["Attribute", "Value"])
+            
+            # Refresh dropdown to remove invalid options
+            self.update_dropdowns()
+    
+    def update_edge_info(self, edge_str):
+        """Update edge info display and attribute table"""
+        if not self.graph_controller.current_graph[0]:
+            return
+            
+        if edge_str and " - " in edge_str:
+            u, v = edge_str.split(" - ", 1)
+            edge_tuple = (u, v)
+            if edge_tuple in self.graph_controller.current_graph[0].edges:
+                attrs = self.graph_controller.current_graph[0].edges[edge_tuple]
+                
+                if 'edge_info_pane' in self.widgets:
+                    self.widgets['edge_info_pane'].object = f"**Edge:** {edge_tuple}"
+                
+                if 'edge_attr_df' in self.widgets:
+                    if attrs:
+                        df = pd.DataFrame(list(attrs.items()), columns=["Attribute", "Value"])
+                        self.widgets['edge_attr_df'].value = df.copy()
+                    else:
+                        self.widgets['edge_attr_df'].value = pd.DataFrame(columns=["Attribute", "Value"])
+            else:
+                if 'edge_info_pane' in self.widgets:
+                    self.widgets['edge_info_pane'].object = f"**Edge not found:** {edge_str}"
+                if 'edge_attr_df' in self.widgets:
+                    self.widgets['edge_attr_df'].value = pd.DataFrame(columns=["Attribute", "Value"])
+
+# END OF SystemViewController CLASS
+
 def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter = 0.5):
 
     '''
@@ -520,89 +877,34 @@ def update_node_info(node, graph):
         node_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
 
 def node_dropdown_callback(event):
-    if current_graph[0] is not None:
-        update_node_info(event.new, current_graph[0])
+    """Delegate to controller"""
+    system_controller.handle_node_selection(event)
 
 def edge_dropdown_callback(event):
-    if current_graph[0] is not None:
-        edge_str = event.new
-        if edge_str and " - " in edge_str:
-            u, v = edge_str.split(" - ", 1)
-            edge_tuple = (u, v)
-            if edge_tuple in current_graph[0].edges:
-                attrs = current_graph[0].edges[edge_tuple]
-                info = f"**Edge:** {edge_tuple}"
-                edge_info_pane.object = info
-                # Display attributes as editable table
-                if attrs:
-                    df = pd.DataFrame(list(attrs.items()), columns=["Attribute", "Value"])
-                    df = df[["Attribute", "Value"]]
-                    edge_attr_df.value = df.copy()
-                else:
-                    edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
-            else:
-                edge_info_pane.object = "No edge selected."
-                edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
-        else:
-            edge_info_pane.object = "No edge selected."
-            edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
-    else:
-        edge_info_pane.object = "No graph loaded."
-        edge_attr_df.value = pd.DataFrame(columns=["Attribute", "Value"])
+    """Delegate to controller"""
+    system_controller.handle_edge_selection(event)
 
 def file_input_callback(event):
-    if file_input.value is not None:
-        try:
-            file_bytes = io.BytesIO(file_input.value)
-            G = nx.read_graphml(file_bytes)
-            # Add risk scores to the graph
-            # G = add_risk_scores(G)
-            fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
-            plot_pane.object = fig
-            fig_risk = visualize_graph_two_d_risk(G, use_full_names=name_toggle.value)
-            plot_risk_pane.object = fig_risk
-            three_d_fig = visualize_graph_three_d(G, use_full_names=name_toggle.value)
-            three_d_pane.object = three_d_fig
-            current_graph[0] = G
-            update_dropdowns(G)
-        except Exception as e:
-            plot_pane.object = None
-            plot_risk_pane.object = None
-            three_d_pane.object = None
-            node_dropdown.options = []
-            edge_dropdown.options = []
-            node_info_pane.object = "Failed to load graph."
-            edge_info_pane.object = "Failed to load graph."
-            print(f"❌ Error loading maintenance log: {e}")
+    """Delegate to controller"""
+    system_controller.handle_file_load(event)
 
 def autoload_example_graph():
+    """Load example graph using controller"""
+    global system_controller
+    
     example_path = 'example_graph.mepg'
     if os.path.exists(example_path):
         try:
             with open(example_path, 'rb') as f:
-                G = nx.read_graphml(f)
-                # Check if the graph is a directed graph
-                if not isinstance(G, nx.DiGraph):
-                    raise ValueError("The example graph must be a directed graph.")
-                fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
-                plot_pane.object = fig
-                fig_risk = visualize_graph_two_d_risk(G, use_full_names=name_toggle.value)
-                plot_risk_pane.object = fig_risk
-                three_d_fig = visualize_graph_three_d(G, use_full_names=name_toggle.value)
-                three_d_pane.object = three_d_fig
-                current_graph[0] = G
-
-                # G = add_risk_scores(G)
-
-                update_dropdowns(G)
+                file_bytes = f.read()
+                result = graph_controller.load_graph_from_file(file_bytes)
+                if result['success']:
+                    system_controller.refresh_all_displays()
+                    system_controller.update_dropdowns()
+                    print("Example graph loaded successfully")
+                else:
+                    print(f"Failed to autoload example graph: {result['error']}")
         except Exception as e:
-            plot_pane.object = None
-            plot_risk_pane.object = None
-            three_d_pane.object = None
-            node_dropdown.options = []
-            edge_dropdown.options = []
-            node_info_pane.object = "Failed to autoload graph."
-            edge_info_pane.object = "Failed to autoload graph."
             print(f"Failed to autoload example graph: {e}")
     else:
         print(f"Example graph file '{example_path}' not found.")
@@ -624,75 +926,40 @@ file_input.param.watch(file_input_callback, 'value')
 name_toggle = pn.widgets.Toggle(name="Use Full Names", value=False)
 
 def name_toggle_callback(event):
-    if current_graph[0] is not None:
-        # Refresh all plots with new name setting
-        plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=event.new)
-        plot_risk_pane.object = visualize_graph_two_d_risk(current_graph[0], use_full_names=event.new)
-        three_d_pane.object = visualize_graph_three_d(current_graph[0], use_full_names=event.new)
+    """Delegate to controller"""
+    system_controller.handle_name_toggle(event)
 
 name_toggle.param.watch(name_toggle_callback, 'value')
 
 # --- Graph Generator Panel ---
 def generate_graph_callback(event):
-    # try:
-        # Collect parameters from widgets
-        construction_year = int(construction_year_slider.value)
-        
-        building_attributes = {
-            "total_load": int(total_load_slider.value),
-            "building_length": building_length_slider.value,
-            "building_width": building_width_slider.value,
-            "num_floors": int(num_floors_slider.value),
-            "floor_height": floor_height_slider.value,
-            "construction_date": datetime.datetime(construction_year, 1, 1).strftime("%Y-%m-%d"),
-        }
-        
-        # Set seed if provided
-        if seed_input.value:
-            random.seed(int(seed_input.value))
-        
-        # Generate the graph using the same process as main()
-        building_attrs = define_building_characteristics(building_attributes)
-        num_risers = determine_number_of_risers(building_attrs)
-        riser_locations = locate_risers(building_attrs, num_risers)
-        voltage_info = determine_voltage_level(building_attrs)
-        floor_loads, end_loads = distribute_loads(building_attrs, voltage_info)
-        riser_floor_attributes = determine_riser_attributes(building_attrs, riser_locations, floor_loads, end_loads, voltage_info)
-        distribution_equipment = place_distribution_equipment(building_attrs, riser_floor_attributes, voltage_info)
-        cluster_strength = cluster_strength_slider.value
-        G = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info, end_loads, cluster_strength)
-        
-        # Add risk scores to the generated graph
-        # G = add_risk_scores(G)
-            # Apply risk scores and RUL to the graph
-
-        from helpers.node_risk import apply_risk_scores_to_graph
-        from helpers.rul_helper import apply_rul_to_graph
-
-        G = apply_risk_scores_to_graph(G)
-        G = apply_rul_to_graph(G)
-
-        # Update visualizations
-        fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
-        plot_pane.object = fig
-        fig_risk = visualize_graph_two_d_risk(G, use_full_names=name_toggle.value)
-        plot_risk_pane.object = fig_risk
-        three_d_fig = visualize_graph_three_d(G, use_full_names=name_toggle.value)
-        three_d_pane.object = three_d_fig
-        current_graph[0] = G
-        update_dropdowns(G)
-        
+    """Generate graph using controller"""
+    building_params = {
+        'construction_year': construction_year_slider.value,
+        'total_load': total_load_slider.value,
+        'building_length': building_length_slider.value,
+        'building_width': building_width_slider.value,
+        'num_floors': num_floors_slider.value,
+        'floor_height': floor_height_slider.value,
+        'cluster_strength': cluster_strength_slider.value,
+        'seed': seed_input.value
+    }
+    
+    result = graph_controller.generate_new_graph(building_params)
+    if result['success']:
+        system_controller.refresh_all_displays()
         generator_status.object = "**Graph generated successfully!**"
         generator_status.visible = True
-
-        # Save the generated graph to the graph_output directory
+        
+        # Save generated graph
         output_dir = 'graph_outputs'
         os.makedirs(output_dir, exist_ok=True)
         current_date_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         output_path = os.path.join(output_dir, f"generated_graph_{current_date_str}.mepg")
-        # Clean None values before saving
-        G = clean_graph_none_values(G)
-        nx.write_graphml(G, output_path)
+        nx.write_graphml(graph_controller.current_graph[0], output_path)
+    else:
+        generator_status.object = f"**Error generating graph:** {result['error']}"
+        generator_status.visible = True
 
 # Generator input widgets with help text
 total_load_slider = pn.widgets.IntSlider(
@@ -790,34 +1057,23 @@ node_attr_df = pn.widgets.DataFrame(
     height=selection_table_height,
     show_index=False,
 )
-current_graph = [None]  # Mutable container for current graph
+# Initialize controllers
+graph_controller = GraphController()
+system_controller = SystemViewController(graph_controller)
+
+# For backward compatibility with existing code
+current_graph = graph_controller.current_graph
 
 def node_attr_df_callback(event):
-    node = node_dropdown.value
-    if node and current_graph[0] is not None:
-        # Convert DataFrame to dict and update node attributes
-        df = event.new
-        attrs = dict(zip(df["Attribute"], df["Value"]))
-        for k, v in attrs.items():
-            # Cast x, y, z to float if possible
-            if k in ["x", "y", "z"]:
-                try:
-                    current_graph[0].nodes[node][k] = float(v)
-                except Exception:
-                    current_graph[0].nodes[node][k] = v
-            else:
-                current_graph[0].nodes[node][k] = v
-        # Refresh visualizations after node attribute edit
-        plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=name_toggle.value)
-        plot_risk_pane.object = visualize_graph_two_d_risk(current_graph[0], use_full_names=name_toggle.value)
-        three_d_pane.object = visualize_graph_three_d(current_graph[0], use_full_names=name_toggle.value)
-node_attr_df.param.watch(node_attr_df_callback, 'value')
-node_dropdown.param.watch(node_dropdown_callback, 'value')
+    """Delegate to controller"""
+    system_controller.handle_node_attr_change(event)
+
+#node_attr_df.param.watch(node_attr_df_callback, 'value') # Commented out - controller handles this
 
 # Add a dropdown for selecting an edge from the graph
 edge_dropdown = pn.widgets.Select(name="Select Edge", options=[])
 edge_info_pane = pn.pane.Markdown("No edge selected.")
-edge_dropdown.param.watch(edge_dropdown_callback, 'value')
+# edge_dropdown.param.watch(edge_dropdown_callback, 'value') # Commented out - controller handles this
 
 # Editable DataFrame for edge attributes
 edge_attr_df = pn.widgets.DataFrame(
@@ -828,20 +1084,10 @@ edge_attr_df = pn.widgets.DataFrame(
 )
 
 def edge_attr_df_callback(event):
-    edge_str = edge_dropdown.value
-    if edge_str and current_graph[0] is not None and " - " in edge_str:
-        u, v = edge_str.split(" - ", 1)
-        edge_tuple = (u, v)
-        if edge_tuple in current_graph[0].edges:
-            df = event.new
-            attrs = dict(zip(df["Attribute"], df["Value"]))
-            for k, v in attrs.items():
-                current_graph[0].edges[edge_tuple][k] = v
-            # Refresh visualizations after edge attribute edit
-            plot_pane.object = visualize_graph_two_d(current_graph[0], use_full_names=name_toggle.value)
-            plot_risk_pane.object = visualize_graph_two_d_risk(current_graph[0], use_full_names=name_toggle.value)
-            three_d_pane.object = visualize_graph_three_d(current_graph[0], use_full_names=name_toggle.value)
-edge_attr_df.param.watch(edge_attr_df_callback, 'value')
+    """Delegate to controller"""
+    system_controller.handle_edge_attr_change(event)
+
+# edge_attr_df.param.watch(edge_attr_df_callback, 'value')  # Commented out - controller handles this
 
 # Create a pane to display the selected graph
 current_month_pane = pn.pane.Markdown(f"**Current Month:**")
@@ -923,9 +1169,6 @@ three_d_column.append("### 3D Graph Visualization")
 three_d_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
 three_d_column.append(three_d_pane)
 
-# Autoload example graph if present
-autoload_example_graph()
-
 # Create a row to show all plots side by side
 plots_row = pn.Row(two_d_column, two_d_risk_column, three_d_column, sizing_mode='stretch_width')
 app.append(plots_row)
@@ -940,7 +1183,7 @@ app.append(selection_row)
 
 # --- Load Maintenance log ---
 maintenance_log_input = pn.widgets.FileInput(accept='.csv')
-#fdfdf
+
 def maintenance_log_callback(event):
     if event.new is not None:
         try:
@@ -987,29 +1230,8 @@ save_button = pn.widgets.Button(name="Save Graph", button_type="primary")
 save_status = pn.pane.Markdown(visible=False)
 
 def save_graph_callback(event):
-    if current_graph[0] is not None:
-        fname = filename_input.value.strip()
-        if not fname:
-            fname = get_default_filename()
-        # Ensure .mepg extension
-        if not fname.lower().endswith('.mepg'):
-            fname += '.mepg'
-        # Ensure graph_outputs folder exists
-        output_dir = 'graph_outputs'
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        out_path = os.path.join(output_dir, fname)
-        try:
-            current_graph[0].graph["source"] = "Panel Graph Viewer Export"
-            nx.write_graphml(current_graph[0], out_path)
-            save_status.object = f"**Graph saved to `{out_path}`**"
-            save_status.visible = True
-        except Exception as e:
-            save_status.object = f"**Error saving graph:** {e}"
-            save_status.visible = True
-    else:
-        save_status.object = "**No graph loaded to save.**"
-        save_status.visible = True
+    """Delegate to controller"""
+    system_controller.handle_save_graph(event)
 
 save_button.on_click(save_graph_callback)
 
@@ -1021,16 +1243,26 @@ prioritized_schedule = None
 # Process the maintenance tasks
 # Add inputs for maintenance task parameters
 def process_tasks_callback(event=None):
+    # Check if graph is loaded
+    if current_graph[0] is None:
+        print("No graph loaded. Please load or generate a graph first.")
+        return
+    
     tasks_file_path = tasks_file_input.value
     if not tasks_file_path:
         tasks_file_path = "./tables/example_maintenance_list.csv"
-    prioritized_schedule = process_maintenance_tasks(
+    
+    try:
+        prioritized_schedule = process_maintenance_tasks(
         tasks_file_path=tasks_file_path,
         graph=current_graph[0],
         monthly_budget_time=float(monthly_budget_time_input.value),
         monthly_budget_money=float(monthly_budget_money_input.value),
         months_to_schedule=int(num_months_input.value)
     )
+    except Exception as e:
+        print(f"Error processing maintenance tasks: {e}")
+        return
 
     if prioritized_schedule:
         print("Prioritized maintenance schedule generated successfully.")
@@ -1237,7 +1469,12 @@ maintenance_task_panel = pn.Column(
 
 # Set up the button callback
 process_tasks_button.on_click(process_tasks_callback)
-process_tasks_callback() # Initial call to populate the app
+# Automatically process tasks when graph is loaded
+def auto_process_tasks_if_graph_loaded():
+    if current_graph[0] is not None:
+        process_tasks_callback()
+
+auto_process_tasks_if_graph_loaded()  # Initial call to populate the app if graph is already loaded
 
 app.append(pn.Column(
     "### Process Maintenance Tasks",
@@ -1381,6 +1618,30 @@ if current_graph[0] is not None:
     ])
     
     app.append(testing_section)
+
+# Register all widgets with the controller
+system_controller.register_widgets({
+    'file_input': file_input,
+    'save_button': save_button,
+    'save_input': filename_input,
+    'save_status': save_status,
+    'plot_pane': plot_pane,
+    'plot_risk_pane': plot_risk_pane,
+    'three_d_pane': three_d_pane,
+    'name_toggle': name_toggle,
+    'node_dropdown': node_dropdown,
+    'edge_dropdown': edge_dropdown,
+    'node_info_pane': node_info_pane,
+    'edge_info_pane': edge_info_pane,
+    'node_attr_df': node_attr_df,
+    'edge_attr_df': edge_attr_df
+})
+
+# Setup all event handlers
+system_controller.setup_callbacks()
+
+# Autoload example graph if present
+autoload_example_graph()
 
 print("Starting MEP System Graph Viewer...")
 app.servable()
