@@ -69,6 +69,8 @@ def get_base_failure_rate(equipment_type: str) -> float:
 
 def calculate_aging_factor(age_years: float) -> float:
     """Calculate aging impact on failure rate"""
+    if age_years is None:
+        age_years = 0.0
     aging_multiplier = 1.0 + (age_years * RULConfig.AGING_ACCELERATION_FACTOR)
     return min(aging_multiplier, RULConfig.MAX_AGING_MULTIPLIER) 
 
@@ -86,16 +88,30 @@ def calculate_remaining_useful_life(graph, current_date):
 
         # Extract attributes, with defaults if missing
         installation_date = attrs.get('installation_date')
+        
+        # Handle different field name formats
+        if installation_date is None:
+            # Try alternative field names
+            year_of_installation = attrs.get('Year_of_installation')
+            if year_of_installation is not None:
+                # Convert year to date format (assume January 1st)
+                installation_date = f"{int(year_of_installation)}-01-01"
+        
         # installation_date is in YYYY-MM-DD format 
         if installation_date is None:
+            # Debug: Check what fields are actually available
+            if RULConfig.ENABLE_DEBUG_OUTPUT:
+                print(f"Debug: Node {node} attributes: {list(attrs.keys())}")
             print(f"Warning: Node {node} has no installation date. Skipping RUL calculation.")
             continue
         installation_date = datetime.datetime.strptime(installation_date, '%Y-%m-%d')
 
         expected_lifespan_years = attrs.get('expected_lifespan') or get_equipment_lifespan(attrs.get('type', 'unknown'))
+        if expected_lifespan_years is None:
+            expected_lifespan_years = get_equipment_lifespan('unknown')  # Use default
         if attrs.get('expected_lifespan_days') is None:
             attrs['expected_lifespan_days'] = expected_lifespan_years * 365.25  # Convert years to days
-        expected_end_date = installation_date + relativedelta(years=expected_lifespan_years)
+        expected_end_date = installation_date + relativedelta(years=int(expected_lifespan_years))
 
         expected_lifespan_days = (expected_end_date - installation_date).days
 
@@ -103,7 +119,7 @@ def calculate_remaining_useful_life(graph, current_date):
         operating_days = (current_date - installation_date).days
 
         # Calculate overdue_factor using tasks_deferred_count
-        tasks_deferred_count = attrs.get('tasks_deferred_count')
+        tasks_deferred_count = attrs.get('tasks_deferred_count', 0) or 0
         overdue_factor = tasks_deferred_count * RULConfig.TASK_DEFERMENT_FACTOR
 
         # RUL baseline (in days)
@@ -118,6 +134,8 @@ def calculate_remaining_useful_life(graph, current_date):
 
         # Add condition factor  
         current_condition = attrs.get('current_condition', RULConfig.DEFAULT_INITIAL_CONDITION)
+        if current_condition is None:
+            current_condition = RULConfig.DEFAULT_INITIAL_CONDITION
         condition_factor = 0.5 + (current_condition * 0.5)  # Range: 0.5 to 1.0
 
         # Apply all factors

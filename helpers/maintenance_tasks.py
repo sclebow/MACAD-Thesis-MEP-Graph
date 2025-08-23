@@ -125,6 +125,18 @@ def generate_maintenance_tasks_from_graph(graph, tasks) -> List[Dict[str, Any]]:
             task_instance_id = f"{task_id}-{node_id}"
             # Get installation_date from node (should be str or int year)
             installation_date = attrs.get('installation_date')
+            
+            # Handle different field name formats
+            if installation_date is None:
+                year_of_installation = attrs.get('Year_of_installation')
+                if year_of_installation is not None:
+                    # Convert year to date format (assume January 1st)
+                    installation_date = f"{int(year_of_installation)}-01-01"
+            
+            if installation_date is None:
+                print(f"Warning: Node {node_id} has no installation date field. Skipping maintenance task generation.")
+                continue
+                
             install_dt = datetime.datetime.strptime(installation_date, "%Y-%m-%d").date()
 
             # Determine frequency (months)
