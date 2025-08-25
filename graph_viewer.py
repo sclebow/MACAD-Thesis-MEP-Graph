@@ -896,6 +896,24 @@ def autoload_example_graph():
     if os.path.exists(example_path):
         try:
             with open(example_path, 'rb') as f:
+                G = nx.read_graphml(f)
+                # Check if the graph is a directed graph
+                if not isinstance(G, nx.DiGraph):
+                    raise ValueError("The example graph must be a directed graph.")
+                fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
+                plot_pane.object = fig
+                fig_risk = visualize_graph_two_d_risk(G, use_full_names=name_toggle.value)
+                plot_risk_pane.object = fig_risk
+                three_d_fig = visualize_graph_three_d(G, use_full_names=name_toggle.value)
+                three_d_pane.object = three_d_fig
+                current_graph[0] = G
+
+                # G = add_risk_scores(G)
+
+                update_dropdowns(G)
+                # Trigger the maintenance process now that the graph is loaded
+                process_tasks_callback()
+
                 file_bytes = f.read()
                 result = graph_controller.load_graph_from_file(file_bytes)
                 if result['success']:
@@ -1241,7 +1259,6 @@ app.append(pn.Column("### Save Graph", save_row, save_status, sizing_mode='stret
 prioritized_schedule = None
 
 # Process the maintenance tasks
-# Add inputs for maintenance task parameters
 def process_tasks_callback(event=None):
     # Check if graph is loaded
     if current_graph[0] is None:
@@ -1252,9 +1269,13 @@ def process_tasks_callback(event=None):
     if not tasks_file_path:
         tasks_file_path = "./tables/example_maintenance_list.csv"
     
-    try:
-        prioritized_schedule = process_maintenance_tasks(
+    replacement_tasks_path = replacement_tasks_file_input.value
+    if not replacement_tasks_path:
+        replacement_tasks_path = "./tables/example_replacement_types.csv"
+
+    prioritized_schedule = process_maintenance_tasks(
         tasks_file_path=tasks_file_path,
+        replacement_tasks_path=replacement_tasks_path,
         graph=current_graph[0],
         monthly_budget_time=float(monthly_budget_time_input.value),
         monthly_budget_money=float(monthly_budget_money_input.value),
@@ -1400,7 +1421,7 @@ def process_tasks_callback(event=None):
                 tasks_scheduled_for_month = prioritized_schedule[month].get('tasks_scheduled_for_month')
                 executed_tasks = prioritized_schedule[month].get('executed_tasks')
                 deferred_tasks = prioritized_schedule[month].get('deferred_tasks')
-                task_list_pane.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
+                task_list_plot.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
 
         def update_number_input(event):
             # Keep slider in sync with number input
@@ -1421,10 +1442,11 @@ def process_tasks_callback(event=None):
             tasks_scheduled_for_month = prioritized_schedule[month].get('tasks_scheduled_for_month')
             executed_tasks = prioritized_schedule[month].get('executed_tasks')
             deferred_tasks = prioritized_schedule[month].get('deferred_tasks')
-            task_list_pane.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
+            task_list_plot.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
 
             # Update the line chart pane
             bar_chart_pane.object = _generate_bar_chart_figure(prioritized_schedule)
+# Add inputs for maintenance task parameters
 
 # Create a slider and number input for graph selection
 graph_slider = pn.widgets.IntSlider(
@@ -1441,7 +1463,7 @@ graph_number_input = pn.widgets.IntInput(
     start=1,
     end=36
 )
-task_list_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
+task_list_plot = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
 
 # Show both slider and number input together
 app.append(pn.Column(
@@ -1449,7 +1471,7 @@ app.append(pn.Column(
     pn.Row(graph_slider, graph_number_input, animation_controls),
     current_month_pane,
     bar_chart_pane,
-    pn.Row(graph_pane, task_list_pane),
+    pn.Row(graph_pane, task_list_plot),
     sizing_mode='stretch_width'
 ))
 
@@ -1458,12 +1480,13 @@ monthly_budget_money_input = pn.widgets.TextInput(name="Monthly Budget (Money)",
 show_end_loads_toggle = pn.widgets.Checkbox(name="Show End Loads", value=False)
 num_months_input = pn.widgets.TextInput(name="Months to Schedule", value="1000")
 tasks_file_input = pn.widgets.FileInput(name="Tasks File", accept='.csv')
+replacement_tasks_file_input = pn.widgets.FileInput(name="Replacement Tasks File", accept='.csv')
 process_tasks_button = pn.widgets.Button(name="Process Tasks", button_type="primary")
 
 maintenance_task_panel = pn.Column(
     pn.Row(monthly_budget_time_input, monthly_budget_money_input, show_end_loads_toggle),
     pn.Row(num_months_input),
-    tasks_file_input,
+    pn.Row(tasks_file_input, replacement_tasks_file_input),
     process_tasks_button
 )
 

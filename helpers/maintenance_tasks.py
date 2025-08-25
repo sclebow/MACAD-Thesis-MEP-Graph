@@ -73,9 +73,9 @@ except ImportError:
     from animate_maintenance_tasks import animate_prioritized_schedule
 
 try:
-    from rul_helper import apply_rul_to_graph
+    from rul_helper import apply_rul_to_graph, apply_condition_improvement
 except ImportError:
-    from helpers.rul_helper import apply_rul_to_graph
+    from helpers.rul_helper import apply_rul_to_graph, apply_condition_improvement
 
 # Placeholder: Load maintenance tasks from a CSV file
 def load_maintenance_tasks(csv_path: str) -> List[Dict[str, Any]]:
@@ -92,6 +92,24 @@ def load_maintenance_tasks(csv_path: str) -> List[Dict[str, Any]]:
                     except (ValueError, TypeError):
                         row[key] = None
             tasks.append(row)
+    return tasks
+
+def load_replacement_tasks(csv_path: str) -> List[Dict[str, Any]]:
+    """Load condition-based replacement/repair task templates from a CSV file."""
+    tasks = []
+    with open(csv_path, newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            # Convert numeric fields
+            for key in ['time_cost', 'money_cost', 'condition_level', 'rul_percentage_effect']:
+                if key in row:
+                    try:
+                        row[key] = float(row[key])
+                    except (ValueError, TypeError):
+                        row[key] = None
+            tasks.append(row)
+    # Sort by condition_level descending to check for most severe tasks first
+    tasks.sort(key=lambda x: x['condition_level'], reverse=True)
     return tasks
 
 # Placeholder: Generate maintenance tasks from a graph
@@ -208,6 +226,7 @@ def update_task_status(tasks: List[Dict[str, Any]], task_id: str, new_status: st
 
 # Additional helper functions can be added as needed
 def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.Graph,
+                                         replacement_tasks: List[Dict[str, Any]],
                                          num_months_to_schedule: int, monthly_budget_time: float, 
                                          monthly_budget_money: float, does_budget_rollover: bool=False):
     """
@@ -217,6 +236,7 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
     # Initial tasks_deferred_count in the graph
     for node in graph.nodes:
         graph.nodes[node]['tasks_deferred_count'] = 0
+        graph.nodes[node]['replacement_required'] = False # Ensure this is initialized
 
     tasks_df = pd.DataFrame(tasks)
 
@@ -293,6 +313,44 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
         # Get tasks scheduled for this month
         tasks_for_month = tasks_df[tasks_df['scheduled_month'] == month]
 
+        # Update the graph's remaining useful life (RUL) and condition before processing the month
+        graph = apply_rul_to_graph(graph, current_date=month.start_time)
+
+        # Check for condition-triggered tasks and add them to this month's schedule
+        newly_triggered_tasks = []
+        for node_id, attrs in graph.nodes(data=True):
+            node_condition = attrs.get('current_condition', 1.0)
+            node_type = attrs.get('type')
+            # Find the most severe applicable replacement task
+            for r_task in replacement_tasks:
+                if r_task['equipment_type'] == node_type and node_condition <= r_task['condition_level']:
+                    # Check if a similar task isn't already scheduled this month
+                    is_already_scheduled = any(
+                        (tasks_for_month['equipment_id'] == node_id) & 
+                        (tasks_for_month['task_id'] == r_task['task_id'])
+                    )
+                    if not is_already_scheduled:
+                        print(f"Condition for {node_id} ({node_condition:.2f}) triggered task: {r_task['task_name']}")
+                        new_task = {
+                            'task_instance_id': f"{r_task['task_id']}-{node_id}",
+                            'equipment_id': node_id, 'equipment_type': node_type,
+                            'task_type': r_task['task_name'], 'priority': 0, # Highest priority
+                            'time_cost': r_task['time_cost'], 'money_cost': r_task['money_cost'],
+                            'notes': r_task.get('notes'), 'description': r_task.get('description'),
+                            'task_id': r_task['task_id'], 'scheduled_month': month,
+                            'risk_score': attrs.get('risk_score', 100), # High risk score
+                            'is_replacement': r_task['rul_percentage_effect'] >= 1.0,
+                            'rul_percentage_effect': r_task['rul_percentage_effect']
+                        }
+                        newly_triggered_tasks.append(new_task)
+                        break # Stop after finding the first (most severe) matching task
+        
+        if newly_triggered_tasks:
+            new_tasks_df = pd.DataFrame(newly_triggered_tasks)
+            tasks_for_month = pd.concat([tasks_for_month, new_tasks_df], ignore_index=True)
+            tasks_df = pd.concat([tasks_df, new_tasks_df], ignore_index=True)
+
+
         # Check if any nodes require replacement
         for node, attrs in graph.nodes(data=True):
             if attrs.get('replacement_required'):
@@ -328,6 +386,10 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
             task_money_cost = task['money_cost']
 
             if time_budget_for_month >= task_time_cost and money_budget_for_month >= task_money_cost:
+                # Apply condition improvement if the task has that effect
+                if 'rul_percentage_effect' in task and pd.notna(task['rul_percentage_effect']):
+                    apply_condition_improvement(graph, task['equipment_id'], task['rul_percentage_effect'], task['task_type'])
+
                 if task['is_replacement']:
                     print(f"  Executing replacement task {task['task_instance_id']} for equipment {task['equipment_id']}")
                     # Update the installation date for replacement tasks
@@ -347,8 +409,9 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
                 # Execute task
                 time_budget_for_month -= task_time_cost
                 money_budget_for_month -= task_money_cost
-                # Update the scheduled_month based on the recommended_frequency_months
-                tasks_df.at[index, 'scheduled_month'] = month + task['recommended_frequency_months']
+                # Update the scheduled_month based on the recommended_frequency_months for recurring tasks
+                if 'recommended_frequency_months' in task and pd.notna(task['recommended_frequency_months']):
+                    tasks_df.at[index, 'scheduled_month'] = month + int(task['recommended_frequency_months'])
                 # print(f"  Executing task {task['task_instance_id']} (Time: {task_time_cost}, Cost: {task_money_cost}), Remaining Budget (Time: {time_budget_for_month}, Money: {money_budget_for_month}), Next Scheduled Month: {tasks_df.at[index, 'scheduled_month']}, Recommended Frequency: {task['recommended_frequency_months']}")
                 month_record['executed_tasks'].append(task)
             else:
@@ -363,8 +426,7 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
                 # print(f"  Updated tasks_deferred_count for node {task['equipment_id']} to {graph.nodes[task['equipment_id']]['tasks_deferred_count']}")
 
         # Update the graph's remaining useful life (RUL)
-        # TODO Debug RUL calculation
-        graph = apply_rul_to_graph(graph, current_date=month.start_time)
+        # This is now done at the start of the loop, so we just save the state
         month_record['graph'] = graph.copy()
         monthly_records_dict[month] = month_record
 
@@ -374,7 +436,7 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
     print("Finished processing all months.")
     return monthly_records_dict
 
-def process_maintenance_tasks(tasks_file_path: str, graph, monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int = 36, animate=False) -> Dict[str, List[Dict[str, Any]]]:
+def process_maintenance_tasks(tasks_file_path: str, replacement_tasks_path: str, graph, monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int = 36, animate=False) -> Dict[str, List[Dict[str, Any]]]:
     """
     Process the maintenance tasks and prioritize them based on the graph and budgets.
     Returns a prioritized schedule of tasks grouped by month.
@@ -384,10 +446,18 @@ def process_maintenance_tasks(tasks_file_path: str, graph, monthly_budget_time: 
 
     # Create a calendar schedule from the tasks
     tasks = load_maintenance_tasks(tasks_file_path)
+    replacement_tasks = load_replacement_tasks(replacement_tasks_path)
     tasks = generate_maintenance_tasks_from_graph(graph, tasks)
         
     # Prioritize the tasks in the calendar schedule
-    prioritized_schedule = create_prioritized_calendar_schedule(tasks, graph=graph, num_months_to_schedule=months_to_schedule, monthly_budget_time=monthly_budget_time, monthly_budget_money=monthly_budget_money)
+    prioritized_schedule = create_prioritized_calendar_schedule(
+        tasks, 
+        graph=graph, 
+        replacement_tasks=replacement_tasks,
+        num_months_to_schedule=months_to_schedule, 
+        monthly_budget_time=monthly_budget_time, 
+        monthly_budget_money=monthly_budget_money
+    )
 
     return prioritized_schedule
 
@@ -402,6 +472,7 @@ def main():
     print("--- Maintenance Task List Helper Test ---")
     # Example file paths (update as needed)
     task_csv = "./tables/example_maintenance_list.csv"
+    replacement_csv = "./tables/example_replacement_types.csv"
     graph_file = "./example_graph.mepg"
     try:
         print(f"Loading task templates from: {task_csv}")
@@ -409,6 +480,13 @@ def main():
         print(f"Loaded {len(templates)} templates.")
     except Exception as e:
         print(f"Error loading task templates: {e}")
+        sys.exit(1)
+    try:
+        print(f"Loading replacement task templates from: {replacement_csv}")
+        replacement_templates = load_replacement_tasks(replacement_csv)
+        print(f"Loaded {len(replacement_templates)} replacement templates.")
+    except Exception as e:
+        print(f"Error loading replacement task templates: {e}")
         sys.exit(1)
     try:
         print(f"Loading graph from: {graph_file}")
@@ -426,7 +504,14 @@ def main():
         sys.exit(1)
 
     # Create a calendar schedule for the tasks
-    calendar_schedule = create_prioritized_calendar_schedule(detailed_tasks, graph=G, num_months_to_schedule=36, monthly_budget_time=1000000, monthly_budget_money=1000000)
+    calendar_schedule = create_prioritized_calendar_schedule(
+        detailed_tasks, 
+        graph=G, 
+        replacement_tasks=replacement_templates,
+        num_months_to_schedule=36, 
+        monthly_budget_time=1000000, 
+        monthly_budget_money=1000000
+    )
 
 if __name__ == "__main__":
     main()
