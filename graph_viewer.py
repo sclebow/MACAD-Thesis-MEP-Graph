@@ -595,6 +595,8 @@ def autoload_example_graph():
                 # G = add_risk_scores(G)
 
                 update_dropdowns(G)
+                # Trigger the maintenance process now that the graph is loaded
+                process_tasks_callback()
         except Exception as e:
             plot_pane.object = None
             plot_risk_pane.object = None
@@ -1019,13 +1021,18 @@ app.append(pn.Column("### Save Graph", save_row, save_status, sizing_mode='stret
 prioritized_schedule = None
 
 # Process the maintenance tasks
-# Add inputs for maintenance task parameters
 def process_tasks_callback(event=None):
     tasks_file_path = tasks_file_input.value
     if not tasks_file_path:
         tasks_file_path = "./tables/example_maintenance_list.csv"
+    
+    replacement_tasks_path = replacement_tasks_file_input.value
+    if not replacement_tasks_path:
+        replacement_tasks_path = "./tables/example_replacement_types.csv"
+
     prioritized_schedule = process_maintenance_tasks(
         tasks_file_path=tasks_file_path,
+        replacement_tasks_path=replacement_tasks_path,
         graph=current_graph[0],
         monthly_budget_time=float(monthly_budget_time_input.value),
         monthly_budget_money=float(monthly_budget_money_input.value),
@@ -1193,6 +1200,7 @@ def process_tasks_callback(event=None):
 
             # Update the line chart pane
             bar_chart_pane.object = _generate_bar_chart_figure(prioritized_schedule)
+# Add inputs for maintenance task parameters
 
 # Create a slider and number input for graph selection
 graph_slider = pn.widgets.IntSlider(
@@ -1226,12 +1234,13 @@ monthly_budget_money_input = pn.widgets.TextInput(name="Monthly Budget (Money)",
 show_end_loads_toggle = pn.widgets.Checkbox(name="Show End Loads", value=False)
 num_months_input = pn.widgets.TextInput(name="Months to Schedule", value="1000")
 tasks_file_input = pn.widgets.FileInput(name="Tasks File", accept='.csv')
+replacement_tasks_file_input = pn.widgets.FileInput(name="Replacement Tasks File", accept='.csv')
 process_tasks_button = pn.widgets.Button(name="Process Tasks", button_type="primary")
 
 maintenance_task_panel = pn.Column(
     pn.Row(monthly_budget_time_input, monthly_budget_money_input, show_end_loads_toggle),
     pn.Row(num_months_input),
-    tasks_file_input,
+    pn.Row(tasks_file_input, replacement_tasks_file_input),
     process_tasks_button
 )
 

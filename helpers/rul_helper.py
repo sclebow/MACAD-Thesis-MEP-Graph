@@ -287,6 +287,38 @@ def apply_maintenance_log_to_graph(df: pd.DataFrame, graph):
     # Recalculate RUL after graph update
     apply_rul_to_graph(graph)
     
+def apply_condition_improvement(graph, node_id: str, improvement_effect: float, maintenance_type: str):
+    """
+    Applies a condition improvement to a node and logs the change.
+    """
+    if node_id not in graph.nodes:
+        return
+
+    old_condition = graph.nodes[node_id].get('current_condition', RULConfig.DEFAULT_INITIAL_CONDITION)
+    
+    # If effect is 1.0, it's a full replacement, setting condition to 1.0
+    if improvement_effect >= 1.0:
+        new_condition = 1.0
+    else:
+        new_condition = min(1.0, old_condition + improvement_effect) # TODO improve logic
+
+    graph.nodes[node_id]['current_condition'] = new_condition
+
+    # Track condition history
+    if 'condition_history' not in graph.nodes[node_id]:
+        graph.nodes[node_id]['condition_history'] = []
+    
+    graph.nodes[node_id]['condition_history'].append({
+        'date': datetime.datetime.now().isoformat(),
+        'old_condition': old_condition,
+        'new_condition': new_condition,
+        'reason': f"Executed task: {maintenance_type}"
+    })
+
+    if RULConfig.ENABLE_DEBUG_OUTPUT:
+        print(f"Condition for {node_id} improved: {old_condition:.2f} -> {new_condition:.2f} due to {maintenance_type}")
+
+
 def update_component_condition(graph, node_id: str, new_condition: float, reason: str = "Manual update") -> bool:
     """
     Update component condition and track the change
