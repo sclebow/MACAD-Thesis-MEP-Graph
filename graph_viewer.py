@@ -1281,9 +1281,9 @@ def process_tasks_callback(event=None):
         monthly_budget_money=float(monthly_budget_money_input.value),
         months_to_schedule=int(num_months_input.value)
     )
-    except Exception as e:
-        print(f"Error processing maintenance tasks: {e}")
-        return
+    # except Exception as e:
+    #     print(f"Error processing maintenance tasks: {e}")
+    #     return
 
     if prioritized_schedule:
         print("Prioritized maintenance schedule generated successfully.")
