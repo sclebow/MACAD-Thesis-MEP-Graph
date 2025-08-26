@@ -668,6 +668,7 @@ prioritized_schedule = None
 
 # Process the maintenance tasks
 def process_tasks_callback(event=None):
+    from helpers.controllers.graph_controller import _generate_2d_graph_figure
     # Check if graph is loaded
     if current_graph[0] is None:
         print("No graph loaded. Please load or generate a graph first.")
