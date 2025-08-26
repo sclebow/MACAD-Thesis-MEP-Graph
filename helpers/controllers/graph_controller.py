@@ -598,3 +598,6 @@ class GraphController:
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
+    def reset_graph(self):
+        """Reset the graph controller"""
+        self.__init__()
