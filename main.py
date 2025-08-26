@@ -7,8 +7,16 @@ import pandas as pd
 
 from helpers.panel.button_callbacks import *
 
+# Enable Panel debug mode
+# pn.config.debug = True
+
+# Create the graph controller
+from helpers.controllers.graph_controller import GraphController
+
+graph_controller = GraphController()
+
 # Create containers for each tab
-system_view_container = pn.GridSpec(nrows=5, ncols=3, mode="error")
+system_view_container = pn.GridSpec(nrows=10, ncols=3, mode="error")
 failure_prediction_container = pn.Column()
 maintenance_container = pn.Column()
 analytics_container = pn.GridSpec(nrows=5, ncols=4, mode="error")
@@ -40,16 +48,35 @@ app = pn.Column(
     main_tabs
 )
 
+# upload_file_dropper = pn.widgets.FileDropper(name="Upload Graph", accepted_filetypes=['.mepg', '.graphml'])
+upload_file_dropper = pn.widgets.FileInput(name="Upload Graph")
+
 # Layout the System View
 header_row = pn.Row(
     pn.pane.Markdown("### System Network View"),
-    pn.widgets.Button(name="Upload Graph", button_type="default", icon="upload", on_click=upload_graph),
-    pn.widgets.Button(name="Export Graph", button_type="default", icon="download", on_click=export_graph),
-    pn.widgets.Button(name="Reset", button_type="warning", icon="refresh", on_click=reset_graph),
-    pn.widgets.Button(name="Run Simulation", button_type="primary", icon="play", on_click=run_simulation),
+    upload_file_dropper,
+    pn.widgets.Button(name="Export Graph", button_type="default", icon="download", on_click=lambda event: export_graph(event, graph_controller, app)),
+    pn.widgets.Button(name="Reset", button_type="warning", icon="refresh", on_click=lambda event: reset_graph(event, graph_controller)),
+    pn.widgets.Button(name="Run Simulation", button_type="primary", icon="play", on_click=lambda event: run_simulation(event, graph_controller)),
 )
 
-graph_container = pn.pane.Plotly(sizing_mode="scale_width")
+graph_container = pn.pane.Plotly(sizing_mode="scale_both")
+
+# Function to handle file upload (defined after graph_container is created)
+def handle_file_upload(event):
+    """Handle file upload from FileDropper"""
+    if upload_file_dropper.value is not None and len(upload_file_dropper.value) > 0:
+        # Get the first uploaded file
+        file_bytes = upload_file_dropper.value
+        filename = upload_file_dropper.filename if upload_file_dropper.filename else "uploaded_file.mepg"
+        
+        # Call the upload function
+        from helpers.panel.button_callbacks import upload_graph_from_file
+        upload_graph_from_file(file_bytes, filename, graph_controller, graph_container)
+
+# Watch for file uploads
+upload_file_dropper.param.watch(handle_file_upload, 'value')
+
 equipment_details_container = pn.Column(
     pn.pane.Markdown("### Equipment Details"),
 )
@@ -406,7 +433,14 @@ settings_container.append(
 )
 
 # DEBUG Set default tabs
-main_tabs.active = 1
+main_tabs.active = 0
 
 print("Starting Application...")
+
+# Make the app servable for panel serve command
 app.servable()
+
+# Allow running directly with Python for debugging
+if __name__ == "__main__":
+    # Run the app in debug mode when executed directly
+    app.show(port=5007, threaded=True)

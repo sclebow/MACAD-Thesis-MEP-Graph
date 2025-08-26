@@ -1,13 +1,71 @@
 # This is a helper function for the button callbacks
+import panel as pn
+import networkx as nx
+import datetime
+import base64
 
-def upload_graph(event):
-    print("Upload Graph button clicked")
+from helpers.controllers.graph_controller import GraphController
 
-def export_graph(event):
-    print("Export Graph button clicked")
+def upload_graph_from_file(file_content, filename, graph_controller, graph_container):
+    """Handle file upload and update graph visualization"""
+    print(f"Uploading file: {filename}")
+    
+    # Load graph using GraphController
+    result = graph_controller.load_graph_from_file(file_content)
+    
+    if result['success']:
+        # Update the graph visualization
+        fig = graph_controller.get_visualization_data()
+        graph_container.object = fig
+        print(f"Graph loaded successfully from {filename}")
 
-def reset_graph(event):
-    print("Reset button clicked")
+def export_graph(event, graph_controller: GraphController, app):
+    now = datetime.datetime.now()
+    now_str = now.strftime("%Y%m%d_%H%M%S")
+    filename = f"exported_graph_{now_str}.mepg"
+
+    graph = graph_controller.current_graph[0]
+
+    # Get the graphml representation
+    graphml_generator = nx.generate_graphml(graph)
+
+    print(graphml_generator)
+
+    lines = []
+
+    for line in graphml_generator:
+        lines.append(line)
+
+    file_string = "\n".join(lines)
+
+    # Encode the file content
+    file_bytes = file_string.encode('utf-8')
+    b64_content = base64.b64encode(file_bytes).decode('utf-8')
+    
+    # Create download HTML
+    download_html = f"""
+    <script>
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8;base64,{b64_content}');
+    element.setAttribute('download', '{filename}');
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    </script>
+    """
+    
+    # Display the download HTML (this triggers the download)
+    download_pane = pn.pane.HTML(download_html)
+    
+    # You can add this to a temporary container or use a notification
+    print(f"Exporting graph as {filename}")
+    app.append(download_pane)
+
+def reset_graph(event, graph_controller):
+    # Reset the panel application
+    pn.state.location.reload = False
+    pn.state.location.reload = True
 
 def run_simulation(event):
     print("Run Simulation button clicked")
