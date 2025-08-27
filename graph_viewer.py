@@ -29,10 +29,22 @@ class SystemViewController:
     def __init__(self, graph_controller):
         self.graph_controller = graph_controller
         self.widgets = {}
+        # Timeline data
+        self.prioritized_schedule = None
+        self.months = []
+        self.number_of_graphs = 0
+        self.max_tasks = 0
         
     def register_widgets(self, widgets_dict):
         """Register UI widgets for event handling"""
         self.widgets.update(widgets_dict)
+    
+    def set_timeline_data(self, prioritized_schedule, months, number_of_graphs, max_tasks):
+        """Set timeline data for controller access"""
+        self.prioritized_schedule = prioritized_schedule
+        self.months = months
+        self.number_of_graphs = number_of_graphs
+        self.max_tasks = max_tasks
     
     def setup_callbacks(self):
         """Set up all event callbacks"""
@@ -55,6 +67,14 @@ class SystemViewController:
             self.widgets['node_attr_df'].param.watch(self.handle_node_attr_change, 'value')
         if 'edge_attr_df' in self.widgets:
             self.widgets['edge_attr_df'].param.watch(self.handle_edge_attr_change, 'value')
+        
+        # Timeline controls
+        if 'graph_slider' in self.widgets:
+            self.widgets['graph_slider'].param.watch(self.handle_slider_change, 'value')
+        if 'play_button' in self.widgets:
+            self.widgets['play_button'].on_click(self.handle_play_animation)
+        if 'pause_button' in self.widgets:
+            self.widgets['pause_button'].on_click(self.handle_pause_animation)
     
     def handle_file_load(self, event):
         """Handle file upload"""
@@ -124,6 +144,67 @@ class SystemViewController:
                             self.graph_controller.current_graph[0].edges[edge_tuple][k] = v
                         self.update_all_visualizations()
     
+    def handle_slider_change(self, event):
+        """Handle graph slider value change"""
+        # The basic visualization update - let the original functions handle timeline-specific updates
+        self.update_all_visualizations()
+    
+    def handle_play_animation(self, event):
+        """Handle play button click to start timeline animation"""
+        if not hasattr(self, 'animation_running'):
+            self.animation_running = {"value": False, "callback": None}
+            
+        if not self.animation_running["value"]:
+            self.animation_running["value"] = True
+            if 'play_button' in self.widgets:
+                self.widgets['play_button'].disabled = True
+            if 'pause_button' in self.widgets:
+                self.widgets['pause_button'].disabled = False
+            self._animate_slider()
+    
+    def handle_pause_animation(self, event):
+        """Handle pause button click to stop timeline animation"""
+        if hasattr(self, 'animation_running'):
+            self.animation_running["value"] = False
+            if 'play_button' in self.widgets:
+                self.widgets['play_button'].disabled = False
+            if 'pause_button' in self.widgets:
+                self.widgets['pause_button'].disabled = True
+            # Remove any pending callback immediately
+            if self.animation_running["callback"] is not None:
+                try:
+                    pn.state.curdoc.remove_timeout_callback(self.animation_running["callback"])
+                except Exception:
+                    pass
+                self.animation_running["callback"] = None
+    
+    def _animate_slider(self):
+        """Internal method to handle slider animation"""
+        if not hasattr(self, 'animation_running') or not self.animation_running["value"]:
+            return
+            
+        if 'graph_slider' not in self.widgets:
+            return
+            
+        slider = self.widgets['graph_slider']
+        total_animation_time = 2000  # 2 seconds (in milliseconds)
+        timeout = total_animation_time / (slider.end - slider.start) if slider.end > slider.start else 100
+        
+        # Increment slider value if not at end
+        if slider.value < slider.end:
+            slider.value += 1
+            # Only schedule next callback if animation is still running
+            if self.animation_running["value"]:
+                self.animation_running["callback"] = pn.state.curdoc.add_timeout_callback(self._animate_slider, timeout)
+        else:
+            # Stop animation when reaching the end
+            self.animation_running["value"] = False
+            if 'play_button' in self.widgets:
+                self.widgets['play_button'].disabled = False
+            if 'pause_button' in self.widgets:
+                self.widgets['pause_button'].disabled = True
+            self.animation_running["callback"] = None
+    
     def refresh_all_displays(self):
         """Refresh all UI displays after data change"""
         self.update_all_visualizations()
@@ -135,8 +216,9 @@ class SystemViewController:
         """Automatically trigger maintenance task processing if a graph is loaded"""
         try:
             if self.graph_controller.current_graph[0] is not None:
-                # Call the global process_tasks_callback function
-                process_tasks_callback()
+                # Call the global process_tasks_callback function if it exists
+                if 'process_tasks_callback' in globals():
+                    process_tasks_callback()
         except Exception as e:
             print(f"Warning: Auto maintenance processing failed: {e}")
     
@@ -224,7 +306,190 @@ class SystemViewController:
                 if 'edge_attr_df' in self.widgets:
                     self.widgets['edge_attr_df'].value = pd.DataFrame(columns=["Attribute", "Value"])
 
-# END OF SystemViewController CLASS
+class SystemView:
+    """Handles the main system overview interface"""
+    
+    def __init__(self, graph_controller, system_controller):
+        self.graph_controller = graph_controller
+        self.system_controller = system_controller
+    
+    def create_layout(self):
+        """Create the system overview layout"""
+        return pn.Column(
+            self.create_file_management(),
+            self.create_visualization_panel(),
+            self.create_inspection_panel(),
+            sizing_mode='stretch_width'
+        )
+
+    def create_file_management(self):
+        """File upload and graph generation controls"""
+        # File upload widget
+        file_input = pn.widgets.FileInput(accept='.mepg')
+        
+        # Name display toggle
+        name_toggle = pn.widgets.Toggle(name="Use Full Names", value=False)
+        
+        return pn.Column(
+            "### Load MEP Graph File",
+            file_input,
+            pn.Row("### Display Options", name_toggle),
+            sizing_mode='stretch_width'
+        )
+
+    def create_visualization_panel(self):
+        """Graph visualization controls and display"""
+        # Create plot panes
+        plot_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
+        plot_risk_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
+        three_d_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
+        
+        # 2D visualization by type
+        two_d_column = pn.Column(
+            "### 2D Graph Visualization (Type)",
+            plot_pane
+        )
+        
+        # 2D visualization by risk
+        two_d_risk_column = pn.Column(
+            "### 2D Graph Visualization (Risk Score)",
+            plot_risk_pane
+        )
+        
+        # 3D visualization
+        three_d_column = pn.Column(
+            "### 3D Graph Visualization",
+            three_d_pane
+        )
+        
+        plots_row = pn.Row(two_d_column, two_d_risk_column, three_d_column, sizing_mode='stretch_width')
+        
+        return plots_row
+
+    def create_inspection_panel(self):
+        """Node/edge inspection panel"""
+        selection_table_height = 400
+        
+        # Node selection
+        node_dropdown = pn.widgets.Select(name="Select Node", options=[])
+        node_info_pane = pn.pane.Markdown("No node selected.")
+        node_attr_df = pn.widgets.DataFrame(
+            pd.DataFrame(columns=["Attribute", "Value"]),
+            editors={
+                "Attribute": None,
+                "Value": {"type": "string", "x": "float", "y": "float", "z": "float"}
+            },
+            height=selection_table_height,
+            show_index=False,
+        )
+        
+        # Edge selection
+        edge_dropdown = pn.widgets.Select(name="Select Edge", options=[])
+        edge_info_pane = pn.pane.Markdown("No edge selected.")
+        edge_attr_df = pn.widgets.DataFrame(
+            pd.DataFrame(columns=["Attribute", "Value"]),
+            editors={"Attribute": None, "Value": "string"},
+            height=selection_table_height,
+            show_index=False,
+        )
+        
+        node_column = pn.Column(
+            "### Node Selection", 
+            node_dropdown, 
+            node_info_pane, 
+            node_attr_df, 
+            sizing_mode='stretch_width'
+        )
+        
+        edge_column = pn.Column(
+            "### Edge Selection", 
+            edge_dropdown, 
+            edge_info_pane, 
+            edge_attr_df, 
+            sizing_mode='stretch_width'
+        )
+        
+        return pn.Row(node_column, edge_column, sizing_mode='stretch_width')
+
+    def _generate_graph_callback(self, event):
+        """Generate graph callback for SystemView"""
+        # This will reference the sliders from _create_generator_accordion
+        # For now, use global function - will be refactored later
+        generate_graph_callback(event)
+
+    def _create_save_section(self):
+        """Create save graph section"""
+        filename_input = pn.widgets.TextInput(name="Save As Filename", value=self._get_default_filename())
+        save_button = pn.widgets.Button(name="Save Graph", button_type="primary")
+        save_status = pn.pane.Markdown(visible=False)
+        
+        save_row = pn.Row(filename_input, save_button)
+        return pn.Column("### Save Graph", save_row, save_status, sizing_mode='stretch_width')
+
+    def _create_maintenance_section(self):
+        """Create maintenance log upload section"""
+        maintenance_log_input = pn.widgets.FileInput(accept='.csv')
+        # Callback will be handled by controller
+        return pn.Column(
+            "### Upload Maintenance Log (.csv)",
+            maintenance_log_input,
+            sizing_mode='stretch_width'
+        )
+
+    def _get_default_filename(self):
+        """Get default filename for saving"""
+        today = datetime.datetime.now().strftime('%y%m%d')
+        return f"{today}_graph.mepg"
+
+class FailurePredictionView:
+    """Handles failure prediction dashboard"""
+    
+    def __init__(self, graph_controller):
+        self.graph_controller = graph_controller
+    
+    def create_layout(self):
+        """Create three-panel failure prediction layout"""
+        left_panel = pn.Column(
+            "### System Health Overview",
+            pn.pane.Markdown("Health metrics coming soon..."),
+            width=300
+        )
+        
+        center_panel = pn.Column(
+            "### Failure Timeline",
+            pn.pane.Markdown("Timeline visualization coming soon..."),
+            sizing_mode='stretch_width'
+        )
+        
+        right_panel = pn.Column(
+            "### Component Details", 
+            pn.pane.Markdown("Component analysis coming soon..."),
+            width=350
+        )
+        
+        return pn.Row(left_panel, center_panel, right_panel)
+
+class MaintenanceView:
+    """Handles maintenance management interface"""
+    
+    def __init__(self, graph_controller):
+        self.graph_controller = graph_controller
+    
+    def create_layout(self):
+        """Create maintenance management layout"""
+        return pn.Column(
+            "## Maintenance Management",
+            pn.pane.Markdown("Maintenance dashboard coming soon..."),
+            pn.pane.Markdown("This will integrate with Scott's scheduling system."),
+            sizing_mode='stretch_width'
+        )
+
+# Initialize controllers early so callback functions can reference them
+graph_controller = GraphController()
+system_controller = SystemViewController(graph_controller)
+
+# For backward compatibility with existing code
+current_graph = graph_controller.current_graph
 
 def update_dropdowns(graph):
     node_names = list(graph.nodes())
@@ -335,27 +600,31 @@ def autoload_example_graph():
     else:
         print(f"Example graph file '{example_path}' not found.")
 
+# Create view instance
+system_view = SystemView(graph_controller, system_controller)
+
+# Create the main app using SystemView
 app = pn.Column(
+    pn.pane.Markdown("""
+    # MEP System Graph Viewer
+    This application allows you to visualize and interact with MEP system graphs.
+    """),
     sizing_mode='stretch_width'
 )
 
-app.append(pn.pane.Markdown("""
-# MEP System Graph Viewer
-This application allows you to visualize and interact with MEP system graphs.
-"""))
+# Comment out widget registration for now
+# system_controller.register_widgets({...})
+
+# system_controller.setup_callbacks()
 
 # File upload widget
 file_input = pn.widgets.FileInput(accept='.mepg')
-file_input.param.watch(file_input_callback, 'value')
+# Note: callback is handled by system_controller.setup_callbacks()
 
 # Name display toggle
 name_toggle = pn.widgets.Toggle(name="Use Full Names", value=False)
 
-def name_toggle_callback(event):
-    """Delegate to controller"""
-    system_controller.handle_name_toggle(event)
-
-name_toggle.param.watch(name_toggle_callback, 'value')
+# Note: callback is handled by system_controller.setup_callbacks()
 
 # --- Graph Generator Panel ---
 def generate_graph_callback(event):
@@ -483,12 +752,7 @@ node_attr_df = pn.widgets.DataFrame(
     height=selection_table_height,
     show_index=False,
 )
-# Initialize controllers
-graph_controller = GraphController()
-system_controller = SystemViewController(graph_controller)
-
-# For backward compatibility with existing code
-current_graph = graph_controller.current_graph
+# Controllers already initialized above
 
 def node_attr_df_callback(event):
     """Delegate to controller"""
@@ -519,51 +783,11 @@ def edge_attr_df_callback(event):
 current_month_pane = pn.pane.Markdown(f"**Current Month:**")
 graph_pane = pn.pane.Plotly(height=600, sizing_mode='stretch_width')
 bar_chart_pane = pn.pane.Plotly(height=300, sizing_mode='stretch_width')
+task_list_pane = pn.pane.Plotly(height=400, sizing_mode='stretch_width')
 
 # --- Play/Pause Animation Controls for graph_slider ---
 play_button = pn.widgets.Button(name="Play", button_type="success", width=80)
 pause_button = pn.widgets.Button(name="Pause", button_type="warning", width=80, disabled=True)
-
-# Animation state
-animation_running = {"value": False, "callback": None}
-
-def animate_slider():
-    total_animation_time = 2000  # 2 seconds (in milliseconds)
-    timeout = total_animation_time / (graph_slider.end - graph_slider.start)
-    if not animation_running["value"]:
-        return
-    # Increment slider value if not at end
-    if graph_slider.value < graph_slider.end:
-        graph_slider.value += 1
-        # Schedule next callback using Panel's curdoc
-        animation_running["callback"] = pn.state.curdoc.add_timeout_callback(animate_slider, timeout)
-    else:
-        # Reset to start
-        graph_slider.value = graph_slider.start
-        animate_slider()
-        # stop_animation()
-
-def start_animation(event=None):
-    if not animation_running["value"]:
-        animation_running["value"] = True
-        play_button.disabled = True
-        pause_button.disabled = False
-        animate_slider()
-
-def stop_animation(event=None):
-    animation_running["value"] = False
-    play_button.disabled = False
-    pause_button.disabled = True
-    # Remove any pending callback
-    if animation_running["callback"] is not None:
-        try:
-            pn.state.curdoc.remove_timeout_callback(animation_running["callback"])
-        except Exception:
-            pass
-        animation_running["callback"] = None
-
-play_button.on_click(start_animation)
-pause_button.on_click(stop_animation)
 
 animation_controls = pn.Row(play_button, pause_button, width=200)
 
@@ -659,7 +883,7 @@ def save_graph_callback(event):
     """Delegate to controller"""
     system_controller.handle_save_graph(event)
 
-save_button.on_click(save_graph_callback)
+# Note: callback is handled by system_controller.setup_callbacks()
 
 save_row = pn.Row(filename_input, save_button)
 app.append(pn.Column("### Save Graph", save_row, save_status, sizing_mode='stretch_width'))
@@ -836,8 +1060,30 @@ def process_tasks_callback(event=None):
             # Keep slider in sync with number input
             if graph_slider.value != event.new:
                 graph_slider.value = event.new
-        graph_slider.param.watch(update_graph, 'value')
-        graph_slider.param.watch(update_task_pane, 'value')
+        
+        # Add timeline-specific callbacks alongside controller callbacks
+        def update_timeline_display(event):
+            """Handle timeline-specific updates for slider changes"""
+            # Keep number input in sync with slider
+            if graph_number_input.value != event.new:
+                graph_number_input.value = event.new
+            graph_index = event.new - 1
+            if 0 <= graph_index < number_of_graphs:
+                month = months[graph_index]
+                current_month_pane.object = f"**Current Month:** {month}"
+                # Get the graph snapshot and convert to Plotly figure
+                graph_snapshot = prioritized_schedule[month].get('graph')
+                fig = visualize_rul_graph(graph_snapshot, use_full_names=name_toggle.value, month=month, show_end_loads=show_end_loads_toggle.value)
+                graph_pane.object = fig
+                
+                # Update task list
+                tasks_scheduled_for_month = prioritized_schedule[month].get('tasks_scheduled_for_month')
+                executed_tasks = prioritized_schedule[month].get('executed_tasks')
+                deferred_tasks = prioritized_schedule[month].get('deferred_tasks')
+                task_list_pane.object = _generate_task_list_figure(tasks_scheduled_for_month, executed_tasks, deferred_tasks, max_tasks)
+        
+        # Register timeline callbacks (these work alongside the controller callbacks)
+        graph_slider.param.watch(update_timeline_display, 'value')
         graph_number_input.param.watch(update_number_input, 'value')
         # Display the first graph by default
         if number_of_graphs > 0:
@@ -1066,7 +1312,14 @@ system_controller.register_widgets({
     'node_info_pane': node_info_pane,
     'edge_info_pane': edge_info_pane,
     'node_attr_df': node_attr_df,
-    'edge_attr_df': edge_attr_df
+    'edge_attr_df': edge_attr_df,
+    'graph_slider': graph_slider,
+    'play_button': play_button,
+    'pause_button': pause_button,
+    'graph_number_input': graph_number_input,
+    'current_month_pane': current_month_pane,
+    'graph_pane': graph_pane,
+    'task_list_pane': task_list_pane
 })
 
 # Setup all event handlers
