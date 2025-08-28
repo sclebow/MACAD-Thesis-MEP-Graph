@@ -18,6 +18,9 @@ def upload_graph_from_file(file_content, filename, graph_controller, graph_conta
         fig = graph_controller.get_visualization_data()
         graph_container.object = fig
         print(f"Graph loaded successfully from {filename}")
+    else:
+        print(f"Error loading graph: {result.get('error', 'Unknown error')}")
+        graph_container.object = None
 
 def export_graph(event, graph_controller: GraphController, app):
     now = datetime.datetime.now()
@@ -67,7 +70,7 @@ def reset_graph(event, graph_controller):
     pn.state.location.reload = False
     pn.state.location.reload = True
 
-def run_simulation(event):
+def run_simulation(event, graph_controller):
     print("Run Simulation button clicked")
 
 def failure_timeline_reset_view(event):
@@ -102,3 +105,64 @@ def export_data(event):
 
 def clear_all_data(event):
     print("Clear All Data button clicked")
+
+# Function to handle node clicks
+def update_node_details(graph_controller, graph_container, equipment_details_container):
+    """Update node details based on selection"""
+    current_graph = graph_controller.current_graph[0] if graph_controller.current_graph[0] else None
+
+    click_data = graph_container.click_data
+    # print(f"Click data: {click_data}")
+    
+    if 'points' in click_data and len(click_data['points']) > 0:
+        point = click_data['points'][0]
+        display_name = point.get('text', '')
+        
+        # Find the node ID that matches this display name
+        node_id = None
+        use_full_names = graph_controller.view_settings.get('use_full_names', False)
+        
+        for n_id, attrs in current_graph.nodes(data=True):
+            if use_full_names:
+                node_display = attrs.get('full_name', n_id)
+            else:
+                node_display = str(n_id)
+            
+            if str(node_display) == str(display_name):
+                node_id = n_id
+                break
+        
+        # if node_id and node_id in current_graph.nodes:
+        node_attrs = current_graph.nodes[node_id]
+        
+        markdown_lines = []
+        markdown_lines.append(f"### Equipment Details: {display_name}")
+        markdown_lines.append("---")
+
+        # Display attributes
+        for key, value in node_attrs.items():
+            if key not in ['x', 'y', 'z']:
+                formatted_key = key.replace('_', ' ').title()
+                markdown_lines.append(f"**{formatted_key}:** {value}")
+
+        # Add coordinates
+        coords = []
+        for coord in ['x', 'y', 'z']:
+            if coord in node_attrs:
+                coords.append(f"{coord.upper()}: {node_attrs[coord]}")
+
+        markdown_lines.extend([
+            "---",
+            "**Location:**",
+            ", ".join(coords)
+        ])
+        markdown_strings = "\n\n".join(markdown_lines)
+        print(markdown_strings)
+        markdown_pane = pn.pane.Markdown(markdown_strings)
+        equipment_details_container.clear()
+        equipment_details_container.extend([markdown_pane])
+        print(f"Updated details for: {node_id}")
+
+def update_graph_container_visualization(event, graph_controller: GraphController, visualization_type_dict, graph_container):
+    graph_controller.update_visualization_type(visualization_type_dict[event.new])
+    graph_container.object = graph_controller.get_visualization_data()
