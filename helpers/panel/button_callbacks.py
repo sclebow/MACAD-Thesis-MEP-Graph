@@ -67,7 +67,7 @@ def reset_graph(event, graph_controller):
     pn.state.location.reload = False
     pn.state.location.reload = True
 
-def run_simulation(event):
+def run_simulation(event, graph_controller):
     print("Run Simulation button clicked")
 
 def failure_timeline_reset_view(event):
