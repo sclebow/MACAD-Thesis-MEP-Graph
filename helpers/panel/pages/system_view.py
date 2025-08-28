@@ -1,5 +1,5 @@
 import panel as pn
-from helpers.panel.button_callbacks import export_graph, reset_graph, run_simulation
+from helpers.panel.button_callbacks import export_graph, reset_graph, run_simulation, update_node_details
 
 def layout_system_view(system_view_container, graph_controller, app):
     # upload_file_dropper = pn.widgets.FileDropper(name="Upload Graph", accepted_filetypes=['.mepg', '.graphml'])
@@ -15,24 +15,25 @@ def layout_system_view(system_view_container, graph_controller, app):
 
     graph_container = pn.pane.Plotly(sizing_mode="scale_both")
 
-    # Function to handle file upload (defined after graph_container is created)
+    equipment_details_container = pn.Column(
+        pn.pane.Markdown("### Equipment Details"),
+        pn.pane.Markdown("Click on a node to view its details")
+    )
+
+    # Function to handle file upload
     def handle_file_upload(event):
         """Handle file upload from FileDropper"""
         if upload_file_dropper.value is not None and len(upload_file_dropper.value) > 0:
-            # Get the first uploaded file
             file_bytes = upload_file_dropper.value
             filename = upload_file_dropper.filename if upload_file_dropper.filename else "uploaded_file.mepg"
             
-            # Call the upload function
             from helpers.panel.button_callbacks import upload_graph_from_file
             upload_graph_from_file(file_bytes, filename, graph_controller, graph_container)
 
-    # Watch for file uploads
     upload_file_dropper.param.watch(handle_file_upload, 'value')
 
-    equipment_details_container = pn.Column(
-        pn.pane.Markdown("### Equipment Details"),
-    )
+    # Watch for click events
+    graph_container.param.watch(lambda event: update_node_details(graph_controller, graph_container, equipment_details_container), 'click_data')
 
     system_view_container[0, 0:2 ] = header_row
     system_view_container[1:, 0:2 ] = graph_container
