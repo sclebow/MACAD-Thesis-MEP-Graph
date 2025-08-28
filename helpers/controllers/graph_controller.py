@@ -74,7 +74,7 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
             
     return _hierarchy_pos(G, root, width, vert_gap, vert_loc, xcenter)
 
-def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=None, color_palette=None, colorbar_title=None, showlegend=False, colorbar_range=None):
+def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=None, color_palette=None, colorbar_title=None, showlegend=False, colorbar_range=None, hide_trace_from_legend=False):
     # Shared logic for 2D graph visualization
     try:
         # Select a valid root node (first node in the graph)
@@ -228,10 +228,20 @@ def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=Non
                         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
                     ))
+
+    if hide_trace_from_legend:
+        # Remove just traces from legend
+        for trace in fig.data:
+            if hasattr(trace, 'mode') and 'lines' in str(trace.mode):
+                trace.showlegend = False
+            if hasattr(trace, 'name') and not trace.name:
+                trace.showlegend = False
+        
+
     return fig
 
 def visualize_graph_two_d(graph, use_full_names=False):
-    return _generate_2d_graph_figure(graph, use_full_names=use_full_names)
+    return _generate_2d_graph_figure(graph, use_full_names=use_full_names, showlegend=True, hide_trace_from_legend=True)
 
 def visualize_graph_two_d_risk(graph, use_full_names=False):
     # Color nodes by risk_score attribute
@@ -534,7 +544,11 @@ class GraphController:
             return {'success': True, 'graph': G}
         except Exception as e:
             return {'success': False, 'error': str(e)}
-    
+
+    def update_visualization_type(self, new_type):
+        """Update the visualization type"""
+        self.view_settings['visualization_type'] = new_type
+
     def get_visualization_data(self, viz_type=None):
         """Get visualization figure for current graph"""
         if not self.current_graph[0]:

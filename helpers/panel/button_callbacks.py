@@ -162,3 +162,7 @@ def update_node_details(graph_controller, graph_container, equipment_details_con
         equipment_details_container.clear()
         equipment_details_container.extend([markdown_pane])
         print(f"Updated details for: {node_id}")
+
+def update_graph_container_visualization(event, graph_controller: GraphController, visualization_type_dict, graph_container):
+    graph_controller.update_visualization_type(visualization_type_dict[event.new])
+    graph_container.object = graph_controller.get_visualization_data()
