@@ -81,4 +81,4 @@ app.servable()
 # Allow running directly with Python for debugging
 if __name__ == "__main__":
     # Run the app in debug mode when executed directly
-    app.show(port=5007, threaded=True)
+    app.show(port=5008)
