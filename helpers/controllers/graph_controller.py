@@ -74,7 +74,7 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
             
     return _hierarchy_pos(G, root, width, vert_gap, vert_loc, xcenter)
 
-def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=None, color_palette=None, colorbar_title=None, showlegend=False, colorbar_range=None, hide_trace_from_legend=False):
+def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=None, color_palette=None, colorbar_title=None, showlegend=False, colorbar_range=None, hide_trace_from_legend=False, legend_settings=None):
     # Shared logic for 2D graph visualization
     try:
         # Select a valid root node (first node in the graph)
@@ -220,12 +220,56 @@ def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=Non
             )
             node_traces.append(trace)
 
+    # Create legend configuration based on settings
+    legend_config = {}
+    if showlegend and legend_settings:
+        legend_config = dict(
+            x=legend_settings.get('x', 0.98),
+            y=legend_settings.get('y', 0.98), 
+            xanchor=legend_settings.get('xanchor', 'right'),
+            yanchor=legend_settings.get('yanchor', 'top'),
+            bgcolor=legend_settings.get('bgcolor', 'rgba(255,255,255,0.95)'),
+            bordercolor='rgba(0,0,0,0.5)',
+            borderwidth=1,
+            font=dict(size=legend_settings.get('font_size', 8)),
+            itemwidth=30,
+            itemsizing='constant',
+            tracegroupgap=0,
+            orientation='v',
+            itemclick='toggleothers',
+            itemdoubleclick='toggle',
+            entrywidth=legend_settings.get('entrywidth', 0.5),
+            entrywidthmode='fraction'
+        )
+        
+        annotations = []
+    elif showlegend:
+        # Default legend config
+        legend_config = dict(
+            x=0.98, y=0.98, xanchor='right', yanchor='top',
+            bgcolor='rgba(255,255,255,0.95)', bordercolor='rgba(0,0,0,0.5)',
+            borderwidth=1, font=dict(size=8), itemwidth=30, itemsizing='constant',
+            tracegroupgap=0, orientation='v', itemclick='toggleothers',
+            itemdoubleclick='toggle', entrywidth=0.5, entrywidthmode='fraction'
+        )
+        
+        annotations = []
+    else:
+        annotations = []
+
     fig = go.Figure(data=[edge_trace, edge_marker_trace] + node_traces,
                     layout=go.Layout(
-                        showlegend=showlegend,
+                        showlegend=showlegend and legend_settings is not None,
                         hovermode='closest',
                         margin=dict(b=20,l=5,r=5,t=40),
-                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        legend=legend_config,
+                        annotations=annotations,
+                        xaxis=dict(
+                            showgrid=False, 
+                            zeroline=False, 
+                            showticklabels=False,
+                            domain=[0, 1]  # Graph uses full width
+                        ),
                         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
                     ))
 
@@ -240,10 +284,10 @@ def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=Non
 
     return fig
 
-def visualize_graph_two_d(graph, use_full_names=False):
-    return _generate_2d_graph_figure(graph, use_full_names=use_full_names, showlegend=True, hide_trace_from_legend=True)
+def visualize_graph_two_d(graph, use_full_names=False, legend_settings=None):
+    return _generate_2d_graph_figure(graph, use_full_names=use_full_names, showlegend=True, hide_trace_from_legend=True, legend_settings=legend_settings)
 
-def visualize_graph_two_d_risk(graph, use_full_names=False):
+def visualize_graph_two_d_risk(graph, use_full_names=False, legend_settings=None):
     # Color nodes by risk_score attribute
     risk_scores = {n: graph.nodes[n].get('risk_score', 0) for n in graph.nodes}
     return _generate_2d_graph_figure(
@@ -252,10 +296,11 @@ def visualize_graph_two_d_risk(graph, use_full_names=False):
         node_color_values=risk_scores,
         color_palette='Inferno',
         colorbar_title='Risk Score',
-        showlegend=False
+        showlegend=False,
+        legend_settings=legend_settings
     )
 
-def visualize_graph_three_d(graph, use_full_names=False):
+def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
     """
     Visualizes a NetworkX graph in 3D using Plotly.
     Uses the x, y, z coordinates of nodes for 3D positioning.
@@ -439,12 +484,50 @@ def visualize_graph_three_d(graph, use_full_names=False):
     fig_data = [edge_trace, edge_marker_trace] + node_traces
     if prism_trace:
         fig_data.append(prism_trace)
+    # Create legend configuration based on settings  
+    legend_config = {}
+    if legend_settings:
+        legend_config = dict(
+            x=legend_settings.get('x', 0.98),
+            y=legend_settings.get('y', 0.98), 
+            xanchor=legend_settings.get('xanchor', 'right'),
+            yanchor=legend_settings.get('yanchor', 'top'),
+            bgcolor=legend_settings.get('bgcolor', 'rgba(255,255,255,0.95)'),
+            bordercolor='rgba(0,0,0,0.5)',
+            borderwidth=1,
+            font=dict(size=legend_settings.get('font_size', 8)),
+            itemwidth=30,
+            itemsizing='constant',
+            tracegroupgap=0,
+            orientation='v',
+            itemclick='toggleothers',
+            itemdoubleclick='toggle',
+            entrywidth=legend_settings.get('entrywidth', 0.5),
+            entrywidthmode='fraction'
+        )
+        
+        annotations = []
+    else:
+        # Default legend config
+        legend_config = dict(
+            x=0.98, y=0.98, xanchor='right', yanchor='top',
+            bgcolor='rgba(255,255,255,0.95)', bordercolor='rgba(0,0,0,0.5)',
+            borderwidth=1, font=dict(size=8), itemwidth=30, itemsizing='constant',
+            tracegroupgap=0, orientation='v', itemclick='toggleothers',
+            itemdoubleclick='toggle', entrywidth=0.5, entrywidthmode='fraction'
+        )
+        
+        annotations = []
+
     fig = go.Figure(data=fig_data,
                     layout=go.Layout(
-                        showlegend=True,
+                        showlegend=legend_settings is not None,
                         hovermode='closest',
                         margin=dict(b=20,l=5,r=5,t=40),
+                        legend=legend_config,
+                        annotations=annotations,
                         scene=dict(
+                            domain=dict(x=[0, 1], y=[0, 1]),  # 3D scene uses full area
                             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=axis_range),
                             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=axis_range),
                             zaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=axis_range)
@@ -459,6 +542,30 @@ class GraphController:
             'use_full_names': False,
             'visualization_type': '2d_type'
         }
+        self.legend_preset = "compact_tr"  # Default preset
+    
+    def get_legend_settings(self):
+        """Get legend configuration based on current preset"""
+        presets = {
+            "compact_tr": {
+                'x': 0.98, 'y': 0.98, 'xanchor': 'right', 'yanchor': 'top',
+                'font_size': 8, 'entrywidth': 0.4, 'bgcolor': 'rgba(255,255,255,0.9)'
+            },
+            "compact_tl": {
+                'x': 0.02, 'y': 0.98, 'xanchor': 'left', 'yanchor': 'top',
+                'font_size': 8, 'entrywidth': 0.4, 'bgcolor': 'rgba(255,255,255,0.9)'
+            },
+            "compact_br": {
+                'x': 0.98, 'y': 0.02, 'xanchor': 'right', 'yanchor': 'bottom',
+                'font_size': 8, 'entrywidth': 0.4, 'bgcolor': 'rgba(255,255,255,0.9)'
+            },
+            "compact_bl": {
+                'x': 0.02, 'y': 0.02, 'xanchor': 'left', 'yanchor': 'bottom',
+                'font_size': 8, 'entrywidth': 0.4, 'bgcolor': 'rgba(255,255,255,0.9)'
+            },
+            "hidden": None  # No legend
+        }
+        return presets.get(self.legend_preset, presets["compact_tr"])
     
     def load_graph_from_file(self, file_bytes):
         """Load graph from file bytes and apply processing"""
@@ -558,11 +665,11 @@ class GraphController:
         use_full_names = self.view_settings['use_full_names']
         
         if viz_type == '2d_type':
-            return visualize_graph_two_d(self.current_graph[0], use_full_names)
+            return visualize_graph_two_d(self.current_graph[0], use_full_names, self.get_legend_settings())
         elif viz_type == '2d_risk':
-            return visualize_graph_two_d_risk(self.current_graph[0], use_full_names)
+            return visualize_graph_two_d_risk(self.current_graph[0], use_full_names, self.get_legend_settings())
         elif viz_type == '3d':
-            return visualize_graph_three_d(self.current_graph[0], use_full_names)
+            return visualize_graph_three_d(self.current_graph[0], use_full_names, self.get_legend_settings())
         
         return None
     
