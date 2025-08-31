@@ -167,16 +167,29 @@ def update_graph_container_visualization(event, graph_controller: GraphControlle
     graph_controller.update_visualization_type(visualization_type_dict[event.new])
     graph_container.object = graph_controller.get_visualization_data()
 
-def task_list_upload(event, graph_controller: GraphController, task_list_viewer):
+def maintenance_task_list_upload(event, graph_controller: GraphController, maintenance_task_list_viewer):
     print("Task List Uploaded")
     # Read byte content from the uploaded file
     file_content = event.new  # event.new is already bytes
-    graph_controller.upload_task_list(file_content)
-    df = graph_controller.get_task_list_df()
-    task_list_viewer.value = df
+
+    graph_controller.upload_maintenance_task_list(file_content)
+    df = graph_controller.get_maintenance_task_list_df()
+    maintenance_task_list_viewer.value = df
 
 def update_hours_budget(event, graph_controller: GraphController):
     graph_controller.update_hours_budget(event.new)
 
 def update_money_budget(event, graph_controller: GraphController):
     graph_controller.update_money_budget(event.new)
+
+def update_weeks_to_schedule(event, graph_controller: GraphController):
+    graph_controller.update_weeks_to_schedule(event.new)
+
+def replacement_task_list_upload(event, graph_controller: GraphController, replacement_task_list_viewer):
+    print("Replacement Task List Uploaded")
+    # Read byte content from the uploaded file
+    file_content = event.new  # event.new is already bytes
+
+    graph_controller.upload_replacement_task_list(file_content)
+    df = graph_controller.get_replacement_task_list_df()
+    replacement_task_list_viewer.value = df
