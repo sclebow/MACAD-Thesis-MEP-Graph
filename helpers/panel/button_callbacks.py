@@ -74,27 +74,62 @@ def reset_graph(event, graph_controller):
 def run_simulation(event, graph_controller, maintenance_schedule_container=None):
     graph_controller.run_rul_simulation()
 
-    # Try to get the schedule container from pn.state.cache if not provided
-    container = maintenance_schedule_container
-    if container is None:
-        container = pn.state.cache.get('maintenance_schedule_container', None)
-    if container is None:
-        print("Warning: No maintenance_schedule_container found to update.")
-        return
+    # Get the schedule container from pn.state.cache or use provided one
+    container = maintenance_schedule_container or pn.state.cache['maintenance_schedule_container']
 
-    prioritized_schedule = graph_controller.prioritized_schedule
-    print(f"Prioritized Schedule: {prioritized_schedule}")
+    # Get the schedule from cache
+    schedule = graph_controller.prioritized_schedule
+    
+    # Convert the prioritized schedule to a DataFrame for display
+    all_tasks = []
+    for month, record in schedule.items():
+        # Add executed tasks with month info
+        for task in record['executed_tasks']:
+            task_copy = dict(task)
+            task_copy['month'] = str(month)
+            task_copy['status'] = 'executed'
+            all_tasks.append(task_copy)
+        
+        # Add deferred tasks with month info
+        for task in record['deferred_tasks']:
+            task_copy = dict(task)
+            task_copy['month'] = str(month)
+            task_copy['status'] = 'deferred'
+            all_tasks.append(task_copy)
+    
+    tasks_df = pd.DataFrame(all_tasks)
+    # Sort by month and priority for better readability
+    tasks_df = tasks_df.sort_values(['month', 'priority'])
+    
+    # Create summary statistics
+    summary_stats = []
+    for month, record in schedule.items():
+        executed_count = len(record['executed_tasks'])
+        deferred_count = len(record['deferred_tasks'])
+        time_used = record['time_budget'] - sum(t['time_cost'] for t in record['executed_tasks'])
+        money_used = record['money_budget'] - sum(t['money_cost'] for t in record['executed_tasks'])
+        
+        summary_stats.append({
+            'month': str(month),
+            'executed_tasks': executed_count,
+            'deferred_tasks': deferred_count,
+            'time_remaining': time_used,
+            'money_remaining': money_used
+        })
+    
+    summary_df = pd.DataFrame(summary_stats)
+    
+    # Create tabs for different views
+    results_panel = pn.Tabs(
+        ("Task Details", pn.widgets.DataFrame(tasks_df, sizing_mode="stretch_width", height=400)),
+        ("Monthly Summary", pn.widgets.DataFrame(summary_df, sizing_mode="stretch_width", height=400)),
+        sizing_mode="stretch_width"
+    )
+    
+    container.clear()
+    container.append(pn.pane.Markdown("### Simulation Results"))
+    container.append(results_panel)
 
-    # # Create a Panel to display the results
-    # results_panel = pn.Column(
-    #     pn.pane.Markdown("### Simulation Results"),
-    #     # Use the schedule from pn.state.cache if available
-    #     pn.widgets.DataFrame(pd.DataFrame.from_dict(prioritized_schedule), sizing_mode="stretch_both", disabled=True)
-    # )
-
-    # # Clear the previous contents and add the new results panel
-    # container.clear()
-    # container.append(results_panel)
 
 def failure_timeline_reset_view(event):
     print("Failure Timeline Reset View button clicked")
