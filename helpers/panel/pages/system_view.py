@@ -24,15 +24,6 @@ def layout_system_view(system_view_container, graph_controller, app):
         button_type="default"
     )
 
-    # Simple approach: Add a floating legend button using Panel's overlay
-    legend_settings_button = pn.widgets.Button(
-        name="⚙️",
-        button_type="light",
-        width=40,
-        height=40,
-        margin=(5, 5)
-    )
-    
     legend_preset_radio = pn.widgets.RadioButtonGroup(
         name="Choose Legend Style:",
         options=[
