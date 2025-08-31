@@ -1,16 +1,22 @@
 import panel as pn
-from helpers.panel.button_callbacks import export_graph, reset_graph, run_simulation, update_node_details, update_graph_container_visualization
+from helpers.panel.button_callbacks import upload_graph_from_file, export_graph, reset_graph, run_simulation, update_node_details, update_graph_container_visualization
 
 def layout_system_view(system_view_container, graph_controller, app):
+    graph_container = pn.pane.Plotly(sizing_mode="scale_both")
     # upload_file_dropper = pn.widgets.FileDropper(name="Upload Graph", accepted_filetypes=['.mepg', '.graphml'])
     upload_file_dropper = pn.widgets.FileInput(name="Upload Graph")
+    upload_file_dropper.param.watch(lambda event: upload_graph_from_file(event.new, upload_file_dropper.filename, graph_controller, graph_container), 'value')
+
+    # Upload a default file
+    default_file_path = "example_graph.mepg"
+    default_file = open(default_file_path, "rb").read()
+    upload_file_dropper.value = default_file
 
     visualization_type_dict = {
         "2D Equipment": "2d_type",
         "2D Risk": "2d_risk",
         "3D": "3d"
     }
-    graph_container = pn.pane.Plotly(sizing_mode="scale_both")
 
     radio_visualization_selector = pn.widgets.RadioButtonGroup(
         name="Visualization Type",
@@ -86,7 +92,7 @@ def layout_system_view(system_view_container, graph_controller, app):
                 graph_container
             )
 
-    legend_preset_radio.param.watch(update_legend_preset, 'value')
+    legend_preset_radio.param.watch(lambda event: update_legend_preset(event), 'value')
     
     # Button handlers
     def show_legend_modal(event):
@@ -117,18 +123,6 @@ def layout_system_view(system_view_container, graph_controller, app):
         pn.pane.Markdown("### Equipment Details"),
         pn.pane.Markdown("Click on a node to view its details")
     )
-
-    # Function to handle file upload
-    def handle_file_upload(event):
-        """Handle file upload from FileDropper"""
-        if upload_file_dropper.value is not None and len(upload_file_dropper.value) > 0:
-            file_bytes = upload_file_dropper.value
-            filename = upload_file_dropper.filename if upload_file_dropper.filename else "uploaded_file.mepg"
-            
-            from helpers.panel.button_callbacks import upload_graph_from_file
-            upload_graph_from_file(file_bytes, filename, graph_controller, graph_container)
-
-    upload_file_dropper.param.watch(handle_file_upload, 'value')
 
     # Create a simpler approach using Panel's JavaScript callback
     # Add a hidden button that can be triggered from JavaScript
