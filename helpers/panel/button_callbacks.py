@@ -71,7 +71,7 @@ def reset_graph(event, graph_controller):
     pn.state.location.reload = False
     pn.state.location.reload = True
 
-def run_simulation(event, graph_controller, maintenance_schedule_container=None):
+def run_simulation(event, graph_controller: GraphController, maintenance_schedule_container=None):
     graph_controller.run_rul_simulation()
 
     # Get the schedule container from pn.state.cache or use provided one

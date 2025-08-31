@@ -49,10 +49,15 @@ main_tabs = pn.Tabs(
     stylesheets=[stylesheet]
 )
 
+run_simulation_button = pn.widgets.Button(name="Run Simulation", button_type="primary", icon="play", on_click=lambda event: run_simulation(event, graph_controller), align="center")
+
 # Create main application layout
 app = pn.Column(
-    pn.pane.Markdown("## MEP Digital Twin\nBuilding Systems Management"),
-    main_tabs
+    pn.Row(
+        pn.pane.Markdown("## MEP Digital Twin\nBuilding Systems Management"),
+        run_simulation_button,
+    ),
+    main_tabs,
 )
 
 # Layout the System View
@@ -71,12 +76,15 @@ layout_analytics(analytics_container, graph_controller)
 layout_settings(settings_container, graph_controller)
 
 # DEBUG Set default tabs
-main_tabs.active = 2
+main_tabs.active = 0
 
 print("Starting Application...")
 
 # Make the app servable for panel serve command
 app.servable()
+
+# Auto-run simulation on load
+run_simulation(None, graph_controller)
 
 # Allow running directly with Python for debugging
 if __name__ == "__main__":

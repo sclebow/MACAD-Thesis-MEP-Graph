@@ -1,5 +1,5 @@
 import panel as pn
-from helpers.panel.button_callbacks import maintenance_task_list_upload, update_hours_budget, update_money_budget, update_weeks_to_schedule, replacement_task_list_upload
+from helpers.panel.button_callbacks import maintenance_task_list_upload, update_hours_budget, update_money_budget, update_weeks_to_schedule, replacement_task_list_upload, run_simulation
 
 def layout_maintenance(maintenance_container, graph_controller):
     maintenance_logs_container = pn.Column(
@@ -63,7 +63,7 @@ def layout_maintenance(maintenance_container, graph_controller):
 
     maintenance_tabs = pn.Tabs(
         ("Maintenance Logs", maintenance_logs_container),
-        ("Schedule", maintenance_schedule_container),
+        ("Simulation Schedule", maintenance_schedule_container),
         ("Maintenance Task List", maintenance_task_list_container),
         ("Replacement Task List", replacement_task_list_container),
         ("Budget", maintenance_budget_container),
