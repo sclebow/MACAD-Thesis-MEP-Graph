@@ -15,7 +15,7 @@ def layout_system_view(system_view_container, graph_controller, app):
     radio_visualization_selector = pn.widgets.RadioButtonGroup(
         name="Visualization Type",
         options=["2D Equipment", "2D Risk", "3D"],
-        button_type="info"
+        button_type="default"
     )
 
     # Simple approach: Add a floating legend button using Panel's overlay
