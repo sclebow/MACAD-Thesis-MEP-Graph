@@ -15,7 +15,12 @@ def layout_maintenance(maintenance_container, graph_controller):
     
     task_list_input = pn.widgets.FileInput(name="Upload Task List")
     task_list_input.param.watch(lambda event: task_list_upload(event, graph_controller, task_list_viewer), "value")
-    
+
+    # Set a default file
+    default_file_path = "tables/example_maintenance_list.csv"
+    default_file = open(default_file_path, "rb").read()
+    task_list_input.value = default_file
+
     maintenance_task_list_container = pn.Column(
         pn.pane.Markdown("### Maintenance Task List"),
         task_list_input,
