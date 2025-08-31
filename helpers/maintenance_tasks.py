@@ -436,7 +436,7 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
     print("Finished processing all months.")
     return monthly_records_dict
 
-def process_maintenance_tasks(tasks_file_path: str, replacement_tasks_path: str, graph, monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int = 36, animate=False) -> Dict[str, List[Dict[str, Any]]]:
+def process_maintenance_tasks(tasks: dict, replacement_tasks: dict, graph, monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int = 36, animate=False) -> Dict[str, List[Dict[str, Any]]]:
     """
     Process the maintenance tasks and prioritize them based on the graph and budgets.
     Returns a prioritized schedule of tasks grouped by month.
@@ -445,10 +445,10 @@ def process_maintenance_tasks(tasks_file_path: str, replacement_tasks_path: str,
     graph = copy.deepcopy(graph)
 
     # Create a calendar schedule from the tasks
-    tasks = load_maintenance_tasks(tasks_file_path)
-    replacement_tasks = load_replacement_tasks(replacement_tasks_path)
+    # tasks = load_maintenance_tasks(tasks_file_path)
+    # replacement_tasks = load_replacement_tasks(replacement_tasks_path)
     tasks = generate_maintenance_tasks_from_graph(graph, tasks)
-        
+    
     # Prioritize the tasks in the calendar schedule
     prioritized_schedule = create_prioritized_calendar_schedule(
         tasks, 

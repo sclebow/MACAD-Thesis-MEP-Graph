@@ -3,6 +3,7 @@ import panel as pn
 import networkx as nx
 import datetime
 import base64
+import pandas as pd
 
 from helpers.controllers.graph_controller import GraphController
 
@@ -70,131 +71,65 @@ def reset_graph(event, graph_controller):
     pn.state.location.reload = False
     pn.state.location.reload = True
 
-def run_simulation(event, graph_controller):
-    """Run a maintenance task simulation"""
-    print("=== RUN SIMULATION BUTTON CLICKED ===")
+def run_simulation(event, graph_controller: GraphController, maintenance_schedule_container=None):
+    graph_controller.run_rul_simulation()
+
+    # Get the schedule container from pn.state.cache or use provided one
+    container = maintenance_schedule_container or pn.state.cache['maintenance_schedule_container']
+
+    # Get the schedule from cache
+    schedule = graph_controller.prioritized_schedule
     
-    # Check if a graph is loaded
-    if not graph_controller or not graph_controller.current_graph[0]:
-        print("Warning: No graph loaded for simulation")
-        return
+    # Convert the prioritized schedule to a DataFrame for display
+    all_tasks = []
+    for month, record in schedule.items():
+        # Add executed tasks with month info
+        for task in record['executed_tasks']:
+            task_copy = dict(task)
+            task_copy['month'] = str(month)
+            task_copy['status'] = 'executed'
+            all_tasks.append(task_copy)
+        
+        # Add deferred tasks with month info
+        for task in record['deferred_tasks']:
+            task_copy = dict(task)
+            task_copy['month'] = str(month)
+            task_copy['status'] = 'deferred'
+            all_tasks.append(task_copy)
     
-    graph = graph_controller.current_graph[0]
-    print(f"Running maintenance simulation on graph with {graph.number_of_nodes()} nodes")
+    tasks_df = pd.DataFrame(all_tasks)
+    # Sort by month and priority for better readability
+    tasks_df = tasks_df.sort_values(['month', 'priority'])
     
-    try:
-        # Test imports first
-        print("Testing imports...")
-        from helpers.maintenance_tasks import process_maintenance_tasks
-        print("Import successful")
+    # Create summary statistics
+    summary_stats = []
+    for month, record in schedule.items():
+        executed_count = len(record['executed_tasks'])
+        deferred_count = len(record['deferred_tasks'])
+        time_used = record['time_budget'] - sum(t['time_cost'] for t in record['executed_tasks'])
+        money_used = record['money_budget'] - sum(t['money_cost'] for t in record['executed_tasks'])
         
-        # Create equipment type mapping for detailed graph types to simple template types
-        def map_equipment_type(detailed_type):
-            """Map detailed equipment types from graph to simple types in maintenance templates"""
-            detailed_type_lower = detailed_type.lower()
-            if 'transformer' in detailed_type_lower:
-                return 'transformer'
-            elif 'panel' in detailed_type_lower or 'switchboard' in detailed_type_lower:
-                return 'panel'
-            elif 'switchboard' in detailed_type_lower:
-                return 'switchboard'
-            elif 'motor' in detailed_type_lower:
-                return 'motor'
-            elif 'breaker' in detailed_type_lower or 'circuit breaker' in detailed_type_lower:
-                return 'breaker'
-            else:
-                # Default to panel for unrecognized types
-                print(f"Warning: Unknown equipment type '{detailed_type}', defaulting to 'panel'")
-                return 'panel'
-        
-        # Update graph nodes with simplified equipment types
-        print("Mapping equipment types...")
-        for node_id, attrs in graph.nodes(data=True):
-            original_type = attrs.get('type', '')
-            simple_type = map_equipment_type(original_type)
-            graph.nodes[node_id]['type'] = simple_type
-            print(f"Node {node_id}: '{original_type}' -> '{simple_type}'")
-            
-            # Also ensure installation_date is available
-            if 'installation_date' not in attrs and 'Year_of_installation' in attrs:
-                year = int(attrs['Year_of_installation'])
-                graph.nodes[node_id]['installation_date'] = f"{year}-01-01"
-                print(f"Node {node_id}: Added installation_date: {year}-01-01")
-            
-            # Add default expected_lifespan if missing (in years)
-            if 'expected_lifespan' not in attrs:
-                if simple_type == 'transformer':
-                    graph.nodes[node_id]['expected_lifespan'] = 25
-                elif simple_type == 'panel':
-                    graph.nodes[node_id]['expected_lifespan'] = 30
-                else:
-                    graph.nodes[node_id]['expected_lifespan'] = 20
-                print(f"Node {node_id}: Added expected_lifespan: {graph.nodes[node_id]['expected_lifespan']} years")
-            
-            # Add default replacement_cost if missing
-            if 'replacement_cost' not in attrs:
-                if simple_type == 'transformer':
-                    graph.nodes[node_id]['replacement_cost'] = 15000
-                elif simple_type == 'panel':
-                    graph.nodes[node_id]['replacement_cost'] = 5000
-                else:
-                    graph.nodes[node_id]['replacement_cost'] = 3000
-                print(f"Node {node_id}: Added replacement_cost: ${graph.nodes[node_id]['replacement_cost']}")
-        
-        # Define file paths for maintenance templates
-        task_csv = "./tables/example_maintenance_list.csv"
-        replacement_csv = "./tables/example_replacement_types.csv"
-        
-        # Check if files exist
-        import os
-        print(f"Checking if files exist...")
-        if not os.path.exists(task_csv):
-            print(f"Error: Maintenance task file not found: {task_csv}")
-            return
-        print(f"Found: {task_csv}")
-        
-        if not os.path.exists(replacement_csv):
-            print(f"Error: Replacement task file not found: {replacement_csv}")
-            return
-        print(f"Found: {replacement_csv}")
-        
-        # Set simulation parameters
-        monthly_budget_time = 40.0  # 40 hours per month
-        monthly_budget_money = 10000.0  # $10,000 per month  
-        months_to_schedule = 36  # 3 years
-        
-        print(f"Processing maintenance tasks with budget: {monthly_budget_time}h / ${monthly_budget_money} per month")
-        
-        # Generate prioritized maintenance schedule
-        print("Calling process_maintenance_tasks...")
-        prioritized_schedule = process_maintenance_tasks(
-            task_csv, 
-            replacement_csv, 
-            graph, 
-            monthly_budget_time, 
-            monthly_budget_money, 
-            months_to_schedule,
-            animate=False  # Don't animate for now
-        )
-        
-        print(f"Successfully generated maintenance schedule for {len(prioritized_schedule)} months")
-        print("Maintenance simulation completed!")
-        
-        # Store results for maintenance page access
-        import panel as pn
-        if not hasattr(pn.state, 'cache'):
-            pn.state.cache = {}
-        pn.state.cache['maintenance_schedule'] = prioritized_schedule
-        pn.state.cache['simulation_parameters'] = {
-            'monthly_budget_time': monthly_budget_time,
-            'monthly_budget_money': monthly_budget_money,
-            'months_to_schedule': months_to_schedule
-        }
-        
-    except Exception as e:
-        print(f"Error during maintenance simulation: {e}")
-        import traceback
-        traceback.print_exc()
+        summary_stats.append({
+            'month': str(month),
+            'executed_tasks': executed_count,
+            'deferred_tasks': deferred_count,
+            'time_remaining': time_used,
+            'money_remaining': money_used
+        })
+    
+    summary_df = pd.DataFrame(summary_stats)
+    
+    # Create tabs for different views
+    results_panel = pn.Tabs(
+        ("Task Details", pn.widgets.DataFrame(tasks_df, sizing_mode="stretch_width", height=400)),
+        ("Monthly Summary", pn.widgets.DataFrame(summary_df, sizing_mode="stretch_width", height=400)),
+        sizing_mode="stretch_width"
+    )
+    
+    container.clear()
+    container.append(pn.pane.Markdown("### Simulation Results"))
+    container.append(results_panel)
+
 
 def failure_timeline_reset_view(event):
     print("Failure Timeline Reset View button clicked")
@@ -289,3 +224,30 @@ def update_node_details(graph_controller, graph_container, equipment_details_con
 def update_graph_container_visualization(event, graph_controller: GraphController, visualization_type_dict, graph_container):
     graph_controller.update_visualization_type(visualization_type_dict[event.new])
     graph_container.object = graph_controller.get_visualization_data()
+
+def maintenance_task_list_upload(event, graph_controller: GraphController, maintenance_task_list_viewer):
+    print("Task List Uploaded")
+    # Read byte content from the uploaded file
+    file_content = event.new  # event.new is already bytes
+
+    graph_controller.upload_maintenance_task_list(file_content)
+    df = graph_controller.get_maintenance_task_list_df()
+    maintenance_task_list_viewer.value = df
+
+def update_hours_budget(event, graph_controller: GraphController):
+    graph_controller.update_hours_budget(event.new)
+
+def update_money_budget(event, graph_controller: GraphController):
+    graph_controller.update_money_budget(event.new)
+
+def update_weeks_to_schedule(event, graph_controller: GraphController):
+    graph_controller.update_weeks_to_schedule(event.new)
+
+def replacement_task_list_upload(event, graph_controller: GraphController, replacement_task_list_viewer):
+    print("Replacement Task List Uploaded")
+    # Read byte content from the uploaded file
+    file_content = event.new  # event.new is already bytes
+
+    graph_controller.upload_replacement_task_list(file_content)
+    df = graph_controller.get_replacement_task_list_df()
+    replacement_task_list_viewer.value = df
