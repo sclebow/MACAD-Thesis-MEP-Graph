@@ -289,3 +289,17 @@ def update_node_details(graph_controller, graph_container, equipment_details_con
 def update_graph_container_visualization(event, graph_controller: GraphController, visualization_type_dict, graph_container):
     graph_controller.update_visualization_type(visualization_type_dict[event.new])
     graph_container.object = graph_controller.get_visualization_data()
+
+def task_list_upload(event, graph_controller: GraphController, task_list_viewer):
+    print("Task List Uploaded")
+    # Read byte content from the uploaded file
+    file_content = event.new  # event.new is already bytes
+    graph_controller.upload_task_list(file_content)
+    df = graph_controller.get_task_list_df()
+    task_list_viewer.value = df
+
+def update_hours_budget(event, graph_controller: GraphController):
+    graph_controller.update_hours_budget(event.new)
+
+def update_money_budget(event, graph_controller: GraphController):
+    graph_controller.update_money_budget(event.new)

@@ -5,300 +5,12 @@ import os
 import plotly.graph_objs as go
 import math
 import datetime
+import pandas as pd
 
 from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes
 from graph_generator.mepg_generator import clean_graph_none_values
 
-def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter = 0.5):
-
-    '''
-    From Joel's answer at https://stackoverflow.com/a/29597209/2966723.  
-    Licensed under Creative Commons Attribution-Share Alike 
-    
-    If the graph is a tree this will return the positions to plot this in a 
-    hierarchical layout.
-    
-    G: the graph (must be a tree)
-    
-    root: the root node of current branch 
-    - if the tree is directed and this is not given, 
-      the root will be found and used
-    - if the tree is directed and this is given, then 
-      the positions will be just for the descendants of this node.
-    - if the tree is undirected and not given, 
-      then a random choice will be used.
-    
-    width: horizontal space allocated for this branch - avoids overlap with other branches
-    
-    vert_gap: gap between levels of hierarchy
-    
-    vert_loc: vertical location of root
-    
-    xcenter: horizontal location of root
-    '''
-    if not nx.is_tree(G):
-        raise TypeError('cannot use hierarchy_pos on a graph that is not a tree')
-
-    if root is None:
-        if isinstance(G, nx.DiGraph):
-            root = next(iter(nx.topological_sort(G)))  #allows back compatibility with nx version 1.11
-        else:
-            root = random.choice(list(G.nodes))
-
-    def _hierarchy_pos(G, root, width=1., vert_gap = 0.2, vert_loc = 0, xcenter = 0.5, pos = None, parent = None):
-        '''
-        see hierarchy_pos docstring for most arguments
-
-        pos: a dict saying where all nodes go if they have been assigned
-        parent: parent of this branch. - only affects it if non-directed
-
-        '''
-    
-        if pos is None:
-            pos = {root:(xcenter,vert_loc)}
-        else:
-            pos[root] = (xcenter, vert_loc)
-        children = list(G.neighbors(root))
-        if not isinstance(G, nx.DiGraph) and parent is not None:
-            children.remove(parent)  
-        if len(children)!=0:
-            dx = width/len(children) 
-            nextx = xcenter - width/2 - dx/2
-            for child in children:
-                nextx += dx
-                pos = _hierarchy_pos(G,child, width = dx, vert_gap = vert_gap, 
-                                    vert_loc = vert_loc-vert_gap, xcenter=nextx,
-                                    pos=pos, parent = root)
-        return pos
-
-            
-    return _hierarchy_pos(G, root, width, vert_gap, vert_loc, xcenter)
-
-def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=None, color_palette=None, colorbar_title=None, showlegend=False, colorbar_range=None, hide_trace_from_legend=False, legend_settings=None):
-    # Shared logic for 2D graph visualization
-    try:
-        # Select a valid root node (first node in the graph)
-        if len(graph.nodes) == 0:
-            return go.Figure()
-        root_node = next(iter(graph.nodes))
-        pos = hierarchy_pos(graph, root_node, width = 2*math.pi, xcenter=0)
-        pos = {u:(r*math.cos(theta),r*math.sin(theta)) for u, (theta, r) in pos.items()}
-
-    except Exception as e:
-        print(f"Error calculating positions: {e}")
-        pos = nx.spring_layout(graph)
-
-    edge_x = []
-    edge_y = []
-    edge_text = []
-    edge_marker_x = []
-    edge_marker_y = []
-    edge_marker_text = []
-    for edge in graph.edges():
-        x0, y0 = pos[edge[0]]
-        x1, y1 = pos[edge[1]]
-        edge_x += [x0, x1, None]
-        edge_y += [y0, y1, None]
-        # Create hover text for edges with all edge attributes
-        edge_0_name = graph.nodes[edge[0]].get('full_name', edge[0]) if use_full_names else edge[0]
-        edge_1_name = graph.nodes[edge[1]].get('full_name', edge[1]) if use_full_names else edge[1]
-        hover_text = f"{edge_0_name} - {edge_1_name}"
-        edge_attrs = graph.edges[edge]
-        if edge_attrs:
-            hover_text += "<br>" + "<br>".join([f"{k}: {v}" for k, v in edge_attrs.items()])
-        # Repeat hover_text for both endpoints, None for separator
-        edge_text += [hover_text, hover_text, None]
-        # Add invisible marker at edge midpoint for better hover
-        edge_marker_x.append((x0 + x1) / 2)
-        edge_marker_y.append((y0 + y1) / 2)
-        edge_marker_text.append(hover_text)
-    edge_trace = go.Scatter(
-        x=edge_x, y=edge_y,
-        line=dict(width=3, color='#888'),  # Thicker line
-        hoverinfo='text',
-        mode='lines',
-        hovertext=edge_text
-    )
-    edge_marker_trace = go.Scatter(
-        x=edge_marker_x, y=edge_marker_y,
-        mode='markers',
-        marker=dict(size=10, color='rgba(0,0,0,0)'),  # Invisible
-        hoverinfo='text',
-        hovertext=edge_marker_text,
-        showlegend=showlegend
-    )
-
-    node_x = []
-    node_y = []
-    names = []
-    node_text = []
-    for node, attrs in graph.nodes(data=True):
-        x, y = pos[node]
-        node_x.append(x)
-        node_y.append(y)
-        # Use full name or short name based on toggle
-        display_name = attrs.get('full_name', node) if use_full_names else node
-        names.append(display_name)
-        hover = f"{display_name}<br>Type: {attrs.get('type', 'Unknown')}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items() if k not in ['type', 'full_name']])
-        node_text.append(hover)
-
-    # Node size scaling based on propagated_power
-    prop_powers = [graph.nodes[n].get('propagated_power', 0) for n in graph.nodes]
-    if prop_powers:
-        min_power = min(prop_powers)
-        max_power = max(prop_powers)
-        if max_power == min_power:
-            norm_power = [0.5 for _ in prop_powers]
-        else:
-            norm_power = [(p - min_power) / (max_power - min_power) for p in prop_powers]
-        # Scale size between 10 and 30
-        node_sizes = [10 + 20 * x for x in norm_power]
-    else:
-        node_sizes = [15 for _ in graph.nodes]
-
-    # Node coloring logic
-    if node_color_values is not None:
-        # Use provided values and palette
-        color_vals = [node_color_values.get(n, 0) for n in graph.nodes]
-        palette = color_palette or 'Viridis'
-        colorbar_dict = dict(title=colorbar_title or 'Value')
-        marker_dict = dict(
-            color=color_vals,
-            colorscale=palette,
-            size=node_sizes,
-            colorbar=colorbar_dict,
-            line_width=2,
-            opacity=0.85
-        )
-        if colorbar_range:
-            marker_dict['cmin'] = colorbar_range[0]
-            marker_dict['cmax'] = colorbar_range[1]
-        node_trace = go.Scatter(
-            x=node_x,
-            y=node_y,
-            mode='markers+text',
-            text=names,
-            textposition="top center",
-            hoverinfo='text',
-            marker=marker_dict,
-            hovertext=node_text,
-            name='Nodes'
-        )
-        node_traces = [node_trace]
-    else:
-        node_types = [graph.nodes[n].get('type', 'Unknown') for n in graph.nodes]
-        unique_types = list(sorted(set(node_types)))
-        plotly_palette = [
-            'rgba(99,110,250,0.85)', 'rgba(239,85,59,0.85)', 'rgba(0,204,150,0.85)', 'rgba(171,99,250,0.85)', 'rgba(255,161,90,0.85)', 'rgba(25,211,243,0.85)',
-            'rgba(255,102,146,0.85)', 'rgba(182,232,128,0.85)', 'rgba(255,151,255,0.85)', 'rgba(254,203,82,0.85)', 'rgba(31,119,180,0.85)', 'rgba(255,127,14,0.85)',
-            'rgba(44,160,44,0.85)', 'rgba(214,39,40,0.85)', 'rgba(148,103,189,0.85)', 'rgba(140,86,75,0.85)', 'rgba(227,119,194,0.85)', 'rgba(127,127,127,0.85)',
-            'rgba(188,189,34,0.85)', 'rgba(23,190,207,0.85)'
-        ]
-        type_color_map = {t: plotly_palette[i % len(plotly_palette)] for i, t in enumerate(unique_types)}
-        node_colors = [type_color_map[t] for t in node_types]
-        node_traces = []
-        node_type_list = node_types
-        for t in unique_types:
-            indices = [i for i, typ in enumerate(node_type_list) if typ == t]
-            if not indices:
-                continue
-            trace = go.Scatter(
-                x=[node_x[i] for i in indices],
-                y=[node_y[i] for i in indices],
-                mode='markers+text',
-                text=[names[i] for i in indices],
-                textposition="top center",
-                hoverinfo='text',
-                marker=dict(
-                    color=[node_colors[i] for i in indices],
-                    size=[node_sizes[i] for i in indices],
-                    line_width=2,
-                    opacity=0.85
-                ),
-                hovertext=[node_text[i] for i in indices],
-                name=str(t)
-            )
-            node_traces.append(trace)
-
-    # Create legend configuration based on settings
-    legend_config = {}
-    if showlegend and legend_settings:
-        legend_config = dict(
-            x=legend_settings.get('x', 0.98),
-            y=legend_settings.get('y', 0.98), 
-            xanchor=legend_settings.get('xanchor', 'right'),
-            yanchor=legend_settings.get('yanchor', 'top'),
-            bgcolor=legend_settings.get('bgcolor', 'rgba(255,255,255,0.95)'),
-            bordercolor='rgba(0,0,0,0.5)',
-            borderwidth=1,
-            font=dict(size=legend_settings.get('font_size', 8)),
-            itemwidth=30,
-            itemsizing='constant',
-            tracegroupgap=0,
-            orientation='v',
-            itemclick='toggleothers',
-            itemdoubleclick='toggle',
-            entrywidth=legend_settings.get('entrywidth', 0.5),
-            entrywidthmode='fraction'
-        )
-        
-        annotations = []
-    elif showlegend:
-        # Default legend config
-        legend_config = dict(
-            x=0.98, y=0.98, xanchor='right', yanchor='top',
-            bgcolor='rgba(255,255,255,0.95)', bordercolor='rgba(0,0,0,0.5)',
-            borderwidth=1, font=dict(size=8), itemwidth=30, itemsizing='constant',
-            tracegroupgap=0, orientation='v', itemclick='toggleothers',
-            itemdoubleclick='toggle', entrywidth=0.5, entrywidthmode='fraction'
-        )
-        
-        annotations = []
-    else:
-        annotations = []
-
-    fig = go.Figure(data=[edge_trace, edge_marker_trace] + node_traces,
-                    layout=go.Layout(
-                        showlegend=showlegend and legend_settings is not None,
-                        hovermode='closest',
-                        margin=dict(b=20,l=5,r=5,t=40),
-                        legend=legend_config,
-                        annotations=annotations,
-                        xaxis=dict(
-                            showgrid=False, 
-                            zeroline=False, 
-                            showticklabels=False,
-                            domain=[0, 1]  # Graph uses full width
-                        ),
-                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
-                    ))
-
-    if hide_trace_from_legend:
-        # Remove just traces from legend
-        for trace in fig.data:
-            if hasattr(trace, 'mode') and 'lines' in str(trace.mode):
-                trace.showlegend = False
-            if hasattr(trace, 'name') and not trace.name:
-                trace.showlegend = False
-        
-
-    return fig
-
-def visualize_graph_two_d(graph, use_full_names=False, legend_settings=None):
-    return _generate_2d_graph_figure(graph, use_full_names=use_full_names, showlegend=True, hide_trace_from_legend=True, legend_settings=legend_settings)
-
-def visualize_graph_two_d_risk(graph, use_full_names=False, legend_settings=None):
-    # Color nodes by risk_score attribute
-    risk_scores = {n: graph.nodes[n].get('risk_score', 0) for n in graph.nodes}
-    return _generate_2d_graph_figure(
-        graph,
-        use_full_names=use_full_names,
-        node_color_values=risk_scores,
-        color_palette='Inferno',
-        colorbar_title='Risk Score',
-        showlegend=False,
-        legend_settings=legend_settings
-    )
+from helpers.visualization import visualize_graph_two_d, visualize_graph_two_d_risk
 
 def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
     """
@@ -543,7 +255,10 @@ class GraphController:
             'visualization_type': '2d_type'
         }
         self.legend_preset = "compact_tr"  # Default preset
-    
+        self.maintenance_tasks = None
+        self.monthly_budget_money = 10000.0  # Default budget
+        self.monthly_budget_time = 40.0  # Default budget
+
     def get_legend_settings(self):
         """Get legend configuration based on current preset"""
         presets = {
@@ -722,3 +437,19 @@ class GraphController:
     def reset_graph(self):
         """Reset the graph controller"""
         self.__init__()
+
+    def upload_task_list(self, file_content):
+        """Upload task list from file content"""
+        self.maintenance_tasks = pd.read_csv(io.BytesIO(file_content))
+
+    def get_task_list_df(self):
+        """Get the task list DataFrame"""
+        return self.maintenance_tasks
+
+    def update_hours_budget(self, new_budget):
+        """Update the hours budget"""
+        self.monthly_budget_time = new_budget
+
+    def update_money_budget(self, new_budget):
+        """Update the money budget"""
+        self.monthly_budget_money = new_budget
