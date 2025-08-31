@@ -26,11 +26,12 @@ class GraphController:
         self.monthly_budget_money = 10000.0  # Default budget
         self.monthly_budget_time = 40.0  # Default budget
         self.months_to_schedule = 360  # Default months to schedule
+        self.prioritized_schedule = None  # Store simulation results
 
     def run_rul_simulation(self):
         """Run a maintenance task simulation and store results in pn.state.cache"""
 
-        process_maintenance_tasks(
+        self.prioritized_schedule = process_maintenance_tasks(
             tasks=self.maintenance_tasks,
             replacement_tasks=self.replacement_tasks,
             graph=self.current_graph[0],

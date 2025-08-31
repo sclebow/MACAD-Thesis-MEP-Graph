@@ -3,6 +3,7 @@ import panel as pn
 import networkx as nx
 import datetime
 import base64
+import pandas as pd
 
 from helpers.controllers.graph_controller import GraphController
 
@@ -70,8 +71,30 @@ def reset_graph(event, graph_controller):
     pn.state.location.reload = False
     pn.state.location.reload = True
 
-def run_simulation(event, graph_controller):
+def run_simulation(event, graph_controller, maintenance_schedule_container=None):
     graph_controller.run_rul_simulation()
+
+    # Try to get the schedule container from pn.state.cache if not provided
+    container = maintenance_schedule_container
+    if container is None:
+        container = pn.state.cache.get('maintenance_schedule_container', None)
+    if container is None:
+        print("Warning: No maintenance_schedule_container found to update.")
+        return
+
+    prioritized_schedule = graph_controller.prioritized_schedule
+    print(f"Prioritized Schedule: {prioritized_schedule}")
+
+    # # Create a Panel to display the results
+    # results_panel = pn.Column(
+    #     pn.pane.Markdown("### Simulation Results"),
+    #     # Use the schedule from pn.state.cache if available
+    #     pn.widgets.DataFrame(pd.DataFrame.from_dict(prioritized_schedule), sizing_mode="stretch_both", disabled=True)
+    # )
+
+    # # Clear the previous contents and add the new results panel
+    # container.clear()
+    # container.append(results_panel)
 
 def failure_timeline_reset_view(event):
     print("Failure Timeline Reset View button clicked")

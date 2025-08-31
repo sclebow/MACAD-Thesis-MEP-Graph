@@ -11,6 +11,8 @@ def layout_maintenance(maintenance_container, graph_controller):
         sizing_mode="stretch_both"
     )
 
+    pn.state.cache["maintenance_schedule_container"] = maintenance_schedule_container
+
     maintenance_task_list_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False)
 
     maintenance_task_list_input = pn.widgets.FileInput(name="Upload Task List")
@@ -42,7 +44,6 @@ def layout_maintenance(maintenance_container, graph_controller):
         replacement_task_list_input,
         replacement_task_list_viewer,
     )
-
 
     budget_hours_input = pn.widgets.NumberInput(name="Monthly Budget (Hours)", value=40, step=1)
     budget_hours_input.param.watch(lambda event: update_hours_budget(event, graph_controller), "value")
