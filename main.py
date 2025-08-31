@@ -71,7 +71,7 @@ layout_analytics(analytics_container, graph_controller)
 layout_settings(settings_container, graph_controller)
 
 # DEBUG Set default tabs
-main_tabs.active = 2
+main_tabs.active = 0
 
 print("Starting Application...")
 
