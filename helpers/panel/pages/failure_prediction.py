@@ -39,6 +39,7 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         pn.widgets.Button(button_type="default", icon="zoom-out", on_click=failure_timeline_zoom_out),
     )
     failure_timeline_container = pn.pane.Plotly(sizing_mode="scale_width")
+    pn.state.cache["failure_timeline_container"] = failure_timeline_container
     component_details_container = pn.Column(
         pn.pane.Markdown("### Component Details"),
     )

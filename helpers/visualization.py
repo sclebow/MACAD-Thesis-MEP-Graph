@@ -528,3 +528,52 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
                         )
                     ))
     return fig
+
+def generate_bar_chart_figure(prioritized_schedule):
+    """
+    Creates a bar chart figure for task status over time.
+    X-axis: Time
+    Y-axis: Number of Tasks
+    Bars:
+        - Number of Scheduled Tasks for this Month
+        - Number of Executed Tasks for this Month
+        - Number of Deferred Tasks for this Month
+    """
+    fig = go.Figure()
+
+    months = list(prioritized_schedule.keys())
+    
+    # Get the max amount of tasks from any month
+    max_tasks_scheduled_for_month = max(len(prioritized_schedule[month].get('tasks_scheduled_for_month', [])) for month in months)
+    max_tasks_executed_for_month = max(len(prioritized_schedule[month].get('executed_tasks', [])) for month in months)
+    max_tasks_deferred_for_month = max(len(prioritized_schedule[month].get('deferred_tasks', [])) for month in months)
+
+    max_tasks = max(max_tasks_scheduled_for_month, max_tasks_executed_for_month, max_tasks_deferred_for_month)
+
+    numbers_of_scheduled = []
+    numbers_of_executed = []
+    numbers_of_deferred = []
+
+    month_datetime_periods = prioritized_schedule.keys()
+    month_names = [month.start_time.strftime("%Y-%m") for month in month_datetime_periods]
+
+    for month in prioritized_schedule:
+        numbers_of_scheduled.append(len(prioritized_schedule[month].get('tasks_scheduled_for_month')))
+        numbers_of_executed.append(len(prioritized_schedule[month].get('executed_tasks')))
+        numbers_of_deferred.append(len(prioritized_schedule[month].get('deferred_tasks')))
+
+    print(f"Most Scheduled Tasks: {max(numbers_of_scheduled)}")
+    print(f"Most Executed Tasks: {max(numbers_of_executed)}")
+    print(f"Most Deferred Tasks: {max(numbers_of_deferred)}")
+
+    fig.add_trace(go.Bar(x=month_names, y=numbers_of_scheduled, name='Scheduled', marker_color='blue'))
+    fig.add_trace(go.Bar(x=month_names, y=numbers_of_executed, name='Executed', marker_color='green'))
+    fig.add_trace(go.Bar(x=month_names, y=numbers_of_deferred, name='Deferred', marker_color='red'))
+
+    fig.update_layout(title='Task Status Over Time', xaxis_title='Time', yaxis_title='Number of Tasks')
+    fig.update_yaxes(range=[0, max_tasks + 10])
+
+    # Show no x axis tick marks
+    fig.update_xaxes(showticklabels=False)
+
+    return fig

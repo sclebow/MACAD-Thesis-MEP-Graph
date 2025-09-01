@@ -130,6 +130,11 @@ def run_simulation(event, graph_controller: GraphController, maintenance_schedul
     container.append(pn.pane.Markdown("### Simulation Results"))
     container.append(results_panel)
 
+    # Update the failure timeline container
+    failure_timeline_container = pn.state.cache.get("failure_timeline_container")
+    fig = graph_controller.get_bar_chart_figure()
+    print(fig)
+    failure_timeline_container.object = fig
 
 def failure_timeline_reset_view(event):
     print("Failure Timeline Reset View button clicked")
