@@ -51,11 +51,19 @@ main_tabs = pn.Tabs(
 
 run_simulation_button = pn.widgets.Button(name="Run Simulation", button_type="primary", icon="play", on_click=lambda event: run_simulation(event, graph_controller), align="center")
 
+default_current_date = pd.Timestamp.now() + pd.DateOffset(years=25)
+graph_controller.current_date = default_current_date
+
+current_date_input = pn.widgets.DatePicker(name="Current Date", value=default_current_date)
+# Watch for changes to the date input
+current_date_input.param.watch(lambda event: update_current_date(event, graph_controller), 'value')
+
 # Create main application layout
 app = pn.Column(
     pn.Row(
         pn.pane.Markdown("## MEP Digital Twin\nBuilding Systems Management"),
         run_simulation_button,
+        current_date_input
     ),
     main_tabs,
 )
@@ -76,7 +84,7 @@ layout_analytics(analytics_container, graph_controller)
 layout_settings(settings_container, graph_controller)
 
 # DEBUG Set default tabs
-main_tabs.active = 0
+main_tabs.active = 1
 
 print("Starting Application...")
 

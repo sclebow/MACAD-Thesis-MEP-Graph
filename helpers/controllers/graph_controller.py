@@ -27,6 +27,7 @@ class GraphController:
         self.monthly_budget_time = 40.0  # Default budget
         self.months_to_schedule = 360  # Default months to schedule
         self.prioritized_schedule = None  # Store simulation results
+        self.current_date = pd.Timestamp.now()
 
     def run_rul_simulation(self):
         """Run a maintenance task simulation and store results in pn.state.cache"""
@@ -38,6 +39,7 @@ class GraphController:
             monthly_budget_time=self.monthly_budget_time,
             monthly_budget_money=self.monthly_budget_money,
             months_to_schedule=self.months_to_schedule,
+            current_date=self.current_date
         )
         
     def get_legend_settings(self):
@@ -255,3 +257,14 @@ class GraphController:
             return None
 
         return generate_bar_chart_figure(self.prioritized_schedule) if self.prioritized_schedule else None
+
+    def get_current_date_graph(self):
+        """Get the current date graph"""
+        month_periods = self.prioritized_schedule.keys()
+
+        current_month = pd.Timestamp(self.current_date).to_period('M')
+        print(f"Current month period: {current_month}")
+        if current_month in month_periods:
+            return self.prioritized_schedule[current_month]['graph']
+
+        return None

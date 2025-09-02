@@ -159,7 +159,7 @@ def generate_maintenance_tasks_from_graph(graph, tasks) -> List[Dict[str, Any]]:
 
             # Determine frequency (months)
             freq_months = int(template['recommended_frequency_months'])
-            print(f"Processing node {node_id} with template {task_id}, frequency: {freq_months} months")
+            # print(f"Processing node {node_id} with template {task_id}, frequency: {freq_months} months")
             if freq_months == -1 or freq_months is None:
                 # Add flag for 'is_replacement'
                 is_replacement = True
@@ -168,7 +168,7 @@ def generate_maintenance_tasks_from_graph(graph, tasks) -> List[Dict[str, Any]]:
                 if node_lifespan is None:
                     raise ValueError(f"expected_lifespan missing for node {node_id} but required by template {task_id}")
                 freq_months = int(node_lifespan)
-                print(f"Using node's expected lifespan: {node_lifespan} months for node {node_id}")
+                # print(f"Using node's expected lifespan: {node_lifespan} months for node {node_id}")
             else:
                 is_replacement = False
 
@@ -228,7 +228,8 @@ def update_task_status(tasks: List[Dict[str, Any]], task_id: str, new_status: st
 def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.Graph,
                                          replacement_tasks: List[Dict[str, Any]],
                                          num_months_to_schedule: int, monthly_budget_time: float, 
-                                         monthly_budget_money: float, does_budget_rollover: bool=False):
+                                         monthly_budget_money: float, does_budget_rollover: bool=False,
+                                         current_date: pd.Timestamp=None):
     """
     Create a calendar schedule for the tasks, grouping by month, as a dictionary.
     Includes all months between the earliest and latest task dates, even if no tasks exist in those months."""
@@ -259,6 +260,15 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
 
     # Get the month of the earliest installation date
     earliest_month = earliest_date.to_period('M')
+
+    current_date = pd.Timestamp(current_date)
+
+    # Use the current date to adjust the number of months to schedule
+    # Num months to schedule start from the current date
+    months_already_passed = (current_date - earliest_date).days // 30
+    print(f"Months already passed: {months_already_passed}")
+    num_months_to_schedule += months_already_passed
+    print(f"Adjusted number of months to schedule: {num_months_to_schedule}")
 
     # print()
     # print(f"Creating calendar schedule starting from {earliest_month} for {num_months_to_schedule} months")
@@ -354,14 +364,15 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
         # Check if any nodes require replacement
         for node, attrs in graph.nodes(data=True):
             if attrs.get('replacement_required'):
-                print(f"Node {node} requires replacement, scheduling replacement task for month {month}")
+                # print(f"Node {node} requires replacement, scheduling replacement task for month {month}")
                 # Check tasks for this node
                 tasks_for_node = tasks_for_month[tasks_for_month['equipment_id'] == node]
                 # Get replacement task
                 replacement_task = tasks_for_node[tasks_for_node['is_replacement'] == True]
                 if not replacement_task.empty:
                     # If there is a replacement task, schedule it for this month
-                    replacement_task['scheduled_month'] = month
+                    replacement_task = replacement_task.copy()
+                    replacement_task.loc[:, 'scheduled_month'] = month
                     tasks_for_month = pd.concat([replacement_task, tasks_for_month])
 
         month_record['tasks_scheduled_for_month'] = tasks_for_month
@@ -391,7 +402,7 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
                     apply_condition_improvement(graph, task['equipment_id'], task['rul_percentage_effect'], task['task_type'])
 
                 if task['is_replacement']:
-                    print(f"  Executing replacement task {task['task_instance_id']} for equipment {task['equipment_id']}")
+                    # print(f"  Executing replacement task {task['task_instance_id']} for equipment {task['equipment_id']}")
                     # Update the installation date for replacement tasks
                     graph.nodes[task['equipment_id']]['installation_date'] = month.start_time.strftime('%Y-%m-%d')
                     task['equipment_installation_date'] = month.start_time.strftime('%Y-%m-%d')
@@ -403,9 +414,9 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
                     for attr in ['age_years', 'current_condition', 'aging_factor', 'condition_factor']:
                         if attr in graph.nodes[task['equipment_id']]:
                             del graph.nodes[task['equipment_id']][attr]
-                    print(f"  Replacing equipment {task['equipment_id']} with new installation date {task['equipment_installation_date']}")
-                else:
-                    print(f"  Executing task {task['task_instance_id']} for equipment {task['equipment_id']}")
+                    # print(f"  Replacing equipment {task['equipment_id']} with new installation date {task['equipment_installation_date']}")
+                # else:
+                    # print(f"  Executing task {task['task_instance_id']} for equipment {task['equipment_id']}")
                 # Execute task
                 time_budget_for_month -= task_time_cost
                 money_budget_for_month -= task_money_cost
@@ -436,7 +447,7 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
     print("Finished processing all months.")
     return monthly_records_dict
 
-def process_maintenance_tasks(tasks: dict, replacement_tasks: dict, graph, monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int = 36, animate=False) -> Dict[str, List[Dict[str, Any]]]:
+def process_maintenance_tasks(tasks: dict, replacement_tasks: dict, graph, monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int = 36, animate=False, current_date: pd.Timestamp = pd.Timestamp.now()) -> Dict[str, List[Dict[str, Any]]]:
     """
     Process the maintenance tasks and prioritize them based on the graph and budgets.
     Returns a prioritized schedule of tasks grouped by month.
@@ -448,7 +459,7 @@ def process_maintenance_tasks(tasks: dict, replacement_tasks: dict, graph, month
     # tasks = load_maintenance_tasks(tasks_file_path)
     # replacement_tasks = load_replacement_tasks(replacement_tasks_path)
     tasks = generate_maintenance_tasks_from_graph(graph, tasks)
-    
+
     # Prioritize the tasks in the calendar schedule
     prioritized_schedule = create_prioritized_calendar_schedule(
         tasks, 
@@ -456,7 +467,8 @@ def process_maintenance_tasks(tasks: dict, replacement_tasks: dict, graph, month
         replacement_tasks=replacement_tasks,
         num_months_to_schedule=months_to_schedule, 
         monthly_budget_time=monthly_budget_time, 
-        monthly_budget_money=monthly_budget_money
+        monthly_budget_money=monthly_budget_money,
+        current_date=current_date
     )
 
     return prioritized_schedule
