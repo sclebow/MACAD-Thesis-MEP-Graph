@@ -66,9 +66,6 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         next_12_months_container,
         cost_forecast_container
     )
-    # main_dashboard_container[1:3, 0] = critical_component_container
-    # main_dashboard_container[3:4, 0] = next_12_months_container
-    # main_dashboard_container[4:, 0] = cost_forecast_container
     main_dashboard_container[0, 1:3] = failure_timeline_header
     main_dashboard_container[1:, 1:3] = failure_timeline_container
     main_dashboard_container[:, 3] = component_details_container
