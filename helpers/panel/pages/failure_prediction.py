@@ -4,7 +4,7 @@ import panel as pn
 from helpers.panel.button_callbacks import failure_timeline_reset_view, failure_timeline_zoom_in, failure_timeline_zoom_out, export_failure_schedule, export_annual_budget_forecast, reset_lifecycle_analysis_controls, run_lifecycle_analysis_simulation, update_failure_component_details
 
 def layout_failure_prediction(failure_prediction_container, graph_controller):
-    main_dashboard_container = pn.GridSpec(nrows=5, ncols=4, mode="error")
+    main_dashboard_container = pn.GridSpec(nrows=8, ncols=4, mode="error")
     failure_schedule_container = pn.Column()
     budget_planning_container = pn.GridSpec(nrows=5, ncols=4, mode="error")
     lifecycle_analysis_container = pn.GridSpec(nrows=5, ncols=4, mode="error")
@@ -84,7 +84,7 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
 
     df_headers = ["Equipment", "Type", "Failure Date", "Cause", "Certainty", "Cost", "Time Until"]
     blank_df = pd.DataFrame(columns=df_headers)
-    failure_schedule_dataframe = pn.widgets.DataFrame(blank_df, sizing_mode="stretch_width")
+    failure_schedule_dataframe = pn.widgets.DataFrame(blank_df, sizing_mode="stretch_both")
     pn.state.cache["failure_schedule_dataframe"] = failure_schedule_dataframe
     failure_schedule_container.append(failure_schedule_dataframe)
 

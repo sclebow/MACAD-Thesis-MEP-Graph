@@ -298,7 +298,7 @@ def run_simulation(event, graph_controller: GraphController):
     critical_nodes = [node for node, attrs in current_date_graph.nodes(data=True) if attrs.get('risk_level') == 'CRITICAL']
     critical_component_list.append(f"**Critical Components**: {len(critical_nodes)}")
     for node in critical_nodes:
-        critical_component_list.append(f"- {node}")
+        critical_component_list.append(f"1. {node}")
     critical_component_container.append(pn.pane.Markdown("\n\n".join(critical_component_list)))
 
     # Update the next_12_months_container
@@ -308,12 +308,18 @@ def run_simulation(event, graph_controller: GraphController):
     next_12_months_list = []
     next_12_months_list.append("### Next 12 Months Overview")
     for month, data_dict in next_12_months_data.items():
-        tasks_scheduled_for_month = data_dict.get('executed_tasks')
+        expected_tasks_for_month = data_dict.get('executed_tasks')
+        deferred_tasks_for_month = data_dict.get('deferred_tasks')
         # Convert DataFrame to list of dicts
         # tasks_scheduled_for_month = tasks_scheduled_for_month.to_dict(orient='records')
         # print(f"Month: {month}, Tasks: {tasks_scheduled_for_month}")
-        next_12_months_list.append(f"**{month}**: {len(tasks_scheduled_for_month)} Expected Executed Tasks")
-        next_12_months_list.append(f"- **Most Critical Task**: {tasks_scheduled_for_month[0].get('task_instance_id')}")
+        next_12_months_list.append(f"**{month}**:")
+        next_12_months_list.append(f"- **Expected Executed Tasks**: {len(expected_tasks_for_month)}")
+        if len(expected_tasks_for_month) > 0:
+            next_12_months_list.append(f"- **Most Critical Expected Task**: {expected_tasks_for_month[0].get('task_instance_id')}")
+        next_12_months_list.append(f"- **Deferred Tasks**: {len(deferred_tasks_for_month)}")
+        if len(deferred_tasks_for_month) > 0:
+            next_12_months_list.append(f"- **Most Critical Deferred Task**: {deferred_tasks_for_month[0].get('task_instance_id')}")
 
     next_12_months_container.append(pn.pane.Markdown("\n\n".join(next_12_months_list)))
 
@@ -333,8 +339,8 @@ def run_simulation(event, graph_controller: GraphController):
             next_12_months_time_cost += time_cost
 
     cost_forecast_str_list.append(f"### Cost Forecast Overview")
-    cost_forecast_str_list.append(f"**Total Money Cost for Next 12 Months**: {next_12_months_money_cost}")
-    cost_forecast_str_list.append(f"**Total Time Cost for Next 12 Months**: {next_12_months_time_cost}")
+    cost_forecast_str_list.append(f"**Total Expected Money Cost for Next 12 Months**: \\${next_12_months_money_cost}")
+    cost_forecast_str_list.append(f"**Total Expected Time Cost for Next 12 Months**: {next_12_months_time_cost} hours")
     cost_forecast_container.append(pn.pane.Markdown("\n\n".join(cost_forecast_str_list)))
 
     # Create the failure timeline figure
