@@ -9,8 +9,7 @@ import pandas as pd
 
 from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes, clean_graph_none_values
 
-from helpers.visualization import visualize_graph_two_d, visualize_graph_two_d_risk, visualize_graph_three_d, generate_bar_chart_figure
-
+from helpers.visualization import *
 from helpers.maintenance_tasks import process_maintenance_tasks
 
 class GraphController:
@@ -274,3 +273,9 @@ class GraphController:
         current_month_ts = current_month.to_timestamp()
         next_12_months = [(current_month_ts + pd.DateOffset(months=i)).to_period('M') for i in range(1, 13)]
         return {month: self.prioritized_schedule.get(month, {}) for month in next_12_months}
+
+    def get_current_date_failure_timeline_figure(self):
+        """Get the failure timeline figure"""
+        current_date_graph = self.get_current_date_graph()
+
+        return generate_failure_timeline_figure(current_date_graph, self.current_date)

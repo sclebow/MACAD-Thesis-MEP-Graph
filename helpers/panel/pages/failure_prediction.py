@@ -83,6 +83,7 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
     df_headers = ["Equipment", "Type", "Failure Date", "Cause", "Certainty", "Cost", "Time Until"]
     blank_df = pd.DataFrame(columns=df_headers)
     failure_schedule_dataframe = pn.widgets.DataFrame(blank_df, sizing_mode="stretch_width")
+    pn.state.cache["failure_schedule_dataframe"] = failure_schedule_dataframe
     failure_schedule_container.append(failure_schedule_dataframe)
 
     total_replacement_container = pn.Column(

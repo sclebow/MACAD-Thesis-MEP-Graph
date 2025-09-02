@@ -311,7 +311,7 @@ def run_simulation(event, graph_controller: GraphController):
         tasks_scheduled_for_month = data_dict.get('executed_tasks')
         # Convert DataFrame to list of dicts
         # tasks_scheduled_for_month = tasks_scheduled_for_month.to_dict(orient='records')
-        print(f"Month: {month}, Tasks: {tasks_scheduled_for_month}")
+        # print(f"Month: {month}, Tasks: {tasks_scheduled_for_month}")
         next_12_months_list.append(f"**{month}**: {len(tasks_scheduled_for_month)} Expected Executed Tasks")
         next_12_months_list.append(f"- **Most Critical Task**: {tasks_scheduled_for_month[0].get('task_instance_id')}")
 
@@ -336,6 +336,18 @@ def run_simulation(event, graph_controller: GraphController):
     cost_forecast_str_list.append(f"**Total Money Cost for Next 12 Months**: {next_12_months_money_cost}")
     cost_forecast_str_list.append(f"**Total Time Cost for Next 12 Months**: {next_12_months_time_cost}")
     cost_forecast_container.append(pn.pane.Markdown("\n\n".join(cost_forecast_str_list)))
+
+    # Create the failure timeline figure
+    failure_timeline_fig, node_dict = graph_controller.get_current_date_failure_timeline_figure()
+    failure_timeline_container = pn.state.cache.get("failure_timeline_container")
+    # from helpers.visualization import _generate_2d_graph_figure
+    # failure_timeline_container.object = _generate_2d_graph_figure(current_date_graph)
+    failure_timeline_container.object = failure_timeline_fig
+
+    # Update the failure schedule
+    failure_schedule_dataframe = pn.state.cache.get("failure_schedule_dataframe")
+    df = pd.DataFrame.from_dict(node_dict, orient="index")
+    failure_schedule_dataframe.value = df
 
 def update_current_date(event, graph_controller: GraphController):
     print("Current date updated to:", event.new)
