@@ -252,14 +252,15 @@ def run_simulation(event, graph_controller: GraphController):
     maintenance_schedule_container.append(results_panel)
 
     # Update the failure timeline container
-    failure_timeline_container = pn.state.cache.get("failure_timeline_container")
+    task_timeline_container = pn.state.cache.get("task_timeline_container")
     fig = graph_controller.get_bar_chart_figure()
-    failure_timeline_container.object = fig
+    task_timeline_container.object = fig
 
     # Update the system_health_container
     system_health_container = pn.state.cache.get("system_health_container")
     system_health_container.clear()
-    system_health_container.append(pn.pane.Markdown("### System Health Overview"))
+    system_health_str = ""
+    system_health_str += "### System Health Overview\n"
 
     current_date_graph = graph_controller.get_current_date_graph()
 
@@ -270,8 +271,8 @@ def run_simulation(event, graph_controller: GraphController):
     total_number_of_nodes = len(node_conditions)
     average_condition = sum(node_conditions) / total_number_of_nodes if total_number_of_nodes > 0 else 0
 
-    system_health_container.append(pn.pane.Markdown(f"**Average Condition**: {average_condition:.0%}"))
-    system_health_container.append(pn.pane.Markdown(f"**Total Number of Nodes**: {total_number_of_nodes}"))
+    system_health_str += f"**Average Condition**: {average_condition:.0%}\n\n"
+    system_health_str += f"**Total Number of Nodes**: {total_number_of_nodes}\n\n"
 
     node_risk_levels = []
     for node_id, attrs in current_date_graph.nodes(data=True):
@@ -279,19 +280,22 @@ def run_simulation(event, graph_controller: GraphController):
             node_risk_levels.append(attrs.get('risk_level'))
     unique_risk_levels = set(node_risk_levels)
 
-    risk_row = pn.Row()
+    risk_str_list = []
     for risk_level in unique_risk_levels:
-        risk_row.append(pn.pane.Markdown(f"**{risk_level}**: {node_risk_levels.count(risk_level)}"))
+        risk_str_list.append(f"**{risk_level}**: {node_risk_levels.count(risk_level)}")
 
-    system_health_container.append(risk_row)
+    risk_str = " | ".join(risk_str_list)
+    system_health_str += f"**Risk Levels**: {risk_str}\n\n"
+
+    system_health_container.append(pn.pane.Markdown(system_health_str))
 
     # Update the critical_component_container
     critical_component_container = pn.state.cache.get("critical_component_container")
     critical_component_container.clear()
-    critical_component_container.append(pn.pane.Markdown("### Critical Component Overview"))
+    critical_component_list = ""
+    critical_component_list += "### Critical Component Overview"
 
     critical_nodes = [node for node, attrs in current_date_graph.nodes(data=True) if attrs.get('risk_level') == 'CRITICAL']
-    critical_component_list = ""
     critical_component_list += f"**Critical Components**: {len(critical_nodes)}\n"
     for node in critical_nodes:
         critical_component_list += f"- {node}\n"
@@ -299,10 +303,38 @@ def run_simulation(event, graph_controller: GraphController):
 
     # Update the next_12_months_container
     next_12_months_container = pn.state.cache.get("next_12_months_container")
-    
+    next_12_months_data = graph_controller.get_next_12_months_data()
+    next_12_months_container.clear()
+    next_12_months_list = ""
+    next_12_months_list += "### Next 12 Months Overview\n"
+    for month, data_dict in next_12_months_data.items():
+        tasks_scheduled_for_month = data_dict.get('executed_tasks')
+        # Convert DataFrame to list of dicts
+        # tasks_scheduled_for_month = tasks_scheduled_for_month.to_dict(orient='records')
+        print(f"Month: {month}, Tasks: {tasks_scheduled_for_month}")
+        next_12_months_list += f"**{month}**: {len(tasks_scheduled_for_month)} Expected Executed Tasks\n"
+        next_12_months_list += f"- **Most Critical Task**: {tasks_scheduled_for_month[0].get('task_instance_id')}\n\n"
+    next_12_months_container.append(pn.pane.Markdown(next_12_months_list))
 
     # Update the cost_forecast_container
     cost_forecast_container = pn.state.cache.get("cost_forecast_container")
+    cost_forecast_container.clear()
+    cost_forecast_str_list = []
+
+    next_12_months_money_cost = 0
+    next_12_months_time_cost = 0
+    for month, data_dict in next_12_months_data.items():
+        tasks_scheduled_for_month = data_dict.get('executed_tasks', [])
+        for task in tasks_scheduled_for_month:
+            money_cost = task.get('money_cost')
+            time_cost = task.get('time_cost')
+            next_12_months_money_cost += money_cost
+            next_12_months_time_cost += time_cost
+
+    cost_forecast_str_list.append(f"### Cost Forecast Overview")
+    cost_forecast_str_list.append(f"**Total Money Cost for Next 12 Months**: {next_12_months_money_cost}")
+    cost_forecast_str_list.append(f"**Total Time Cost for Next 12 Months**: {next_12_months_time_cost}")
+    cost_forecast_container.append(pn.pane.Markdown("\n\n".join(cost_forecast_str_list)))
 
 def update_current_date(event, graph_controller: GraphController):
     print("Current date updated to:", event.new)

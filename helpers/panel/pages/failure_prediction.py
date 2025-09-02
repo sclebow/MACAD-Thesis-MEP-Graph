@@ -21,31 +21,36 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
 
     system_health_container = pn.Column(
         pn.pane.Markdown("### System Health Overview"),
-        sizing_mode="stretch_both"
+        # sizing_mode="stretch_both"
     )
     pn.state.cache["system_health_container"] = system_health_container
     critical_component_container = pn.Column(
         pn.pane.Markdown("### Critical Component Overview"),
-        sizing_mode="stretch_both"
+        # sizing_mode="stretch_both"
     )
     pn.state.cache["critical_component_container"] = critical_component_container
     next_12_months_container = pn.Column(
         pn.pane.Markdown("### Next 12 Months Overview"),
-        sizing_mode="stretch_both"
+        # sizing_mode="stretch_both"
     )
     pn.state.cache["next_12_months_container"] = next_12_months_container
     cost_forecast_container = pn.Column(
         pn.pane.Markdown("### Cost Forecast"),
-        sizing_mode="stretch_both"
+        # sizing_mode="stretch_both"
     )
     pn.state.cache["cost_forecast_container"] = cost_forecast_container
     failure_timeline_header_markdown = pn.pane.Markdown("### Failure Timeline")
     pn.state.cache["failure_timeline_header_markdown"] = failure_timeline_header_markdown
-    failure_timeline_header = pn.Row(
-        failure_timeline_header_markdown,
-        pn.widgets.Button(name="Reset View", button_type="default", icon="refresh", on_click=failure_timeline_reset_view),
-        pn.widgets.Button(button_type="default", icon="zoom-in", on_click=failure_timeline_zoom_in),
-        pn.widgets.Button(button_type="default", icon="zoom-out", on_click=failure_timeline_zoom_out),
+    task_timeline_container = pn.pane.Plotly(sizing_mode="stretch_width")
+    pn.state.cache["task_timeline_container"] = task_timeline_container
+    failure_timeline_header = pn.Column(
+        pn.Row(
+            failure_timeline_header_markdown,
+            pn.widgets.Button(name="Reset View", button_type="default", icon="refresh", on_click=failure_timeline_reset_view),
+            pn.widgets.Button(button_type="default", icon="zoom-in", on_click=failure_timeline_zoom_in),
+            pn.widgets.Button(button_type="default", icon="zoom-out", on_click=failure_timeline_zoom_out),
+        ),
+        task_timeline_container,
         sizing_mode="stretch_both"
     )
     failure_timeline_container = pn.pane.Plotly(sizing_mode="scale_both")
@@ -55,11 +60,16 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         sizing_mode="stretch_both"
     )
 
-    main_dashboard_container[0:1, 0] = system_health_container
-    main_dashboard_container[1:3, 0] = critical_component_container
-    main_dashboard_container[3:4, 0] = next_12_months_container
-    main_dashboard_container[4:, 0] = cost_forecast_container
-    main_dashboard_container[0, 1:2] = failure_timeline_header
+    main_dashboard_container[0:, 0] = pn.Column(
+        system_health_container,
+        critical_component_container,
+        next_12_months_container,
+        cost_forecast_container
+    )
+    # main_dashboard_container[1:3, 0] = critical_component_container
+    # main_dashboard_container[3:4, 0] = next_12_months_container
+    # main_dashboard_container[4:, 0] = cost_forecast_container
+    main_dashboard_container[0, 1:3] = failure_timeline_header
     main_dashboard_container[1:, 1:3] = failure_timeline_container
     main_dashboard_container[:, 3] = component_details_container
 

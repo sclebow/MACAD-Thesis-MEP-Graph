@@ -576,4 +576,6 @@ def generate_bar_chart_figure(prioritized_schedule):
     # Show no x axis tick marks
     fig.update_xaxes(showticklabels=False)
 
+    fig.update_layout(height=300)
+
     return fig

@@ -268,3 +268,9 @@ class GraphController:
             return self.prioritized_schedule[current_month]['graph']
 
         return None
+    
+    def get_next_12_months_data(self):
+        current_month = pd.Timestamp(self.current_date).to_period('M')
+        current_month_ts = current_month.to_timestamp()
+        next_12_months = [(current_month_ts + pd.DateOffset(months=i)).to_period('M') for i in range(1, 13)]
+        return {month: self.prioritized_schedule.get(month, {}) for month in next_12_months}
