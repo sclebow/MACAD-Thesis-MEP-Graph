@@ -1,7 +1,7 @@
 import pandas as pd
 import panel as pn
 
-from helpers.panel.button_callbacks import failure_timeline_reset_view, failure_timeline_zoom_in, failure_timeline_zoom_out, export_failure_schedule, export_annual_budget_forecast, reset_lifecycle_analysis_controls, run_lifecycle_analysis_simulation
+from helpers.panel.button_callbacks import failure_timeline_reset_view, failure_timeline_zoom_in, failure_timeline_zoom_out, export_failure_schedule, export_annual_budget_forecast, reset_lifecycle_analysis_controls, run_lifecycle_analysis_simulation, update_failure_component_details
 
 def layout_failure_prediction(failure_prediction_container, graph_controller):
     main_dashboard_container = pn.GridSpec(nrows=5, ncols=4, mode="error")
@@ -55,10 +55,12 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
     )
     failure_timeline_container = pn.pane.Plotly(sizing_mode="scale_both")
     pn.state.cache["failure_timeline_container"] = failure_timeline_container
+    failure_timeline_container.param.watch(lambda event: update_failure_component_details(graph_controller, failure_timeline_container), 'click_data')
     component_details_container = pn.Column(
         pn.pane.Markdown("### Component Details"),
         sizing_mode="stretch_both"
     )
+    pn.state.cache["component_details_container"] = component_details_container
 
     main_dashboard_container[0:, 0] = pn.Column(
         system_health_container,
@@ -67,8 +69,8 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         cost_forecast_container
     )
     main_dashboard_container[0, 1:3] = failure_timeline_header
-    main_dashboard_container[1:, 1:3] = failure_timeline_container
-    main_dashboard_container[:, 3] = component_details_container
+    main_dashboard_container[1:, 1:] = failure_timeline_container
+    main_dashboard_container[0, 3] = component_details_container
 
     failure_schedule_container.append(
         pn.Row(

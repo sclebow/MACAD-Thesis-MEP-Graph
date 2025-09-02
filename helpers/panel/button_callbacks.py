@@ -355,3 +355,17 @@ def update_current_date(event, graph_controller: GraphController):
 
     # Update the simulation
     run_simulation(None, graph_controller)
+
+def update_failure_component_details(graph_controller: GraphController, failure_timeline_container):
+    component_details_container = pn.state.cache["component_details_container"]
+
+    component_details_container.clear()
+    selected_failure = failure_timeline_container.click_data
+    if selected_failure:
+        component_details_str_list = []
+        # print(selected_failure.get('points')[0].get('hovertext'))
+        y = selected_failure.get('points')[0].get('y')
+        hover = selected_failure.get('points')[0].get('hovertext')
+        component_details_str_list.append(f"### Component Details for {y}")
+        component_details_str_list.append(hover)
+        component_details_container.append(pn.pane.Markdown("\n\n".join(component_details_str_list)))

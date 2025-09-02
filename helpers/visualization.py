@@ -667,5 +667,28 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: datetime.dat
 
     fig.update_layout(showlegend=True)
 
-    fig.update_layout(title='Node Failure Timeline', xaxis_title='Time', yaxis_title='Remaining Useful Life (RUL)')
+    fig.update_layout(title='Node Failure Timeline', xaxis_title='Failure Date', yaxis_title='Remaining Useful Life (RUL)')
+
+    # Add invisible trace to force secondary x-axis to appear
+    fig.add_trace(go.Scatter(
+        x=[node['date'] for node in list(node_dict.values())[:1]],  # Just first date
+        y=[list(node_dict.keys())[0]] if node_dict else [None],     # Just first node
+        mode='markers',
+        marker=dict(size=0.1, color='rgba(0,0,0,0)'),  # Completely transparent
+        xaxis='x2',  # Assign to secondary x-axis
+        showlegend=False,
+        hoverinfo='skip'
+    ))
+
+    # Show xlabels at the top and bottom
+    fig.update_layout(
+        xaxis2=dict(
+            title='Failure Date',
+            overlaying='x', 
+            side="top",
+            showticklabels=True,
+            matches='x'  # Sync with primary x-axis
+        )
+    )
+
     return fig, node_dict
