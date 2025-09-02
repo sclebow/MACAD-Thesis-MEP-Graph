@@ -9,8 +9,7 @@ import pandas as pd
 
 from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes, clean_graph_none_values
 
-from helpers.visualization import visualize_graph_two_d, visualize_graph_two_d_risk, visualize_graph_three_d
-
+from helpers.visualization import *
 from helpers.maintenance_tasks import process_maintenance_tasks
 
 class GraphController:
@@ -27,6 +26,7 @@ class GraphController:
         self.monthly_budget_time = 40.0  # Default budget
         self.months_to_schedule = 360  # Default months to schedule
         self.prioritized_schedule = None  # Store simulation results
+        self.current_date = pd.Timestamp.now()
 
     def run_rul_simulation(self):
         """Run a maintenance task simulation and store results in pn.state.cache"""
@@ -38,6 +38,7 @@ class GraphController:
             monthly_budget_time=self.monthly_budget_time,
             monthly_budget_money=self.monthly_budget_money,
             months_to_schedule=self.months_to_schedule,
+            current_date=self.current_date
         )
         
     def get_legend_settings(self):
@@ -248,3 +249,33 @@ class GraphController:
     def get_replacement_task_list_df(self):
         """Get the replacement task list DataFrame"""
         return pd.DataFrame(self.replacement_tasks)
+
+    def get_bar_chart_figure(self):
+        """Get the bar chart figure for task status over time"""
+        if not self.current_graph[0]:
+            return None
+
+        return generate_bar_chart_figure(self.prioritized_schedule) if self.prioritized_schedule else None
+
+    def get_current_date_graph(self):
+        """Get the current date graph"""
+        month_periods = self.prioritized_schedule.keys()
+
+        current_month = pd.Timestamp(self.current_date).to_period('M')
+        print(f"Current month period: {current_month}")
+        if current_month in month_periods:
+            return self.prioritized_schedule[current_month]['graph']
+
+        return None
+    
+    def get_next_12_months_data(self):
+        current_month = pd.Timestamp(self.current_date).to_period('M')
+        current_month_ts = current_month.to_timestamp()
+        next_12_months = [(current_month_ts + pd.DateOffset(months=i)).to_period('M') for i in range(1, 13)]
+        return {month: self.prioritized_schedule.get(month, {}) for month in next_12_months}
+
+    def get_current_date_failure_timeline_figure(self):
+        """Get the failure timeline figure"""
+        current_date_graph = self.get_current_date_graph()
+
+        return generate_failure_timeline_figure(current_date_graph, self.current_date)

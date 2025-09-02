@@ -2,6 +2,8 @@ import networkx as nx
 import plotly.graph_objects as go
 import math
 import random
+import datetime
+import plotly.express as px
 
 def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter = 0.5):
 
@@ -528,3 +530,165 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
                         )
                     ))
     return fig
+
+def generate_bar_chart_figure(prioritized_schedule):
+    """
+    Creates a bar chart figure for task status over time.
+    X-axis: Time
+    Y-axis: Number of Tasks
+    Bars:
+        - Number of Scheduled Tasks for this Month
+        - Number of Executed Tasks for this Month
+        - Number of Deferred Tasks for this Month
+    """
+    fig = go.Figure()
+
+    months = list(prioritized_schedule.keys())
+    
+    # Get the max amount of tasks from any month
+    max_tasks_scheduled_for_month = max(len(prioritized_schedule[month].get('tasks_scheduled_for_month', [])) for month in months)
+    max_tasks_executed_for_month = max(len(prioritized_schedule[month].get('executed_tasks', [])) for month in months)
+    max_tasks_deferred_for_month = max(len(prioritized_schedule[month].get('deferred_tasks', [])) for month in months)
+
+    max_tasks = max(max_tasks_scheduled_for_month, max_tasks_executed_for_month, max_tasks_deferred_for_month)
+
+    numbers_of_scheduled = []
+    numbers_of_executed = []
+    numbers_of_deferred = []
+
+    month_datetime_periods = prioritized_schedule.keys()
+    month_names = [month.start_time.strftime("%Y-%m") for month in month_datetime_periods]
+
+    for month in prioritized_schedule:
+        numbers_of_scheduled.append(len(prioritized_schedule[month].get('tasks_scheduled_for_month')))
+        numbers_of_executed.append(len(prioritized_schedule[month].get('executed_tasks')))
+        numbers_of_deferred.append(len(prioritized_schedule[month].get('deferred_tasks')))
+
+    print(f"Most Scheduled Tasks: {max(numbers_of_scheduled)}")
+    print(f"Most Executed Tasks: {max(numbers_of_executed)}")
+    print(f"Most Deferred Tasks: {max(numbers_of_deferred)}")
+
+    fig.add_trace(go.Bar(x=month_names, y=numbers_of_scheduled, name='Scheduled', marker_color='blue'))
+    fig.add_trace(go.Bar(x=month_names, y=numbers_of_executed, name='Executed', marker_color='green'))
+    fig.add_trace(go.Bar(x=month_names, y=numbers_of_deferred, name='Deferred', marker_color='red'))
+
+    fig.update_layout(title='Task Status Over Time', xaxis_title='Time', yaxis_title='Number of Tasks')
+    fig.update_yaxes(range=[0, max_tasks + 10])
+
+    # Show no x axis tick marks
+    # fig.update_xaxes(showticklabels=False)
+
+    fig.update_layout(height=300)
+
+    return fig
+
+def generate_failure_timeline_figure(graph: nx.Graph, current_date: datetime.date):
+    """
+    Creates a timeline figure for node failures over time.
+    X-axis: Time
+    Each node is a dot based on its remaining useful life (RUL).
+    """
+
+    # Remove end_load types from the graph
+    nodes = []
+    for node_id, node_data in graph.nodes(data=True):
+        if node_data.get('type') != 'end_load':
+            nodes.append((node_id, node_data))
+
+    min_marker_size = 15
+    max_marker_size = 50
+
+    fig = go.Figure()
+
+    node_dict = {}
+
+    for node_id, node_data in nodes:
+        rul_days = node_data.get('remaining_useful_life_days')
+        if rul_days is not None:
+            node_dict[node_id] = {
+                'rul_days': rul_days,
+                'type': node_data.get('type'),
+                'risk_score': node_data.get('risk_score'),
+                'date': current_date + datetime.timedelta(days=rul_days)
+            }
+
+    # Sort node_dict by date
+    node_dict = dict(sorted(node_dict.items(), key=lambda item: item[1]['date']))
+
+    # Size markers based on risk scores
+    risk_scores = [node['risk_score'] for node in node_dict.values()]
+    marker_sizes = [
+        min_marker_size + (max_marker_size - min_marker_size) * (risk_score / max(risk_scores)) if max(risk_scores) > 0 else min_marker_size
+        for risk_score in risk_scores
+    ]
+    
+    types = [node['type'] for node in node_dict.values()]
+    unique_types = list(sorted(set(types)))
+    type_colors = [px.colors.qualitative.Plotly[i % len(px.colors.qualitative.Plotly)] for i in range(len(unique_types))]
+
+    type_color_dict = {t: type_colors[i] for i, t in enumerate(unique_types)}
+
+    node_colors = []
+    for t in types:
+        node_colors.append(type_color_dict.get(t))
+
+    fig.add_trace(go.Scatter(
+        x=[node['date'] for node in node_dict.values()],
+        y=list(node_dict.keys()),
+        mode='markers',
+        marker=dict(size=marker_sizes, color=node_colors),
+        hovertext=[
+            f"Node: {node_id}<br>"
+            f"Type: {node['type']}<br>"
+            f"Risk Score: {node['risk_score']}<br>"
+            f"RUL (days): {node['rul_days']}<br>"
+            f"Failure Date: {node['date']}"
+            for node_id, node in node_dict.items()
+        ],
+        hoverinfo='text'
+    ))
+
+    # Add a legend
+    for t in unique_types:
+        fig.add_trace(go.Scatter(
+            x=[None],
+            y=[None],
+            mode='markers',
+            marker=dict(size=marker_sizes[0], color=type_color_dict.get(t)),
+            name=t
+        ))
+        
+    # Remove traces from the legend
+    for trace in fig.data:
+        if hasattr(trace, 'mode') and 'lines' in str(trace.mode):
+            trace.showlegend = False
+        if hasattr(trace, 'name') and not trace.name:
+            trace.showlegend = False
+
+    fig.update_layout(showlegend=True)
+
+    fig.update_layout(title='Node Failure Timeline', xaxis_title='Failure Date', yaxis_title='Remaining Useful Life (RUL)')
+
+    # Add invisible trace to force secondary x-axis to appear
+    fig.add_trace(go.Scatter(
+        x=[node['date'] for node in list(node_dict.values())[:1]],  # Just first date
+        y=[list(node_dict.keys())[0]] if node_dict else [None],     # Just first node
+        mode='markers',
+        marker=dict(size=0.1, color='rgba(0,0,0,0)'),  # Completely transparent
+        xaxis='x2',  # Assign to secondary x-axis
+        showlegend=False,
+        hoverinfo='skip'
+    ))
+
+    # Show xlabels at the top and bottom
+    fig.update_layout(
+        xaxis2=dict(
+            title='Failure Date',
+            overlaying='x', 
+            side="top",
+            showticklabels=True,
+            matches='x'  # Sync with primary x-axis
+        )
+    )
+
+    return fig, node_dict
