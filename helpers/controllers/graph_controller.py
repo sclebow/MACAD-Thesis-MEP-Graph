@@ -267,7 +267,27 @@ class GraphController:
             return self.prioritized_schedule[current_month]['graph']
 
         return None
-    
+
+    def get_previous_month_graph(self, number_of_months=1):
+        """Get the previous month graph"""
+        month_periods = self.prioritized_schedule.keys()
+
+        current_month = pd.Timestamp(self.current_date).to_period('M')
+        previous_month = current_month - number_of_months  # Use period arithmetic instead of DateOffset
+        if previous_month in month_periods:
+            return self.prioritized_schedule[previous_month]['graph']
+
+    def get_future_month_graph(self, number_of_months=1):
+        """Get the future month graph"""
+        month_periods = self.prioritized_schedule.keys()
+
+        current_month = pd.Timestamp(self.current_date).to_period('M')
+        future_month = current_month + number_of_months  # Use period arithmetic instead of DateOffset
+        if future_month in month_periods:
+            return self.prioritized_schedule[future_month]['graph']
+
+        return None
+
     def get_next_12_months_data(self):
         current_month = pd.Timestamp(self.current_date).to_period('M')
         current_month_ts = current_month.to_timestamp()

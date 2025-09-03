@@ -6,6 +6,7 @@ import base64
 import pandas as pd
 
 from helpers.controllers.graph_controller import GraphController
+from helpers.visualization import get_remaining_useful_life_fig, get_risk_distribution_fig, get_equipment_conditions_fig, get_maintenance_costs_fig
 
 def upload_graph_from_file(file_content, filename, graph_controller, graph_container):
     """Handle file upload and update graph visualization"""
@@ -192,6 +193,27 @@ def replacement_task_list_upload(event, graph_controller: GraphController, repla
     df = graph_controller.get_replacement_task_list_df()
     replacement_task_list_viewer.value = df
 
+def update_current_date(event, graph_controller: GraphController):
+    print("Current date updated to:", event.new)
+    graph_controller.current_date = event.new
+
+    # Update the simulation
+    run_simulation(None, graph_controller)
+
+def update_failure_component_details(graph_controller: GraphController, failure_timeline_container):
+    component_details_container = pn.state.cache["component_details_container"]
+
+    component_details_container.clear()
+    selected_failure = failure_timeline_container.click_data
+    if selected_failure:
+        component_details_str_list = []
+        # print(selected_failure.get('points')[0].get('hovertext'))
+        y = selected_failure.get('points')[0].get('y')
+        hover = selected_failure.get('points')[0].get('hovertext')
+        component_details_str_list.append(f"### Component Details for {y}")
+        component_details_str_list.append(hover)
+        component_details_container.append(pn.pane.Markdown("\n\n".join(component_details_str_list)))
+
 def run_simulation(event, graph_controller: GraphController):
     graph_controller.run_rul_simulation()
 
@@ -264,13 +286,17 @@ def run_simulation(event, graph_controller: GraphController):
 
     current_date_graph = graph_controller.get_current_date_graph()
 
-    node_conditions = []
-    for node_id, attrs in current_date_graph.nodes(data=True):
-        if 'current_condition' in attrs:
-            node_conditions.append(attrs.get('current_condition'))
-    total_number_of_nodes = len(node_conditions)
-    average_condition = sum(node_conditions) / total_number_of_nodes if total_number_of_nodes > 0 else 0
+    def get_average_condition(graph):
+        node_conditions = []
+        for node_id, attrs in graph.nodes(data=True):
+            if 'current_condition' in attrs:
+                node_conditions.append(attrs.get('current_condition'))
+        total_number_of_nodes = len(node_conditions)
+        average_condition = sum(node_conditions) / total_number_of_nodes if total_number_of_nodes > 0 else 0
 
+        return average_condition, total_number_of_nodes
+
+    average_condition, total_number_of_nodes = get_average_condition(current_date_graph)
     system_health_str_list.append(f"**Average Condition**: {average_condition:.0%}")
     system_health_str_list.append(f"**Total Number of Nodes**: {total_number_of_nodes}")
 
@@ -355,30 +381,10 @@ def run_simulation(event, graph_controller: GraphController):
     df = pd.DataFrame.from_dict(node_dict, orient="index")
     failure_schedule_dataframe.value = df
 
-    # Update analytics tab with simulation results
+    # Notify analytics module of simulation results (if available)
     try:
         from helpers.panel.pages.analytics import update_analytics_from_simulation
         update_analytics_from_simulation(graph_controller)
-    except ImportError:
-        print("Analytics module not available")
-
-def update_current_date(event, graph_controller: GraphController):
-    print("Current date updated to:", event.new)
-    graph_controller.current_date = event.new
-
-    # Update the simulation
-    run_simulation(None, graph_controller)
-
-def update_failure_component_details(graph_controller: GraphController, failure_timeline_container):
-    component_details_container = pn.state.cache["component_details_container"]
-
-    component_details_container.clear()
-    selected_failure = failure_timeline_container.click_data
-    if selected_failure:
-        component_details_str_list = []
-        # print(selected_failure.get('points')[0].get('hovertext'))
-        y = selected_failure.get('points')[0].get('y')
-        hover = selected_failure.get('points')[0].get('hovertext')
-        component_details_str_list.append(f"### Component Details for {y}")
-        component_details_str_list.append(hover)
-        component_details_container.append(pn.pane.Markdown("\n\n".join(component_details_str_list)))
+    except Exception:
+        # Analytics module may not be available in all contexts; ignore failures
+        pass

@@ -26,7 +26,7 @@ graph_controller = GraphController()
 system_view_container = pn.GridSpec(nrows=10, ncols=3, mode="error")
 failure_prediction_container = pn.Column()
 maintenance_container = pn.Column()
-analytics_container = pn.GridSpec(nrows=5, ncols=4, mode="error")
+analytics_container = pn.Column()
 settings_container = pn.Column()
 
 # Create main tabs page
@@ -84,7 +84,7 @@ layout_analytics(analytics_container, graph_controller)
 layout_settings(settings_container, graph_controller)
 
 # DEBUG Set default tabs
-main_tabs.active = 1
+main_tabs.active = 3
 
 print("Starting Application...")
 
