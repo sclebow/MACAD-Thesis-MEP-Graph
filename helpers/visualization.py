@@ -4,6 +4,7 @@ import math
 import random
 import datetime
 import plotly.express as px
+import pandas as pd
 
 def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter = 0.5):
 
@@ -582,7 +583,7 @@ def generate_bar_chart_figure(prioritized_schedule):
 
     return fig
 
-def generate_failure_timeline_figure(graph: nx.Graph, current_date: datetime.date):
+def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp):
     """
     Creates a timeline figure for node failures over time.
     X-axis: Time
@@ -609,7 +610,8 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: datetime.dat
                 'rul_days': rul_days,
                 'type': node_data.get('type'),
                 'risk_score': node_data.get('risk_score'),
-                'date': current_date + datetime.timedelta(days=rul_days)
+                'date': current_date + datetime.timedelta(days=rul_days),
+                'risk_level': node_data.get('risk_level')
             }
 
     # Sort node_dict by date
@@ -642,7 +644,8 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: datetime.dat
             f"Type: {node['type']}<br>"
             f"Risk Score: {node['risk_score']}<br>"
             f"RUL (days): {node['rul_days']}<br>"
-            f"Failure Date: {node['date']}"
+            f"Failure Date: {node['date']}<br>"
+            f"Risk Level: {node['risk_level']}"
             for node_id, node in node_dict.items()
         ],
         hoverinfo='text'
@@ -692,3 +695,157 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: datetime.dat
     )
 
     return fig, node_dict
+
+def get_equipment_conditions_fig(graphs: list[nx.Graph], periods: list, current_date: datetime) -> go.Figure:
+    """Get the remaining useful life figure for the given graphs."""
+
+    data_dict_list = []
+
+    for period, graph in zip(periods, graphs):
+        for node, attrs in graph.nodes(data=True):
+            node_type = attrs.get('type')
+            if node_type != 'end_load':
+                data_dict_list.append({
+                    'node': node,
+                    'type': node_type,
+                    'period': period,
+                    'remaining_useful_life_days': attrs.get('remaining_useful_life_days')
+                })
+
+    data_df = pd.DataFrame(data_dict_list)
+
+    # Group by period and type, and calculate the average remaining useful life
+    grouped = data_df.groupby(['period', 'type'])['remaining_useful_life_days'].mean().reset_index()
+
+    # Convert period to timestamp
+    grouped['period'] = grouped['period'].dt.to_timestamp()
+
+    # Create the figure
+    fig = go.Figure()
+
+    # X-axis is period, Y-axis is average remaining useful life, different lines for each type
+    for node_type in grouped['type'].unique():
+        filtered = grouped[grouped['type'] == node_type]
+        fig.add_trace(go.Scatter(
+            x=filtered['period'],
+            y=filtered['remaining_useful_life_days'],
+            mode='lines+markers',
+            name=node_type
+        ))
+
+    # Add a vertical line for the current date
+    current_date_dt = pd.to_datetime(current_date).to_pydatetime()
+    fig.add_vline(x=current_date_dt, line=dict(color='red', dash='dash'))
+    # Add annotation for the current date
+    fig.add_annotation(
+        x=current_date_dt,
+        y=1,
+        yref='paper',
+        text="Current Date",
+        showarrow=False,
+        xanchor='left',
+        yanchor='bottom',
+        font=dict(color='red')
+    )
+
+    fig.update_layout(xaxis_title='Period', yaxis_title='RUL')
+
+    return fig
+
+def get_risk_distribution_fig(current_date_graph: nx.Graph):
+    """Create a pie chart of the risk distribution."""
+    fig = go.Figure()
+
+    # Get the node types and their corresponding colors
+    node_conditions = {node: attrs.get('risk_level') for node, attrs in current_date_graph.nodes(data=True)}
+    condition_counts = pd.Series(node_conditions).value_counts()
+
+    fig.add_trace(go.Pie(
+        labels=condition_counts.index,
+        values=condition_counts.values,
+        hole=0.4
+    ))
+
+    return fig
+
+def get_remaining_useful_life_fig(current_date_graph: nx.Graph):
+    """Create a bar chart of the remaining useful life for each equipment."""
+    fig = go.Figure()
+
+    # Get the remaining useful life values
+    rul_values = [attrs.get('remaining_useful_life_days') for node, attrs in current_date_graph.nodes(data=True) if attrs.get('remaining_useful_life_days') is not None]
+    node_ids = [node for node, attrs in current_date_graph.nodes(data=True) if attrs.get('remaining_useful_life_days') is not None]
+
+    # Sort by rul_values
+    sorted_indices = sorted(range(len(rul_values)), key=lambda i: rul_values[i])
+    node_ids = [node_ids[i] for i in sorted_indices]
+    rul_values = [rul_values[i] for i in sorted_indices]
+
+    fig.add_trace(go.Bar(
+        x=node_ids,
+        y=rul_values,
+        marker=dict(
+            color=rul_values,
+            colorscale='Agsunset',
+            colorbar=dict(title='RUL (days)')
+        ),
+    ))
+    fig.update_layout(yaxis_title='Days', xaxis_title='Equipment')
+
+    return fig
+
+def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Timestamp, number_of_previous_months: int=3, number_of_future_months: int=6):
+    """Create a line chart of monthly total maintenance costs."""
+    # Get period of current date
+    current_period = pd.Period(current_date, freq='M')
+
+    # Get the relevant periods for the chart
+    all_periods = pd.period_range(
+        start=(current_period - number_of_previous_months),
+        end=(current_period + number_of_future_months),
+        freq='M'
+    )
+
+    # Filter the prioritized_schedule by periods
+    filtered_schedule = {k: v for k, v in prioritized_schedule.items() if k in all_periods}
+
+    executed_tasks_lists = [v.get('executed_tasks') for v in filtered_schedule.values()]
+
+    total_money_costs = []
+    for executed_task_list in executed_tasks_lists:
+        total_money_cost = 0
+        for task in executed_task_list:
+            money_cost = task.get('money_cost')
+            total_money_cost += money_cost
+        total_money_costs.append(total_money_cost)
+
+    # Convert periods to datetime
+    all_periods = all_periods.to_timestamp()
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=all_periods,
+        y=total_money_costs,
+        mode='lines+markers',
+        name='Total Maintenance Costs',
+        fill='tozeroy',
+        line=dict(shape='spline')
+    ))
+    fig.update_layout(xaxis_title='Period', yaxis_title='Cost in Period (Dollars)')
+
+    # Add a vertical line for the current date
+    current_date_dt = pd.to_datetime(current_date).to_pydatetime()
+    fig.add_vline(x=current_date_dt, line=dict(color='red', dash='dash'))
+    # Add annotation for the current date
+    fig.add_annotation(
+        x=current_date_dt,
+        y=1,
+        yref='paper',
+        text="Current Date",
+        showarrow=False,
+        xanchor='left',
+        yanchor='bottom',
+        font=dict(color='red')
+    )
+
+    return fig
