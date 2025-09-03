@@ -696,7 +696,7 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp
 
     return fig, node_dict
 
-def get_remaining_useful_life_fig(graphs: list[nx.Graph], periods: list, current_date: datetime) -> go.Figure:
+def get_equipment_conditions_fig(graphs: list[nx.Graph], periods: list, current_date: datetime) -> go.Figure:
     """Get the remaining useful life figure for the given graphs."""
 
     data_dict_list = []
@@ -749,5 +749,21 @@ def get_remaining_useful_life_fig(graphs: list[nx.Graph], periods: list, current
     )
 
     fig.update_layout(xaxis_title='Period', yaxis_title='RUL')
+
+    return fig
+
+def get_risk_distribution_fig(current_date_graph: nx.Graph):
+    """Create a pie chart of the risk distribution."""
+    fig = go.Figure()
+
+    # Get the node types and their corresponding colors
+    node_conditions = {node: attrs.get('risk_level') for node, attrs in current_date_graph.nodes(data=True)}
+    condition_counts = pd.Series(node_conditions).value_counts()
+
+    fig.add_trace(go.Pie(
+        labels=condition_counts.index,
+        values=condition_counts.values,
+        hole=0.4
+    ))
 
     return fig

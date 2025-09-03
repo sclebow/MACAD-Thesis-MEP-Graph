@@ -6,7 +6,7 @@ import base64
 import pandas as pd
 
 from helpers.controllers.graph_controller import GraphController
-from helpers.visualization import get_remaining_useful_life_fig
+from helpers.visualization import get_remaining_useful_life_fig, get_risk_distribution_fig, get_equipment_conditions_fig, get_maintenance_costs_fig
 
 def upload_graph_from_file(file_content, filename, graph_controller, graph_container):
     """Handle file upload and update graph visualization"""
@@ -463,9 +463,21 @@ def run_simulation(event, graph_controller: GraphController):
     ]
     periods = [(pd.Timestamp(graph_controller.current_date) + pd.DateOffset(months=i)).to_period('M') for i in range(-3, 7)]
 
-    fig = get_remaining_useful_life_fig(graphs, periods, current_date=graph_controller.current_date)
+    fig = get_remaining_useful_life_fig(current_date_graph)
     remaining_useful_life_plot.object = fig
 
     risk_distribution_container = pn.state.cache.get("risk_distribution_container")
+    risk_distribution_plot = pn.state.cache.get("risk_distribution_plot")
+
+    fig = get_risk_distribution_fig(current_date_graph)
+    risk_distribution_plot.object = fig
+
     equipment_condition_trends_container = pn.state.cache.get("equipment_condition_trends_container")
+    equipment_condition_trends_plot = pn.state.cache.get("equipment_condition_trends_plot")
+    fig = get_equipment_conditions_fig(graphs, periods, current_date=graph_controller.current_date)
+    equipment_condition_trends_plot.object = fig
+
     maintenance_costs_container = pn.state.cache.get("maintenance_costs_container")
+    maintenance_costs_plot = pn.state.cache.get("maintenance_costs_plot")
+    fig = get_maintenance_costs_fig(graphs, periods, current_date=graph_controller.current_date)
+    maintenance_costs_plot.object = fig

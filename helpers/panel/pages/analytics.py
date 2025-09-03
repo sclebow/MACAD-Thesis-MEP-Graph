@@ -42,18 +42,22 @@ def layout_analytics(analytics_container, graph_controller):
     pn.state.cache["risk_distribution_plot"] = risk_distribution_plot
     grid[1:3, 2:] = risk_distribution_container
 
+    equipment_condition_trends_plot = pn.pane.Plotly(sizing_mode="scale_width")
     equipment_condition_trends_container = pn.Column(
         pn.pane.Markdown("### Equipment Condition Trends"),
-        pn.pane.Plotly(sizing_mode="scale_width")
+        equipment_condition_trends_plot
     )
     pn.state.cache["equipment_condition_trends_container"] = equipment_condition_trends_container
+    pn.state.cache["equipment_condition_trends_plot"] = equipment_condition_trends_plot
     grid[3:, 0:2] = equipment_condition_trends_container
 
+    maintenance_costs_plot = pn.pane.Plotly(sizing_mode="scale_width")
     maintenance_costs_container = pn.Column(
         pn.pane.Markdown("### Maintenance Costs"),
-        pn.pane.Plotly(sizing_mode="scale_width")
+        maintenance_costs_plot
     )
     pn.state.cache["maintenance_costs_container"] = maintenance_costs_container
+    pn.state.cache["maintenance_costs_plot"] = maintenance_costs_plot
     grid[3:, 2:] = maintenance_costs_container
 
     analytics_container.append(grid)
