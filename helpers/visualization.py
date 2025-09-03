@@ -827,7 +827,9 @@ def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Times
         x=all_periods,
         y=total_money_costs,
         mode='lines+markers',
-        name='Total Maintenance Costs'
+        name='Total Maintenance Costs',
+        fill='tozeroy',
+        line=dict(shape='spline')
     ))
     fig.update_layout(xaxis_title='Period', yaxis_title='Cost in Period (Dollars)')
 
@@ -845,5 +847,5 @@ def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Times
         yanchor='bottom',
         font=dict(color='red')
     )
-    
+
     return fig
