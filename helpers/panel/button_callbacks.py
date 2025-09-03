@@ -355,6 +355,13 @@ def run_simulation(event, graph_controller: GraphController):
     df = pd.DataFrame.from_dict(node_dict, orient="index")
     failure_schedule_dataframe.value = df
 
+    # Update analytics tab with simulation results
+    try:
+        from helpers.panel.pages.analytics import update_analytics_from_simulation
+        update_analytics_from_simulation(graph_controller)
+    except ImportError:
+        print("Analytics module not available")
+
 def update_current_date(event, graph_controller: GraphController):
     print("Current date updated to:", event.new)
     graph_controller.current_date = event.new
