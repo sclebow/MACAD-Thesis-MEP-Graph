@@ -4,6 +4,7 @@ import math
 import random
 import datetime
 import plotly.express as px
+import pandas as pd
 
 def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter = 0.5):
 
@@ -582,7 +583,7 @@ def generate_bar_chart_figure(prioritized_schedule):
 
     return fig
 
-def generate_failure_timeline_figure(graph: nx.Graph, current_date: datetime.date):
+def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp):
     """
     Creates a timeline figure for node failures over time.
     X-axis: Time
@@ -609,7 +610,8 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: datetime.dat
                 'rul_days': rul_days,
                 'type': node_data.get('type'),
                 'risk_score': node_data.get('risk_score'),
-                'date': current_date + datetime.timedelta(days=rul_days)
+                'date': current_date + datetime.timedelta(days=rul_days),
+                'risk_level': node_data.get('risk_level')
             }
 
     # Sort node_dict by date
@@ -642,7 +644,8 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: datetime.dat
             f"Type: {node['type']}<br>"
             f"Risk Score: {node['risk_score']}<br>"
             f"RUL (days): {node['rul_days']}<br>"
-            f"Failure Date: {node['date']}"
+            f"Failure Date: {node['date']}<br>"
+            f"Risk Level: {node['risk_level']}"
             for node_id, node in node_dict.items()
         ],
         hoverinfo='text'
@@ -692,3 +695,59 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: datetime.dat
     )
 
     return fig, node_dict
+
+def get_remaining_useful_life_fig(graphs: list[nx.Graph], periods: list, current_date: datetime) -> go.Figure:
+    """Get the remaining useful life figure for the given graphs."""
+
+    data_dict_list = []
+
+    for period, graph in zip(periods, graphs):
+        for node, attrs in graph.nodes(data=True):
+            node_type = attrs.get('type')
+            if node_type != 'end_load':
+                data_dict_list.append({
+                    'node': node,
+                    'type': node_type,
+                    'period': period,
+                    'remaining_useful_life_days': attrs.get('remaining_useful_life_days')
+                })
+
+    data_df = pd.DataFrame(data_dict_list)
+
+    # Group by period and type, and calculate the average remaining useful life
+    grouped = data_df.groupby(['period', 'type'])['remaining_useful_life_days'].mean().reset_index()
+
+    # Convert period to timestamp
+    grouped['period'] = grouped['period'].dt.to_timestamp()
+
+    # Create the figure
+    fig = go.Figure()
+
+    # X-axis is period, Y-axis is average remaining useful life, different lines for each type
+    for node_type in grouped['type'].unique():
+        filtered = grouped[grouped['type'] == node_type]
+        fig.add_trace(go.Scatter(
+            x=filtered['period'],
+            y=filtered['remaining_useful_life_days'],
+            mode='lines+markers',
+            name=node_type
+        ))
+
+    # Add a vertical line for the current date
+    current_date_dt = pd.to_datetime(current_date).to_pydatetime()
+    fig.add_vline(x=current_date_dt, line=dict(color='red', dash='dash'))
+    # Add annotation for the current date
+    fig.add_annotation(
+        x=current_date_dt,
+        y=1,
+        yref='paper',
+        text="Current Date",
+        showarrow=False,
+        xanchor='left',
+        yanchor='bottom',
+        font=dict(color='red')
+    )
+
+    fig.update_layout(xaxis_title='Period', yaxis_title='RUL')
+
+    return fig
