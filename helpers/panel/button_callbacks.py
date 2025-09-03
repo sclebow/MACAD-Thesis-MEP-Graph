@@ -479,5 +479,5 @@ def run_simulation(event, graph_controller: GraphController):
 
     maintenance_costs_container = pn.state.cache.get("maintenance_costs_container")
     maintenance_costs_plot = pn.state.cache.get("maintenance_costs_plot")
-    fig = get_maintenance_costs_fig(graphs, periods, current_date=graph_controller.current_date)
+    fig = get_maintenance_costs_fig(prioritized_schedule=graph_controller.prioritized_schedule, current_date=graph_controller.current_date)
     maintenance_costs_plot.object = fig

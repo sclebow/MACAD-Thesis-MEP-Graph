@@ -767,3 +767,83 @@ def get_risk_distribution_fig(current_date_graph: nx.Graph):
     ))
 
     return fig
+
+def get_remaining_useful_life_fig(current_date_graph: nx.Graph):
+    """Create a bar chart of the remaining useful life for each equipment."""
+    fig = go.Figure()
+
+    # Get the remaining useful life values
+    rul_values = [attrs.get('remaining_useful_life_days') for node, attrs in current_date_graph.nodes(data=True) if attrs.get('remaining_useful_life_days') is not None]
+    node_ids = [node for node, attrs in current_date_graph.nodes(data=True) if attrs.get('remaining_useful_life_days') is not None]
+
+    # Sort by rul_values
+    sorted_indices = sorted(range(len(rul_values)), key=lambda i: rul_values[i])
+    node_ids = [node_ids[i] for i in sorted_indices]
+    rul_values = [rul_values[i] for i in sorted_indices]
+
+    fig.add_trace(go.Bar(
+        x=node_ids,
+        y=rul_values,
+        marker=dict(
+            color=rul_values,
+            colorscale='Agsunset',
+            colorbar=dict(title='RUL (days)')
+        ),
+    ))
+    fig.update_layout(yaxis_title='Days', xaxis_title='Equipment')
+
+    return fig
+
+def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Timestamp, number_of_previous_months: int=3, number_of_future_months: int=6):
+    """Create a line chart of monthly total maintenance costs."""
+    # Get period of current date
+    current_period = pd.Period(current_date, freq='M')
+
+    # Get the relevant periods for the chart
+    all_periods = pd.period_range(
+        start=(current_period - number_of_previous_months),
+        end=(current_period + number_of_future_months),
+        freq='M'
+    )
+
+    # Filter the prioritized_schedule by periods
+    filtered_schedule = {k: v for k, v in prioritized_schedule.items() if k in all_periods}
+
+    executed_tasks_lists = [v.get('executed_tasks') for v in filtered_schedule.values()]
+
+    total_money_costs = []
+    for executed_task_list in executed_tasks_lists:
+        total_money_cost = 0
+        for task in executed_task_list:
+            money_cost = task.get('money_cost')
+            total_money_cost += money_cost
+        total_money_costs.append(total_money_cost)
+
+    # Convert periods to datetime
+    all_periods = all_periods.to_timestamp()
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=all_periods,
+        y=total_money_costs,
+        mode='lines+markers',
+        name='Total Maintenance Costs'
+    ))
+    fig.update_layout(xaxis_title='Period', yaxis_title='Cost in Period (Dollars)')
+
+    # Add a vertical line for the current date
+    current_date_dt = pd.to_datetime(current_date).to_pydatetime()
+    fig.add_vline(x=current_date_dt, line=dict(color='red', dash='dash'))
+    # Add annotation for the current date
+    fig.add_annotation(
+        x=current_date_dt,
+        y=1,
+        yref='paper',
+        text="Current Date",
+        showarrow=False,
+        xanchor='left',
+        yanchor='bottom',
+        font=dict(color='red')
+    )
+    
+    return fig
