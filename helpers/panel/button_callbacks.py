@@ -192,6 +192,27 @@ def replacement_task_list_upload(event, graph_controller: GraphController, repla
     df = graph_controller.get_replacement_task_list_df()
     replacement_task_list_viewer.value = df
 
+def update_current_date(event, graph_controller: GraphController):
+    print("Current date updated to:", event.new)
+    graph_controller.current_date = event.new
+
+    # Update the simulation
+    run_simulation(None, graph_controller)
+
+def update_failure_component_details(graph_controller: GraphController, failure_timeline_container):
+    component_details_container = pn.state.cache["component_details_container"]
+
+    component_details_container.clear()
+    selected_failure = failure_timeline_container.click_data
+    if selected_failure:
+        component_details_str_list = []
+        # print(selected_failure.get('points')[0].get('hovertext'))
+        y = selected_failure.get('points')[0].get('y')
+        hover = selected_failure.get('points')[0].get('hovertext')
+        component_details_str_list.append(f"### Component Details for {y}")
+        component_details_str_list.append(hover)
+        component_details_container.append(pn.pane.Markdown("\n\n".join(component_details_str_list)))
+
 def run_simulation(event, graph_controller: GraphController):
     graph_controller.run_rul_simulation()
 
@@ -354,24 +375,3 @@ def run_simulation(event, graph_controller: GraphController):
     failure_schedule_dataframe = pn.state.cache.get("failure_schedule_dataframe")
     df = pd.DataFrame.from_dict(node_dict, orient="index")
     failure_schedule_dataframe.value = df
-
-def update_current_date(event, graph_controller: GraphController):
-    print("Current date updated to:", event.new)
-    graph_controller.current_date = event.new
-
-    # Update the simulation
-    run_simulation(None, graph_controller)
-
-def update_failure_component_details(graph_controller: GraphController, failure_timeline_container):
-    component_details_container = pn.state.cache["component_details_container"]
-
-    component_details_container.clear()
-    selected_failure = failure_timeline_container.click_data
-    if selected_failure:
-        component_details_str_list = []
-        # print(selected_failure.get('points')[0].get('hovertext'))
-        y = selected_failure.get('points')[0].get('y')
-        hover = selected_failure.get('points')[0].get('hovertext')
-        component_details_str_list.append(f"### Component Details for {y}")
-        component_details_str_list.append(hover)
-        component_details_container.append(pn.pane.Markdown("\n\n".join(component_details_str_list)))
