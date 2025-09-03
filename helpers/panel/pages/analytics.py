@@ -24,71 +24,197 @@ def _create_kpi_cards_section(analytics_container, graph_controller):
     pn.state.cache["analytics_system_reliability"] = system_reliability_card
 
 def layout_analytics(analytics_container, graph_controller):
-    """Create Scott's simplified analytics layout within existing GridSpec"""
+    """Create hybrid layout: Figma-styled KPI cards + Scott's functional containers + charts"""
     # analytics_container is already a GridSpec, so place items directly
     
     # Store grid reference for our KPI card updates  
     pn.state.cache["analytics_container_ref"] = analytics_container
     
-    # Create individual containers for each KPI (Scott's approach)
+    # Row 0: Figma-styled KPI cards (visual layer)
+    system_health_card = _create_kpi_card("System Health", "Loading...", "↗ +0%", "System Health")
+    critical_equipment_card = _create_kpi_card("Critical Equipment", "Loading...", "→ 0", "Critical Equipment")
+    avg_rul_card = _create_kpi_card("Avg. RUL", "Loading...", "→ 0 m", "Avg. RUL")
+    system_reliability_card = _create_kpi_card("System Reliability", "Loading...", "→ +0%", "System Reliability")
+    
+    # Store styled cards for updates
+    pn.state.cache["styled_system_health_card"] = system_health_card
+    pn.state.cache["styled_critical_equipment_card"] = critical_equipment_card
+    pn.state.cache["styled_avg_rul_card"] = avg_rul_card
+    pn.state.cache["styled_system_reliability_card"] = system_reliability_card
+    
+    analytics_container[0, 0] = system_health_card
+    analytics_container[0, 1] = critical_equipment_card
+    analytics_container[0, 2] = avg_rul_card
+    analytics_container[0, 3] = system_reliability_card
+    
+    # Also create Scott's individual containers for backward compatibility (hidden or minimal)
     average_system_health_container = pn.Column()
     pn.state.cache["average_system_health_container"] = average_system_health_container
-    analytics_container[0, 0] = average_system_health_container
+    # Don't place in grid - keep for compatibility only
 
     critical_equipment_container = pn.Column()
     pn.state.cache["critical_equipment_container"] = critical_equipment_container
-    analytics_container[0, 1] = critical_equipment_container
 
     average_rul_container = pn.Column()
     pn.state.cache["average_rul_container"] = average_rul_container
-    analytics_container[0, 2] = average_rul_container
 
-    system_reliability_container = pn.Column(
-        pn.pane.Markdown("### System Reliability"),
-    )
+    system_reliability_container = pn.Column()
     pn.state.cache["system_reliability_container"] = system_reliability_container
-    analytics_container[0, 3] = system_reliability_container
 
-    # Charts setup
-    remaining_useful_life_plot = pn.pane.Plotly(sizing_mode="scale_both")
+    # Charts setup with better sizing and more vertical space
+    remaining_useful_life_plot = pn.pane.Plotly(sizing_mode="stretch_both", min_height=400)
     remaining_useful_life_container = pn.Column(
         pn.pane.Markdown("### Remaining Useful Life"),
-        remaining_useful_life_plot
+        remaining_useful_life_plot,
+        sizing_mode="stretch_both"
     )
     pn.state.cache["remaining_useful_life_container"] = remaining_useful_life_container
     pn.state.cache["remaining_useful_life_plot"] = remaining_useful_life_plot
-    analytics_container[1:3, 0:2] = remaining_useful_life_container
+    analytics_container[1:4, 0:2] = remaining_useful_life_container
 
-    risk_distribution_plot = pn.pane.Plotly(sizing_mode="scale_width")
+    risk_distribution_plot = pn.pane.Plotly(sizing_mode="stretch_both", min_height=400)
     risk_distribution_container = pn.Column(
         pn.pane.Markdown("### Risk Distribution"),
-        risk_distribution_plot
+        risk_distribution_plot,
+        sizing_mode="stretch_both"
     )
     pn.state.cache["risk_distribution_container"] = risk_distribution_container
     pn.state.cache["risk_distribution_plot"] = risk_distribution_plot
-    analytics_container[1:3, 2:] = risk_distribution_container
+    analytics_container[1:4, 2:] = risk_distribution_container
 
-    equipment_condition_trends_plot = pn.pane.Plotly(sizing_mode="scale_width")
+    equipment_condition_trends_plot = pn.pane.Plotly(sizing_mode="stretch_both", min_height=400)
     equipment_condition_trends_container = pn.Column(
         pn.pane.Markdown("### Equipment Condition Trends"),
-        equipment_condition_trends_plot
+        equipment_condition_trends_plot,
+        sizing_mode="stretch_both"
     )
     pn.state.cache["equipment_condition_trends_container"] = equipment_condition_trends_container
     pn.state.cache["equipment_condition_trends_plot"] = equipment_condition_trends_plot
-    analytics_container[3:, 0:2] = equipment_condition_trends_container
+    analytics_container[4:7, 0:2] = equipment_condition_trends_container
 
-    maintenance_costs_plot = pn.pane.Plotly(sizing_mode="scale_width")
+    maintenance_costs_plot = pn.pane.Plotly(sizing_mode="stretch_both", min_height=400)
     maintenance_costs_container = pn.Column(
         pn.pane.Markdown("### Maintenance Costs"),
-        maintenance_costs_plot
+        maintenance_costs_plot,
+        sizing_mode="stretch_both"
     )
     pn.state.cache["maintenance_costs_container"] = maintenance_costs_container
     pn.state.cache["maintenance_costs_plot"] = maintenance_costs_plot
-    analytics_container[3:, 2:] = maintenance_costs_container
+    analytics_container[4:7, 2:] = maintenance_costs_container
 
 # Legacy functions removed - now using Scott's approach + unified analytics pipeline
 
 # Chart Generation Functions
+
+def _create_enhanced_kpi_card(title, value, trend, metric_type):
+    """Create an enhanced styled KPI card with improved visual design."""
+    # Color scheme based on metric type
+    accent_colors = {
+        "System Health": "#22c55e",  # Green
+        "Critical Equipment": "#ef4444",  # Red  
+        "Avg. RUL": "#3b82f6",  # Blue
+        "System Reliability": "#8b5cf6"  # Purple
+    }
+    
+    accent_color = accent_colors.get(metric_type, "#6b7280")
+    
+    # Icon based on metric type with better visual representation
+    icons = {
+        "System Health": "🟢",
+        "Critical Equipment": "🔴", 
+        "Avg. RUL": "🔧",
+        "System Reliability": "🛡️"
+    }
+    
+    icon = icons.get(metric_type, "📊")
+    
+    # Determine trend color based on trend direction
+    trend_color = "#22c55e" if "↗" in trend else "#ef4444" if "↘" in trend else "#64748b"
+    
+    card_html = f"""
+    <div style="
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 6px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        position: relative;
+        overflow: hidden;
+        min-height: 120px;
+        transition: all 0.3s ease;
+    ">
+        <!-- Accent bar -->
+        <div style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: {accent_color};
+            box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+        "></div>
+        
+        <!-- Background pattern -->
+        <div style="
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 40px;
+            height: 40px;
+            background: {accent_color};
+            opacity: 0.05;
+            border-radius: 50%;
+        "></div>
+        
+        <!-- Header with icon -->
+        <div style="
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            margin-left: 8px;
+        ">
+            <span style="font-size: 20px; margin-right: 10px;">{icon}</span>
+            <h3 style="
+                margin: 0;
+                font-size: 13px;
+                font-weight: 600;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            ">{title}</h3>
+        </div>
+        
+        <!-- Value -->
+        <div style="
+            margin-left: 8px;
+            margin-bottom: 8px;
+        ">
+            <span style="
+                font-size: 32px;
+                font-weight: 700;
+                color: #1e293b;
+                line-height: 1;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            ">{value}</span>
+        </div>
+        
+        <!-- Trend with enhanced styling -->
+        <div style="
+            margin-left: 8px;
+            font-size: 13px;
+            color: {trend_color};
+            font-weight: 600;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            display: inline-block;
+            border: 1px solid {trend_color}22;
+        ">{trend}</div>
+    </div>
+    """
+    
+    return pn.pane.HTML(card_html, sizing_mode="stretch_width", height=140)
 
 def _create_kpi_card(title, value, trend_value, card_type):
     """Helper function to create a standardized KPI card matching Figma design"""
@@ -515,8 +641,101 @@ def _format_delta(value, suffix='', precision=1):
     fmt = f"{sign}{value:.{precision}f}{suffix}" if isinstance(value, (int, float)) else '0'
     return fmt
 
+def _clear_analytics_cache():
+    """Clear analytics-related cache entries for cleanup."""
+    cache_keys_to_clear = [
+        'styled_system_health_card',
+        'styled_critical_equipment_card', 
+        'styled_avg_rul_card',
+        'styled_system_reliability_card',
+        'analytics_metrics'
+    ]
+    
+    for key in cache_keys_to_clear:
+        if key in pn.state.cache:
+            del pn.state.cache[key]
+
+def _validate_analytics_container():
+    """Validate and return analytics container, create if missing."""
+    analytics_container = pn.state.cache.get("analytics_container_ref")
+    
+    if analytics_container is None:
+        print("Warning: Analytics container not found in cache, analytics may not display correctly")
+        return None
+        
+    if not hasattr(analytics_container, '__getitem__') or not hasattr(analytics_container, '__setitem__'):
+        print("Warning: Analytics container is not a valid GridSpec object")
+        return None
+        
+    return analytics_container
+
 def update_kpi_cards(metrics):
-    """Update Scott's individual KPI containers with computed metrics."""
+    """Update styled cards by recreating and clearing/replacing grid positions."""
+    def trend_string(delta, unit):
+        if delta == 0 or delta is None:
+            return '→ 0'
+        arrow = '↗' if delta > 0 else '↘'
+        if unit == 'months':
+            return f"{arrow} {delta:+.1f} m"
+        return f"{arrow} {delta:+.1f}{unit}"
+
+    analytics_container = _validate_analytics_container()
+    if analytics_container is None:
+        return
+
+    # Create all new cards using enhanced styling
+    sh_val = f"{metrics['system_health']:.1f}%"
+    sh_trend = trend_string(metrics['system_health_delta'], '%')
+    new_sh_card = _create_enhanced_kpi_card("System Health", sh_val, sh_trend, "System Health")
+
+    ce_val = str(metrics['critical_equipment'])
+    ce_trend = trend_string(metrics['critical_equipment_delta'], '')
+    new_ce_card = _create_enhanced_kpi_card("Critical Equipment", ce_val, ce_trend, "Critical Equipment")
+
+    rul_val = f"{metrics['avg_rul_months']:.1f} months"
+    rul_trend = trend_string(metrics['avg_rul_months_delta'], ' months')
+    new_rul_card = _create_enhanced_kpi_card("Avg. RUL", rul_val, rul_trend, "Avg. RUL")
+
+    rel_val = f"{metrics['system_reliability']:.1f}%"
+    rel_trend = trend_string(metrics['system_reliability_delta'], '%')
+    new_rel_card = _create_enhanced_kpi_card("System Reliability", rel_val, rel_trend, "System Reliability")
+
+    # Clear existing positions and place new cards
+    try:
+        del analytics_container[0, 0]
+        del analytics_container[0, 1] 
+        del analytics_container[0, 2]
+        del analytics_container[0, 3]
+    except (KeyError, IndexError):
+        pass  # Positions may not exist yet
+
+    # Place new cards
+    try:
+        analytics_container[0, 0] = new_sh_card
+        analytics_container[0, 1] = new_ce_card
+        analytics_container[0, 2] = new_rul_card
+        analytics_container[0, 3] = new_rel_card
+    except Exception as e:
+        print(f"Warning: Failed to place new cards: {e}")
+
+    # Update cache references
+    pn.state.cache["styled_system_health_card"] = new_sh_card
+    pn.state.cache["styled_critical_equipment_card"] = new_ce_card
+    pn.state.cache["styled_avg_rul_card"] = new_rul_card
+    pn.state.cache["styled_system_reliability_card"] = new_rel_card
+
+    # Also update Scott's containers for backward compatibility (optional detailed view)
+    _update_scott_containers(metrics)
+
+    # Store for legacy compatibility
+    pn.state.cache['analytics_metrics'] = metrics
+    _update_scott_containers(metrics)
+
+    # Store for legacy compatibility
+    pn.state.cache['analytics_metrics'] = metrics
+
+def _update_scott_containers(metrics):
+    """Update Scott's detailed containers with verbose metrics for compatibility."""
     def trend_string(delta, unit):
         if delta == 0 or delta is None:
             return '0'
@@ -567,23 +786,19 @@ def update_kpi_cards(metrics):
             f"**Change**: {trend_string(rul_delta, ' months')}"
         ))
 
-    # System Reliability container already has header, just add content
+    # System Reliability container
     rel_container = pn.state.cache.get("system_reliability_container")
     if rel_container is not None:
-        # Remove everything except the header
-        if len(rel_container) > 1:
-            rel_container[:] = rel_container[:1]
+        rel_container.clear()
         rel_val = f"{metrics['system_reliability']:.1f}%"
         rel_prev = f"{metrics['system_reliability_prev']:.1f}%" if metrics['system_reliability_prev'] is not None else "N/A"
         rel_delta = metrics['system_reliability_delta']
         rel_container.append(pn.pane.Markdown(
+            f"### System Reliability\n\n"
             f"**Current Month**: {rel_val}\n\n"
             f"**Previous Month**: {rel_prev}\n\n"
             f"**Change**: {trend_string(rel_delta, '%')}"
         ))
-
-    # Store for legacy compatibility
-    pn.state.cache['analytics_metrics'] = metrics
 
 def update_analytics_charts(graph_controller):
     """Update chart panes using visualization helpers if present."""
@@ -595,14 +810,20 @@ def update_analytics_charts(graph_controller):
     rul_plot = pn.state.cache.get('remaining_useful_life_plot')
     if rul_plot is not None:
         try:
-            rul_plot.object = get_remaining_useful_life_fig(current_graph)
+            fig = get_remaining_useful_life_fig(current_graph)
+            if fig:
+                fig.update_layout(height=450)  # Increased height for better proportions
+            rul_plot.object = fig
         except Exception:
             pass
     # Risk Distribution
     risk_plot = pn.state.cache.get('risk_distribution_plot')
     if risk_plot is not None:
         try:
-            risk_plot.object = get_risk_distribution_fig(current_graph)
+            fig = get_risk_distribution_fig(current_graph)
+            if fig:
+                fig.update_layout(height=450)  # Increased height for better proportions
+            risk_plot.object = fig
         except Exception:
             pass
     # Condition Trends
@@ -612,23 +833,58 @@ def update_analytics_charts(graph_controller):
             # Build period series for last 3 / next 6 months
             periods = [(pd.Timestamp(graph_controller.current_date) + pd.DateOffset(months=i)).to_period('M') for i in range(-3,7)]
             graphs = [graph_controller.get_future_month_graph(i) for i in range(-3,7)]
-            cond_plot.object = get_equipment_conditions_fig(graphs, periods, current_date=graph_controller.current_date)
+            fig = get_equipment_conditions_fig(graphs, periods, current_date=graph_controller.current_date)
+            if fig:
+                fig.update_layout(height=450)  # Increased height for better proportions
+            cond_plot.object = fig
         except Exception:
             pass
     # Maintenance Costs
     maint_plot = pn.state.cache.get('maintenance_costs_plot')
     if maint_plot is not None:
         try:
-            maint_plot.object = get_maintenance_costs_fig(prioritized_schedule=graph_controller.prioritized_schedule, current_date=graph_controller.current_date)
+            fig = get_maintenance_costs_fig(prioritized_schedule=graph_controller.prioritized_schedule, current_date=graph_controller.current_date)
+            if fig:
+                fig.update_layout(height=450)  # Increased height for better proportions
+            maint_plot.object = fig
         except Exception:
             pass
 
 def update_analytics(graph_controller):
-    """Public orchestrator: compute metrics, update KPI cards, then charts."""
-    metrics = compute_analytics_metrics(graph_controller)
-    update_kpi_cards(metrics)
-    update_analytics_charts(graph_controller)
-    print("Analytics updated (unified pipeline)")
+    """Public orchestrator: compute metrics, update KPI cards, then charts with enhanced error handling."""
+    try:
+        if graph_controller is None:
+            print("Warning: No graph controller provided to analytics update")
+            return
+            
+        print("Updating analytics pipeline...")
+        
+        # Step 1: Compute metrics
+        metrics = compute_analytics_metrics(graph_controller)
+        if metrics is None:
+            print("Warning: Failed to compute analytics metrics")
+            return
+            
+        # Step 2: Update KPI cards
+        try:
+            update_kpi_cards(metrics)
+            print("✓ KPI cards updated")
+        except Exception as e:
+            print(f"Warning: Failed to update KPI cards: {e}")
+        
+        # Step 3: Update charts
+        try:
+            update_analytics_charts(graph_controller)
+            print("✓ Analytics charts updated")
+        except Exception as e:
+            print(f"Warning: Failed to update analytics charts: {e}")
+            
+        print("✓ Analytics updated (unified pipeline)")
+        
+    except Exception as e:
+        print(f"Error in analytics update pipeline: {e}")
+        import traceback
+        traceback.print_exc()
 
 def _update_kpi_cards_with_real_data(graph_controller):
     """Update KPI cards with real data from graph controller"""
