@@ -26,7 +26,7 @@ graph_controller = GraphController()
 system_view_container = pn.GridSpec(nrows=10, ncols=3, mode="error")
 failure_prediction_container = pn.Column()
 maintenance_container = pn.Column()
-analytics_container = pn.GridSpec(nrows=8, ncols=4, mode="error", min_height=1200)
+analytics_container = pn.Column()
 settings_container = pn.Column()
 
 # Create main tabs page

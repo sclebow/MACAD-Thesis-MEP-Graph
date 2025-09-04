@@ -6,6 +6,8 @@ import base64
 import pandas as pd
 
 from helpers.controllers.graph_controller import GraphController
+from helpers.panel.analytics_viz import _create_enhanced_kpi_card
+from helpers.visualization import get_remaining_useful_life_fig, get_risk_distribution_fig, get_equipment_conditions_fig, get_maintenance_costs_fig
 
 def upload_graph_from_file(file_content, filename, graph_controller, graph_container):
     """Handle file upload and update graph visualization"""
@@ -33,7 +35,7 @@ def export_graph(event, graph_controller: GraphController, app):
     # Get the graphml representation
     graphml_generator = nx.generate_graphml(graph)
 
-    print(graphml_generator)
+    # print(graphml_generator)
 
     lines = []
 
@@ -110,7 +112,6 @@ def update_node_details(graph_controller, graph_container, equipment_details_con
     current_graph = graph_controller.current_graph[0] if graph_controller.current_graph[0] else None
 
     click_data = graph_container.click_data
-    # print(f"Click data: {click_data}")
     
     if 'points' in click_data and len(click_data['points']) > 0:
         point = click_data['points'][0]
@@ -155,18 +156,15 @@ def update_node_details(graph_controller, graph_container, equipment_details_con
             ", ".join(coords)
         ])
         markdown_strings = "\n\n".join(markdown_lines)
-        print(markdown_strings)
         markdown_pane = pn.pane.Markdown(markdown_strings)
         equipment_details_container.clear()
         equipment_details_container.extend([markdown_pane])
-        print(f"Updated details for: {node_id}")
-
+        
 def update_graph_container_visualization(event, graph_controller: GraphController, visualization_type_dict, graph_container):
     graph_controller.update_visualization_type(visualization_type_dict[event.new])
     graph_container.object = graph_controller.get_visualization_data()
 
 def maintenance_task_list_upload(event, graph_controller: GraphController, maintenance_task_list_viewer):
-    print("Task List Uploaded")
     # Read byte content from the uploaded file
     file_content = event.new  # event.new is already bytes
 
@@ -184,7 +182,6 @@ def update_weeks_to_schedule(event, graph_controller: GraphController):
     graph_controller.update_weeks_to_schedule(event.new)
 
 def replacement_task_list_upload(event, graph_controller: GraphController, replacement_task_list_viewer):
-    print("Replacement Task List Uploaded")
     # Read byte content from the uploaded file
     file_content = event.new  # event.new is already bytes
 
@@ -193,6 +190,7 @@ def replacement_task_list_upload(event, graph_controller: GraphController, repla
     replacement_task_list_viewer.value = df
 
 def run_simulation(event, graph_controller: GraphController):
+    print("\nRunning simulation...")
     graph_controller.run_rul_simulation()
 
     # Get the schedule maintenance_schedule_container from pn.state.cache
@@ -310,9 +308,6 @@ def run_simulation(event, graph_controller: GraphController):
     for month, data_dict in next_12_months_data.items():
         expected_tasks_for_month = data_dict.get('executed_tasks')
         deferred_tasks_for_month = data_dict.get('deferred_tasks')
-        # Convert DataFrame to list of dicts
-        # tasks_scheduled_for_month = tasks_scheduled_for_month.to_dict(orient='records')
-        # print(f"Month: {month}, Tasks: {tasks_scheduled_for_month}")
         next_12_months_list.append(f"**{month}**:")
         next_12_months_list.append(f"- **Expected Executed Tasks**: {len(expected_tasks_for_month)}")
         if len(expected_tasks_for_month) > 0:
@@ -346,31 +341,136 @@ def run_simulation(event, graph_controller: GraphController):
     # Create the failure timeline figure
     failure_timeline_fig, node_dict = graph_controller.get_current_date_failure_timeline_figure()
     failure_timeline_container = pn.state.cache.get("failure_timeline_container")
-    # from helpers.visualization import _generate_2d_graph_figure
-    # failure_timeline_container.object = _generate_2d_graph_figure(current_date_graph)
     failure_timeline_container.object = failure_timeline_fig
 
     # Update the failure schedule
     failure_schedule_dataframe = pn.state.cache.get("failure_schedule_dataframe")
     df = pd.DataFrame.from_dict(node_dict, orient="index")
     failure_schedule_dataframe.value = df
+    # Update the average system health
+    average_system_health_container = pn.state.cache.get("average_system_health_container")
+    average_system_health_container.clear()
+    
+    # Get previous month graph
+    previous_month_graph = graph_controller.get_previous_month_graph()
+    def get_average_condition(graph):
+        node_conditions = []
+        for node_id, attrs in graph.nodes(data=True):
+            if 'current_condition' in attrs:
+                node_conditions.append(attrs.get('current_condition'))
+        total_number_of_nodes = len(node_conditions)
+        average_condition = sum(node_conditions) / total_number_of_nodes if total_number_of_nodes > 0 else 0
 
-    # Unified analytics update
-    try:
-        from helpers.panel.pages.analytics import update_analytics
-        update_analytics(graph_controller)
-    except ImportError:
-        print("Analytics module not available")
+        return average_condition, total_number_of_nodes
+    previous_month_average_condition, previous_month_total_nodes = get_average_condition(previous_month_graph)
+
+    condition_change = previous_month_average_condition - average_condition
+    average_system_health_container.append(        
+        _create_enhanced_kpi_card(
+            title="Average System Health",
+            value=f"{average_condition:.0%}",
+            trend=condition_change,
+            metric_type="System Health",
+            unit="%"
+        )
+    )
+
+    critical_equipment_container = pn.state.cache.get("critical_equipment_container")
+    critical_equipment_container.clear()
+    def get_number_of_critical_equipment(graph):
+        if graph is None:
+            return 0
+        return sum(1 for node in graph.nodes(data=True) if node[1].get("risk_level", False))
+
+    number_of_current_critical_equipment = get_number_of_critical_equipment(current_date_graph)
+    number_of_previous_critical_equipment = get_number_of_critical_equipment(previous_month_graph)
+    change_in_critical_equipment = number_of_previous_critical_equipment - number_of_current_critical_equipment
+
+    critical_equipment_container.append(
+        _create_enhanced_kpi_card(
+            title="Critical Equipment",
+            value=str(number_of_current_critical_equipment),
+            trend=change_in_critical_equipment,
+            metric_type="Critical Equipment",
+            unit=""
+        )
+    )
+
+    average_rul_container = pn.state.cache.get("average_rul_container")
+    average_rul_container.clear()
+
+    def get_average_remaining_useful_life_days(graph):
+        if graph is None:
+            return 0
+        return sum(node[1].get("remaining_useful_life_days", 0) for node in graph.nodes(data=True)) / len(graph.nodes)
+
+    current_month_average_rul_days = get_average_remaining_useful_life_days(current_date_graph)
+    current_month_average_rul_months = current_month_average_rul_days / 30  # Convert days to months
+    previous_month_average_rul_days = get_average_remaining_useful_life_days(previous_month_graph)
+    previous_month_average_rul_months = previous_month_average_rul_days / 30  # Convert days to months
+    change_in_average_rul_days = previous_month_average_rul_days - current_month_average_rul_days
+    change_in_average_rul_months = previous_month_average_rul_months - current_month_average_rul_months
+
+    average_rul_container.append(
+        _create_enhanced_kpi_card(
+            title="Average RUL (Months)",
+            value=f"{current_month_average_rul_months:.1f}",
+            trend=change_in_average_rul_months,
+            metric_type="Avg. RUL",
+            unit="months"
+        )
+    )
+
+    system_reliability_container = pn.state.cache.get("system_reliability_container")
+    system_reliability_container.clear()
+
+    def get_system_reliability(graph):
+        # Calculate system reliability as percentage of non-critical nodes
+        total_nodes = graph.number_of_nodes()
+        critical_nodes = [n for n, attrs in graph.nodes(data=True) if attrs.get('risk_level') == 'CRITICAL']
+        reliability = ((total_nodes - len(critical_nodes)) / total_nodes) if total_nodes else 0.0
+        return reliability
+
+    current_month_system_reliability = get_system_reliability(current_date_graph)
+    previous_month_system_reliability = get_system_reliability(previous_month_graph)
+    change_in_system_reliability = previous_month_system_reliability - current_month_system_reliability
+
+    system_reliability_container.append(
+        _create_enhanced_kpi_card(
+            title="System Reliability",
+            value=f"{current_month_system_reliability:.1%}",
+            trend=change_in_system_reliability,
+            metric_type="System Reliability",
+            unit='%'
+        )
+    )
+
+    remaining_useful_life_plot = pn.state.cache.get("remaining_useful_life_plot")
+
+    # Get graphs between last three months and next six months
+    graphs = [
+        graph_controller.get_future_month_graph(i) for i in range(-3, 7)
+    ]
+    periods = [(pd.Timestamp(graph_controller.current_date) + pd.DateOffset(months=i)).to_period('M') for i in range(-3, 7)]
+
+    fig = get_remaining_useful_life_fig(current_date_graph)
+    remaining_useful_life_plot.object = fig
+
+    risk_distribution_plot = pn.state.cache.get("risk_distribution_plot")
+
+    fig = get_risk_distribution_fig(current_date_graph)
+    risk_distribution_plot.object = fig
+
+    equipment_condition_trends_plot = pn.state.cache.get("equipment_condition_trends_plot")
+    fig = get_equipment_conditions_fig(graphs, periods, current_date=graph_controller.current_date)
+    equipment_condition_trends_plot.object = fig
+
+    maintenance_costs_plot = pn.state.cache.get("maintenance_costs_plot")
+    fig = get_maintenance_costs_fig(prioritized_schedule=graph_controller.prioritized_schedule, current_date=graph_controller.current_date)
+    maintenance_costs_plot.object = fig
 
 def update_current_date(event, graph_controller: GraphController):
-    print("Current date updated to:", event.new)
     graph_controller.current_date = event.new
-    # Only recompute analytics (avoid full re-simulation for date change)
-    try:
-        from helpers.panel.pages.analytics import update_analytics
-        update_analytics(graph_controller)
-    except ImportError:
-        print("Analytics module not available for date change")
 
 def update_failure_component_details(graph_controller: GraphController, failure_timeline_container):
     component_details_container = pn.state.cache["component_details_container"]
@@ -379,7 +479,6 @@ def update_failure_component_details(graph_controller: GraphController, failure_
     selected_failure = failure_timeline_container.click_data
     if selected_failure:
         component_details_str_list = []
-        # print(selected_failure.get('points')[0].get('hovertext'))
         y = selected_failure.get('points')[0].get('y')
         hover = selected_failure.get('points')[0].get('hovertext')
         component_details_str_list.append(f"### Component Details for {y}")
