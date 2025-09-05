@@ -1,5 +1,5 @@
 import panel as pn
-from helpers.panel.button_callbacks import save_settings, import_data, export_data, clear_all_data
+from helpers.panel.button_callbacks import save_settings, import_data, export_data, clear_all_data, run_simulation
 from helpers.rul_helper import adjust_rul_parameters, get_current_parameters
 
 def layout_settings(settings_container, graph_controller):
@@ -24,42 +24,51 @@ def layout_settings(settings_container, graph_controller):
         if isinstance(value, float):
             input_widget = pn.widgets.FloatInput(
                 step=0.01,
+                align="center",
             )
         elif isinstance(value, bool):
-            input_widget = pn.widgets.Checkbox()
+            input_widget = pn.widgets.Checkbox(
+                align="center",
+            )
         elif isinstance(value, int):
-            input_widget = pn.widgets.IntInput()
+            input_widget = pn.widgets.IntInput(
+                align="center",
+            )
         elif isinstance(value, str):
-            input_widget = pn.widgets.TextInput()
+            input_widget = pn.widgets.TextInput(
+                align="center",
+            )
         elif isinstance(value, list):
             input_widget = pn.Column()
-            input_widget.append(pn.pane.Markdown(f"**{param.replace('_', ' ').title()}:**"))
+            # input_widget.append(pn.pane.Markdown(f"**{param.replace('_', ' ').title()}:**"))
             for i, item in enumerate(value):
                 sub_widget = create_input_widget(f"{param}_{i+1}", item)
                 if sub_widget:
                     input_widget.append(sub_widget)
         elif isinstance(value, dict):
             input_widget = pn.Column()
-            input_widget.append(pn.pane.Markdown(f"**{param.replace('_', ' ').title()}:**"))
+            # input_widget.append(pn.pane.Markdown(f"**{param.replace('_', ' ').title()}:**"))
             for key, item in value.items():
-                sub_widget = create_input_widget(f"{param}_{key}", item)
+                sub_widget = create_input_widget(f"{key}", item)
                 if sub_widget:
                     input_widget.append(sub_widget)
         else:
             print(f"WARNING: No input widget created for parameter {param} of type {type(value)}")
             return None
 
-        try:
-            input_widget.name = param.replace('_', ' ').title()
-        except Exception as e:
-            print(f"ERROR setting name for widget {param}: {e}")
         input_widget.value = value
 
         if not isinstance(value, list) and not isinstance(value, dict):
             def update_param(event, param_name=param):
                 adjust_rul_parameters(**{param_name: event.new})
             input_widget.param.watch(update_param, 'value')
-        return input_widget
+
+        row = pn.Row(
+            pn.pane.Markdown(f"**{param.replace('_', ' ').title()}:**", width=200),
+            input_widget,
+        )
+
+        return row
 
     for param, value in current_params.items():
         input_widget = create_input_widget(param, value)
