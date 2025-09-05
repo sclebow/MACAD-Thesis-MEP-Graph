@@ -49,10 +49,10 @@ def layout_settings(settings_container, graph_controller):
             print(f"WARNING: No input widget created for parameter {param} of type {type(value)}")
             return None
 
-        # try:
-        #     input_widget.name = param.replace('_', ' ').title()
-        # except Exception as e:
-        #     print(f"ERROR setting name for widget {param}: {e}")
+        try:
+            input_widget.name = param.replace('_', ' ').title()
+        except Exception as e:
+            print(f"ERROR setting name for widget {param}: {e}")
         input_widget.value = value
 
         if not isinstance(value, list) and not isinstance(value, dict):
