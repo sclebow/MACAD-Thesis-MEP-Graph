@@ -62,6 +62,7 @@ def layout_settings(settings_container, graph_controller):
             def update_param(event, param_name=param):
                 adjust_rul_parameters(**{param_name: event.new})
             input_widget.param.watch(update_param, 'value')
+            # TODO: Allow updating of parts of a dictionary
             input_widget.param.watch(lambda event: run_simulation(None, graph_controller), 'value')
 
         row = pn.Row(
