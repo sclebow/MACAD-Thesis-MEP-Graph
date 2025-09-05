@@ -1,5 +1,6 @@
 import panel as pn
 from helpers.panel.button_callbacks import save_settings, import_data, export_data, clear_all_data
+from helpers.rul_helper import adjust_rul_parameters, get_current_parameters
 
 def layout_settings(settings_container, graph_controller):
     settings_header = pn.Row(
@@ -11,54 +12,59 @@ def layout_settings(settings_container, graph_controller):
     )
     settings_container.append(settings_header)
     settings_container.append(pn.layout.Divider(sizing_mode="stretch_width"))
-
     settings_container.append(
-        pn.Column(
-            pn.pane.Markdown("### Alert Thresholds"),
-            pn.Row(
-                pn.Column(
-                    pn.widgets.IntInput(
-                        name="Critical Condition Threshold (%)",
-                        value=30,
-                        step=1,
-                        start=1,
-                        end=100,
-                        sizing_mode="stretch_width"
-                    ),
-                    pn.pane.Markdown("Equipment below this condition triggers critical alerts"),
-                    pn.widgets.IntInput(
-                        name="Low RUL Threshold (months)",
-                        value=6,
-                        step=1,
-                        start=1,
-                        end=100,
-                        sizing_mode="stretch_width"
-                    ),
-                    pn.pane.Markdown("Equipment with RUL below this triggers alerts")
-                ),
-                pn.Column(
-                    pn.widgets.IntInput(
-                        name="Warning Condition Threshold (%)",
-                        value=50,
-                        step=1,
-                        start=1,
-                        end=100,
-                        sizing_mode="stretch_width"
-                    ),
-                    pn.pane.Markdown("Equipment below this condition shows warnings"),
-                    pn.widgets.IntInput(
-                        name="High Risk Threshold (%)",
-                        value=80,
-                        step=1,
-                        start=1,
-                        end=100,
-                        sizing_mode="stretch_width"
-                    ),
-                    pn.pane.Markdown("Equipment below this condition triggers high-risk alerts"),
-                )
-            )
-        )
+        pn.pane.Markdown("### RUL Prediction Parameters", sizing_mode="stretch_width")
     )
+
+    current_params = get_current_parameters()
+
+    def create_input_widget(param, value):
+        input_widget = None
+
+        if isinstance(value, float):
+            input_widget = pn.widgets.FloatInput(
+                step=0.01,
+            )
+        elif isinstance(value, bool):
+            input_widget = pn.widgets.Checkbox()
+        elif isinstance(value, int):
+            input_widget = pn.widgets.IntInput()
+        elif isinstance(value, str):
+            input_widget = pn.widgets.TextInput()
+        elif isinstance(value, list):
+            input_widget = pn.Column()
+            input_widget.append(pn.pane.Markdown(f"**{param.replace('_', ' ').title()}:**"))
+            for i, item in enumerate(value):
+                sub_widget = create_input_widget(f"{param}_{i+1}", item)
+                if sub_widget:
+                    input_widget.append(sub_widget)
+        elif isinstance(value, dict):
+            input_widget = pn.Column()
+            input_widget.append(pn.pane.Markdown(f"**{param.replace('_', ' ').title()}:**"))
+            for key, item in value.items():
+                sub_widget = create_input_widget(f"{param}_{key}", item)
+                if sub_widget:
+                    input_widget.append(sub_widget)
+        else:
+            print(f"WARNING: No input widget created for parameter {param} of type {type(value)}")
+            return None
+
+        # try:
+        #     input_widget.name = param.replace('_', ' ').title()
+        # except Exception as e:
+        #     print(f"ERROR setting name for widget {param}: {e}")
+        input_widget.value = value
+
+        if not isinstance(value, list) and not isinstance(value, dict):
+            def update_param(event, param_name=param):
+                adjust_rul_parameters(**{param_name: event.new})
+            input_widget.param.watch(update_param, 'value')
+        return input_widget
+
+    for param, value in current_params.items():
+        input_widget = create_input_widget(param, value)
+        if input_widget:
+            settings_container.append(input_widget)
 
     settings_container.append(pn.layout.Divider(sizing_mode="stretch_width"))
 

@@ -53,7 +53,8 @@ class RULConfig:
     # Debug settings
     ENABLE_RUL_WARNINGS = False            # Print warnings for low RUL
     ENABLE_DEBUG_OUTPUT = False            # Detailed calculation output
-    TYPES_TO_IGNORE = ['utility_transformer', 'end_load']  # Types to ignore in RUL calculations
+    TYPES_TO_IGNORE = {'utility_transformer': True, 
+                       'end_load': True}  # Types to ignore in RUL calculations
 
 def calculate_remaining_useful_life(graph, current_date):
     """
@@ -63,7 +64,8 @@ def calculate_remaining_useful_life(graph, current_date):
     rul_dict = {}
     for node, attrs in graph.nodes(data=True):
         if attrs.get('type') in RULConfig.TYPES_TO_IGNORE:
-            continue
+            if RULConfig.TYPES_TO_IGNORE[attrs.get('type')]:
+                continue
 
         # Extract attributes, with defaults if missing
         installation_date = attrs.get('installation_date')
@@ -302,6 +304,9 @@ def adjust_rul_parameters(**kwargs) -> dict:
     """
     changed_params = {}
     
+    print("Adjusting RUL parameters:")
+    print(kwargs)
+
     for param_name, new_value in kwargs.items():
         if hasattr(RULConfig, param_name):
             old_value = getattr(RULConfig, param_name)
@@ -312,7 +317,9 @@ def adjust_rul_parameters(**kwargs) -> dict:
                 print(f"Parameter {param_name}: {old_value} → {new_value}")
         else:
             print(f"Warning: Unknown parameter {param_name}")
-    
+
+    print(RULConfig.__dict__)
+
     return changed_params
 
 def get_current_parameters() -> dict:
