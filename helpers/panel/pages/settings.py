@@ -6,9 +6,8 @@ def layout_settings(settings_container, graph_controller):
     settings_header = pn.Row(
         pn.Column(
             pn.pane.Markdown("## ⚙ Application Settings", sizing_mode="stretch_width"),
-            pn.pane.Markdown("Configure system preferences and thresholds.", sizing_mode="stretch_width")
+            pn.pane.Markdown("Configure system preferences and thresholds.  Changing Settings will trigger a simulation update.", sizing_mode="stretch_width")
         ),
-        pn.widgets.Button(name="Save Changes", button_type="primary", on_click=save_settings, align=("center")),
     )
     settings_container.append(settings_header)
     settings_container.append(pn.layout.Divider(sizing_mode="stretch_width"))
@@ -52,8 +51,9 @@ def layout_settings(settings_container, graph_controller):
             input_widget.value = value
             def update_param(event, param_name=param):
                 adjust_rul_parameters(**{param_name: event.new})
+                # Also trigger simulation after parameter update
+                run_simulation(None, graph_controller)
             input_widget.param.watch(update_param, 'value')
-            input_widget.param.watch(lambda event: run_simulation(None, graph_controller), 'value')
         elif isinstance(value, dict):
             # For dictionaries, the sub-widgets already have their event handlers set up
             pass
