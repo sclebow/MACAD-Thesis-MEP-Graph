@@ -40,7 +40,6 @@ def layout_settings(settings_container, graph_controller):
             )
         elif isinstance(value, dict):
             input_widget = pn.Column()
-            # input_widget.append(pn.pane.Markdown(f"**{param.replace('_', ' ').title()}:**"))
             for key, item in value.items():
                 sub_widget = create_input_widget(f"{param}.{key}", item)
                 if sub_widget:
@@ -54,7 +53,6 @@ def layout_settings(settings_container, graph_controller):
             def update_param(event, param_name=param):
                 adjust_rul_parameters(**{param_name: event.new})
             input_widget.param.watch(update_param, 'value')
-            # TODO: Allow updating of parts of a dictionary
             input_widget.param.watch(lambda event: run_simulation(None, graph_controller), 'value')
         elif isinstance(value, dict):
             # For dictionaries, the sub-widgets already have their event handlers set up
