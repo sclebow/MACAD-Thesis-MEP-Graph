@@ -301,6 +301,7 @@ def apply_condition_improvement(graph, node_id: str, improvement_effect: float, 
 def adjust_rul_parameters(**kwargs) -> dict:
     """
     Adjust RUL calculation parameters (Scott's "dials")
+    Supports nested dictionary updates using dot notation (e.g., DEFAULT_LIFESPANS.transformer)
     """
     changed_params = {}
     
@@ -308,7 +309,24 @@ def adjust_rul_parameters(**kwargs) -> dict:
     print(kwargs)
 
     for param_name, new_value in kwargs.items():
-        if hasattr(RULConfig, param_name):
+        # Handle nested dictionary updates (e.g., "DEFAULT_LIFESPANS.transformer")
+        if '.' in param_name:
+            dict_name, key = param_name.split('.', 1)
+            if hasattr(RULConfig, dict_name):
+                target_dict = getattr(RULConfig, dict_name)
+                if isinstance(target_dict, dict) and key in target_dict:
+                    old_value = target_dict[key]
+                    target_dict[key] = new_value
+                    changed_params[param_name] = {'old': old_value, 'new': new_value}
+                    
+                    if RULConfig.ENABLE_DEBUG_OUTPUT:
+                        print(f"Parameter {param_name}: {old_value} → {new_value}")
+                else:
+                    print(f"Warning: Unknown dictionary key {key} in {dict_name}")
+            else:
+                print(f"Warning: Unknown parameter {dict_name}")
+        # Handle regular parameter updates
+        elif hasattr(RULConfig, param_name):
             old_value = getattr(RULConfig, param_name)
             setattr(RULConfig, param_name, new_value)
             changed_params[param_name] = {'old': old_value, 'new': new_value}
