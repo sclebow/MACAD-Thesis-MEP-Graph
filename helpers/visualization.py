@@ -544,12 +544,6 @@ def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
     """
     fig = go.Figure()
 
-    months = list(prioritized_schedule.keys())
-    
-    # Get the max amount of tasks from any month
-    max_tasks_executed_for_month = max(len(prioritized_schedule[month].get('executed_tasks', [])) for month in months)
-    max_tasks_deferred_for_month = max(len(prioritized_schedule[month].get('deferred_tasks', [])) for month in months)
-
     numbers_of_executed = []
     numbers_of_deferred = []
 
@@ -577,17 +571,11 @@ def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
     ))
 
     fig.update_layout(
-        # title='Task Status Over Time', 
+        title='Task Status Each Month', 
         xaxis_title='Time', 
         yaxis_title='Number of Tasks',
         barmode='stack'  # This makes it a stacked bar chart
     )
-    # fig.update_yaxes(range=[0, max_total_tasks + 10])
-
-    # Show no x axis tick marks
-    # fig.update_xaxes(showticklabels=False)
-
-    # fig.update_layout(height=300)
 
     # Ensure zoom buttons only affect x-axis, default range is last 6 months + next 12 months
     default_range = [

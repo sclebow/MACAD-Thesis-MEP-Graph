@@ -46,7 +46,7 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
     )
     pn.state.cache["task_timeline_container"] = task_timeline_container
     failure_timeline_header = pn.Column(
-        failure_timeline_header_markdown,
+        # failure_timeline_header_markdown,
         task_timeline_container,
         sizing_mode="stretch_both"
     )
