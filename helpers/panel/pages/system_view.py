@@ -3,9 +3,10 @@ from helpers.panel.button_callbacks import upload_graph_from_file, export_graph,
 
 def layout_system_view(system_view_container, graph_controller, app):
     graph_container = pn.pane.Plotly(sizing_mode="scale_both")
+    pn.state.cache["graph_container"] = graph_container
     # upload_file_dropper = pn.widgets.FileDropper(name="Upload Graph", accepted_filetypes=['.mepg', '.graphml'])
     upload_file_dropper = pn.widgets.FileInput(name="Upload Graph")
-    upload_file_dropper.param.watch(lambda event: upload_graph_from_file(event.new, upload_file_dropper.filename, graph_controller, graph_container), 'value')
+    upload_file_dropper.param.watch(lambda event: upload_graph_from_file(event.new, upload_file_dropper.filename, graph_controller), 'value')
 
     # Upload a default file
     default_file_path = "example_graph.mepg"
@@ -74,7 +75,7 @@ def layout_system_view(system_view_container, graph_controller, app):
         pn.Row(
             pn.pane.Markdown("### System Network View"),
             upload_file_dropper,
-            pn.widgets.Button(name="Export Graph", button_type="default", icon="download", on_click=lambda event: export_graph(event, graph_controller, app)),
+            pn.widgets.Button(name="Export Graph", button_type="default", icon="download", on_click=lambda event: export_graph(event, graph_controller)),
             pn.widgets.Button(name="Reset", button_type="warning", icon="refresh", on_click=lambda event: reset_graph(event, graph_controller)),
             pn.widgets.Button(name="Run Simulation", button_type="primary", icon="play", on_click=lambda event: run_simulation(event, graph_controller)),
             radio_visualization_selector,

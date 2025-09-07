@@ -19,6 +19,7 @@ from helpers.panel.pages.failure_prediction import layout_failure_prediction
 from helpers.panel.pages.maintenance import layout_maintenance
 from helpers.panel.pages.analytics import layout_analytics
 from helpers.panel.pages.settings import layout_settings
+from helpers.panel.pages.graph_generator import layout_graph_generator
 
 pn.extension('plotly')
 
@@ -30,6 +31,7 @@ failure_prediction_container = pn.Column()
 maintenance_container = pn.Column()
 analytics_container = pn.Column()
 settings_container = pn.Column()
+graph_generator_container = pn.Column()
 
 # Create main tabs page
 # Create a stylesheet for the tabs
@@ -46,6 +48,7 @@ main_tabs = pn.Tabs(
     ("Maintenance", maintenance_container),
     ("Analytics", analytics_container),
     ("Settings", settings_container),
+    ("Graph Generator", graph_generator_container),
     dynamic=True,
     tabs_location="left",
     stylesheets=[stylesheet]
@@ -75,6 +78,7 @@ app = pn.Column(
     ),
     main_tabs,
 )
+pn.state.cache["app"] = app
 
 # Layout the System View
 layout_system_view(system_view_container, graph_controller, app)
@@ -91,8 +95,11 @@ layout_analytics(analytics_container, graph_controller)
 # Layout Settings
 layout_settings(settings_container, graph_controller)
 
+# Layout Graph Generator
+layout_graph_generator(graph_generator_container, graph_controller)
+
 # DEBUG Set default tabs
-main_tabs.active = 1
+main_tabs.active = 5
 
 print("Starting Application...")
 

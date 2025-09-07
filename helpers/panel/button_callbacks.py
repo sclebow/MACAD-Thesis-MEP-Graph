@@ -10,7 +10,12 @@ from helpers.controllers.graph_controller import GraphController
 from helpers.panel.analytics_viz import _create_enhanced_kpi_card
 from helpers.visualization import get_remaining_useful_life_fig, get_risk_distribution_fig, get_equipment_conditions_fig, get_maintenance_costs_fig
 
-def upload_graph_from_file(file_content, filename, graph_controller, graph_container):
+def update_system_view_graph_container(graph_controller: GraphController):
+    fig = graph_controller.get_visualization_data()
+    graph_container = pn.state.cache.get("graph_container")
+    graph_container.object = fig
+
+def upload_graph_from_file(file_content, filename, graph_controller):
     """Handle file upload and update graph visualization"""
     print(f"Uploading file: {filename}")
     
@@ -19,14 +24,16 @@ def upload_graph_from_file(file_content, filename, graph_controller, graph_conta
     
     if result['success']:
         # Update the graph visualization
-        fig = graph_controller.get_visualization_data()
-        graph_container.object = fig
+        update_system_view_graph_container(graph_controller)
         print(f"Graph loaded successfully from {filename}")
     else:
         print(f"Error loading graph: {result.get('error', 'Unknown error')}")
+        graph_container = pn.state.cache.get("graph_container")
         graph_container.object = None
 
-def export_graph(event, graph_controller: GraphController, app):
+def export_graph(event, graph_controller: GraphController):
+    app = pn.state.cache.get('app')
+
     now = datetime.datetime.now()
     now_str = now.strftime("%Y%m%d_%H%M%S")
     filename = f"exported_graph_{now_str}.mepg"
@@ -559,3 +566,14 @@ def update_failure_component_details(graph_controller: GraphController, failure_
         component_details_str_list.append(f"### Component Details for {y}")
         component_details_str_list.append(hover)
         component_details_container.append(pn.pane.Markdown("\n\n".join(component_details_str_list)))
+
+def generate_graph(event, graph_controller: GraphController, graph_args):
+    """Generate and display a custom graph based on user inputs"""
+
+    graph_controller.generate_new_graph(building_params=graph_args)
+
+    update_system_view_graph_container(graph_controller)
+    run_simulation(None, graph_controller)
+    
+    # DEBUG: Save the generated graph to a file
+    export_graph(None, graph_controller)

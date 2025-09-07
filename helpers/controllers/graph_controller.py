@@ -73,7 +73,7 @@ class GraphController:
             G = nx.read_graphml(file_buffer)
             
             # Validate and clean graph data
-            self._validate_graph_data(G)
+            G = self._validate_graph_data(G)
             
             # Apply risk scores and RUL with error handling
             G = apply_risk_scores_to_graph(G)
@@ -101,44 +101,44 @@ class GraphController:
                 if value is None and key in ['voltage', 'current_rating', 'power']:
                     edge_attrs[key] = 0.0
                     print(f"Warning: Set {key} to 0.0 for edge {edge[0]}-{edge[1]}")
+
+        return clean_graph_none_values(graph)
     
     def generate_new_graph(self, building_params):
         """Generate new graph with given parameters"""
-        try:
-            construction_year = int(building_params['construction_year'])
-            
-            building_attributes = {
-                "total_load": int(building_params['total_load']),
-                "building_length": building_params['building_length'],
-                "building_width": building_params['building_width'],
-                "num_floors": int(building_params['num_floors']),
-                "floor_height": building_params['floor_height'],
-                "construction_date": datetime.datetime(construction_year, 1, 1).strftime("%Y-%m-%d"),
-            }
-            
-            # Set seed if provided
-            if building_params.get('seed'):
-                random.seed(int(building_params['seed']))
-            
-            # Generate the graph using existing functions
-            building_attrs = define_building_characteristics(building_attributes)
-            num_risers = determine_number_of_risers(building_attrs)
-            riser_locations = locate_risers(building_attrs, num_risers)
-            voltage_info = determine_voltage_level(building_attrs)
-            floor_loads, end_loads = distribute_loads(building_attrs, voltage_info)
-            riser_floor_attributes = determine_riser_attributes(building_attrs, riser_locations, floor_loads, end_loads, voltage_info)
-            distribution_equipment = place_distribution_equipment(building_attrs, riser_floor_attributes, voltage_info)
-            cluster_strength = building_params.get('cluster_strength', 0.95)
-            G = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info, end_loads, cluster_strength)
-            
-            G = apply_risk_scores_to_graph(G)
-            G = apply_rul_to_graph(G)
-            G = clean_graph_none_values(G)
-            
-            self.current_graph[0] = G
-            return {'success': True, 'graph': G}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
+        construction_year = int(building_params['construction_year'])
+        
+        building_attributes = {
+            "total_load": int(building_params['total_load']),
+            "building_length": building_params['building_length'],
+            "building_width": building_params['building_width'],
+            "num_floors": int(building_params['num_floors']),
+            "floor_height": building_params['floor_height'],
+            "construction_date": datetime.datetime(construction_year, 1, 1).strftime("%Y-%m-%d"),
+        }
+        
+        # Set seed if provided
+        if building_params.get('seed'):
+            random.seed(int(building_params['seed']))
+        
+        building_attrs = define_building_characteristics(building_attributes)
+        num_risers = determine_number_of_risers(building_attrs)
+        riser_locations = locate_risers(building_attrs, num_risers)
+        voltage_info = determine_voltage_level(building_attrs)
+        floor_loads, end_loads = distribute_loads(building_attrs, voltage_info)
+        riser_floor_attributes = determine_riser_attributes(building_attrs, riser_locations, floor_loads, end_loads, voltage_info)
+        distribution_equipment = place_distribution_equipment(building_attrs, riser_floor_attributes, voltage_info)
+        cluster_strength = building_params.get('cluster_strength')
+        graph = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info, end_loads, cluster_strength)
+
+        print(f"Generated graph with {graph.number_of_nodes()} nodes and {graph.number_of_edges()} edges.")
+        # Apply risk scores and RUL to the graph
+        graph = self._validate_graph_data(graph)
+        graph = apply_risk_scores_to_graph(graph)
+        graph = apply_rul_to_graph(graph)
+
+
+        self.current_graph[0] = graph
 
     def update_visualization_type(self, new_type):
         """Update the visualization type"""
@@ -187,25 +187,25 @@ class GraphController:
         
         return {'success': True}
     
-    def save_graph_to_file(self, filename):
-        """Save current graph to file"""
-        if not self.current_graph[0]:
-            return {'success': False, 'error': 'No graph loaded'}
+    # def save_graph_to_file(self, filename):
+    #     """Save current graph to file"""
+    #     if not self.current_graph[0]:
+    #         return {'success': False, 'error': 'No graph loaded'}
         
-        try:
-            if not filename.lower().endswith('.mepg'):
-                filename += '.mepg'
+    #     try:
+    #         if not filename.lower().endswith('.mepg'):
+    #             filename += '.mepg'
             
-            output_dir = 'graph_outputs'
-            os.makedirs(output_dir, exist_ok=True)
-            output_path = os.path.join(output_dir, filename)
+    #         output_dir = 'graph_outputs'
+    #         os.makedirs(output_dir, exist_ok=True)
+    #         output_path = os.path.join(output_dir, filename)
             
-            self.current_graph[0].graph["source"] = "Panel Graph Viewer Export"
-            nx.write_graphml(self.current_graph[0], output_path)
+    #         self.current_graph[0].graph["source"] = "Panel Graph Viewer Export"
+    #         nx.write_graphml(self.current_graph[0], output_path)
             
-            return {'success': True, 'path': output_path}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
+    #         return {'success': True, 'path': output_path}
+    #     except Exception as e:
+    #         return {'success': False, 'error': str(e)}
 
     def reset_graph(self):
         """Reset the graph controller"""
