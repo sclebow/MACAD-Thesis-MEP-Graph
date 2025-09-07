@@ -532,7 +532,7 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
                     ))
     return fig
 
-def generate_bar_chart_figure(prioritized_schedule):
+def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
     """
     Creates a bar chart figure for task status over time.
     X-axis: Time
@@ -580,6 +580,21 @@ def generate_bar_chart_figure(prioritized_schedule):
     # fig.update_xaxes(showticklabels=False)
 
     fig.update_layout(height=300)
+
+    # Add a vertical line for the current date
+    current_date_dt = pd.to_datetime(current_date).to_pydatetime()
+    fig.add_vline(x=current_date_dt, line=dict(color='red', dash='dash'))
+    # Add annotation for the current date
+    fig.add_annotation(
+        x=current_date_dt,
+        y=1,
+        yref='paper',
+        text="Current Date",
+        showarrow=False,
+        xanchor='left',
+        yanchor='bottom',
+        font=dict(color='red')
+    )
 
     return fig
 
@@ -692,6 +707,21 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp
             showticklabels=True,
             matches='x'  # Sync with primary x-axis
         )
+    )
+
+    # Add a vertical line for the current date
+    current_date_dt = pd.to_datetime(current_date).to_pydatetime()
+    fig.add_vline(x=current_date_dt, line=dict(color='red', dash='dash'))
+    # Add annotation for the current date
+    fig.add_annotation(
+        x=current_date_dt,
+        y=1,
+        yref='paper',
+        text="Current Date",
+        showarrow=False,
+        xanchor='left',
+        yanchor='bottom',
+        font=dict(color='red')
     )
 
     return fig, node_dict
