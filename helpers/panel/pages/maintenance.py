@@ -1,9 +1,9 @@
 import panel as pn
-from helpers.panel.button_callbacks import maintenance_task_list_upload, update_hours_budget, update_money_budget, update_weeks_to_schedule, replacement_task_list_upload, maintenance_log_upload
+from helpers.panel.button_callbacks import maintenance_task_list_upload, update_hours_budget, update_money_budget, update_weeks_to_schedule, replacement_task_list_upload, maintenance_log_upload, generate_synthetic_maintenance_logs
 
 def layout_maintenance(maintenance_container, graph_controller):
 
-    condition_level_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False)
+    condition_level_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False, show_index=False)
     print("Setting condition_level_viewer in cache")
     pn.state.cache["condition_level_viewer"] = condition_level_viewer
     condition_level_container = pn.Column(
@@ -11,7 +11,7 @@ def layout_maintenance(maintenance_container, graph_controller):
         condition_level_viewer,
     )
 
-    maintenance_logs_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False)
+    maintenance_logs_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False, show_index=False)
     pn.state.cache["maintenance_logs_viewer"] = maintenance_logs_viewer
     maintenance_logs_container = pn.Column(
         pn.pane.Markdown("### Maintenance Logs"),
@@ -26,14 +26,18 @@ def layout_maintenance(maintenance_container, graph_controller):
     maintenance_logs_file_input = pn.widgets.FileInput(name="Upload Maintenance Logs")
     maintenance_logs_file_input.param.watch(lambda event: maintenance_log_upload(event, graph_controller), "value")
 
-    default_maintenance_logs_file_path = "tables/example_maintenance_logs.csv"
-    default_maintenance_logs_file = open(default_maintenance_logs_file_path, "rb").read()
-    maintenance_logs_file_input.value = default_maintenance_logs_file
+    # default_maintenance_logs_file_path = "tables/example_maintenance_logs.csv"
+    # default_maintenance_logs_file = open(default_maintenance_logs_file_path, "rb").read()
+    # maintenance_logs_file_input.value = default_maintenance_logs_file
+
+    generate_synthetic_logs_button = pn.widgets.Button(name="Generate Synthetic Logs", button_type="primary", icon="cogs", align="center")
+    generate_synthetic_logs_button.on_click(lambda event: generate_synthetic_maintenance_logs(event, graph_controller))
 
     maintenance_and_condition_container.append(
         pn.Row(
             pn.pane.Markdown("### Upload Maintenance Logs: "),
             maintenance_logs_file_input,
+            generate_synthetic_logs_button,
         ),
     )
     maintenance_and_condition_container.append(
@@ -47,7 +51,7 @@ def layout_maintenance(maintenance_container, graph_controller):
 
     pn.state.cache["maintenance_schedule_container"] = maintenance_schedule_container
 
-    maintenance_task_list_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False)
+    maintenance_task_list_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, show_index=False, auto_edit=False)
 
     maintenance_task_list_input = pn.widgets.FileInput(name="Upload Task List")
     maintenance_task_list_input.param.watch(lambda event: maintenance_task_list_upload(event, graph_controller, maintenance_task_list_viewer), "value")
@@ -64,7 +68,7 @@ def layout_maintenance(maintenance_container, graph_controller):
         sizing_mode="stretch_both"
     )
 
-    replacement_task_list_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False)
+    replacement_task_list_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False, show_index=False)
 
     replacement_task_list_input = pn.widgets.FileInput(name="Upload Replacement Task List")
     replacement_task_list_input.param.watch(lambda event: replacement_task_list_upload(event, graph_controller, replacement_task_list_viewer), "value")
@@ -91,4 +95,4 @@ def layout_maintenance(maintenance_container, graph_controller):
     )
     maintenance_container.append(maintenance_tabs)
 
-    maintenance_tabs.active = 1 # Set default tab to "Task List" for debugging
+    maintenance_tabs.active = 0 # Set default tab to "Task List" for debugging

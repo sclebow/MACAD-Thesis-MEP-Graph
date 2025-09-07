@@ -186,26 +186,6 @@ class GraphController:
                 self.current_graph[0].nodes[node_id][k] = v
         
         return {'success': True}
-    
-    # def save_graph_to_file(self, filename):
-    #     """Save current graph to file"""
-    #     if not self.current_graph[0]:
-    #         return {'success': False, 'error': 'No graph loaded'}
-        
-    #     try:
-    #         if not filename.lower().endswith('.mepg'):
-    #             filename += '.mepg'
-            
-    #         output_dir = 'graph_outputs'
-    #         os.makedirs(output_dir, exist_ok=True)
-    #         output_path = os.path.join(output_dir, filename)
-            
-    #         self.current_graph[0].graph["source"] = "Panel Graph Viewer Export"
-    #         nx.write_graphml(self.current_graph[0], output_path)
-            
-    #         return {'success': True, 'path': output_path}
-    #     except Exception as e:
-    #         return {'success': False, 'error': str(e)}
 
     def reset_graph(self):
         """Reset the graph controller"""
@@ -334,3 +314,64 @@ class GraphController:
             'current_date': self.current_date
         }
         return data_dict
+
+    def generate_synthetic_maintenance_logs(self, max_num_logs=100, ignore_end_loads=True, ignore_utility_transformers=True):
+        """Generate synthetic maintenance logs for testing"""
+
+        # Get all previous periods from the graph controller's prioritized schedule
+        prioritized_schedule = self.prioritized_schedule
+
+        all_periods = list(prioritized_schedule.keys())
+
+        previous_periods = [period for period in all_periods if period <= self.current_date.to_period('M')]
+
+        # Randomly distribute max_num_logs across previous periods
+        logs_per_period = {period: 0 for period in previous_periods}
+        for _ in range(max_num_logs):
+            period = random.choice(previous_periods)
+            logs_per_period[period] += 1
+
+        synthetic_logs = []
+        for period, num_logs in logs_per_period.items():
+            if num_logs == 0:
+                continue
+            
+            period_data = prioritized_schedule.get(period)
+            period_graph = period_data.get('graph')
+            nodes = list(period_graph.nodes(data=True))
+
+            if ignore_end_loads:
+                nodes = [n for n in nodes if n[1].get('type') != 'end_load']
+            if ignore_utility_transformers:
+                nodes = [n for n in nodes if n[1].get('type') != 'utility_transformer']
+
+            # Gerenate logs for this period for the number of logs assigned, randomly selecting nodes
+            for _ in range(num_logs):
+                if not nodes:
+                    continue
+                
+                node_id, attrs = random.choice(nodes)
+
+                # Remove the node from the list to avoid duplicate logs for the same node in this period
+                nodes.remove((node_id, attrs))
+
+                # Minimum condition level of any generated log for this node in the synthetic logs
+                min_condition_level = 1.0
+                for log in synthetic_logs:
+                    if log['equipment_id'] == node_id:
+                        min_condition_level = min(min_condition_level, log['condition_level'])
+                
+                if node_id == "MP0.0":
+                    print(f"Generating log for node {node_id} in period {period} with min_condition_level {min_condition_level}") # DEBUG
+
+                condition_level = round(random.uniform(0.0, min_condition_level), 2)
+
+                log_entry = {
+                    'date': (period.to_timestamp() + pd.DateOffset(days=random.randint(0, 27))).strftime("%Y-%m-%d"),
+                    'equipment_id': node_id,
+                    'condition_level': condition_level,
+                    'notes': f"Synthetic maintenance log for {node_id} on {period}"
+                }
+                synthetic_logs.append(log_entry)
+
+        self.maintenance_logs = synthetic_logs

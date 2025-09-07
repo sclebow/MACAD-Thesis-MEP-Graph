@@ -5,7 +5,7 @@
 import panel as pn
 import pandas as pd
 
-from helpers.panel.button_callbacks import update_current_date, run_simulation, generate_graph
+from helpers.panel.button_callbacks import update_current_date, run_simulation, generate_graph, generate_synthetic_maintenance_logs
 
 # Enable Panel debug mode
 # pn.config.debug = True
@@ -127,7 +127,7 @@ layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS)
 layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS)
 
 # DEBUG Set default tabs
-main_tabs.active = 0
+main_tabs.active = 2
 
 print("Starting Application...")
 
@@ -139,6 +139,9 @@ generate_graph(None, graph_controller, DEFAULT_BUILDING_PARAMS)
 
 # Auto-run simulation on load
 run_simulation(None, graph_controller)
+
+# Default to generating synthetic logs for easier testing
+generate_synthetic_maintenance_logs(None, graph_controller)
 
 # Allow running directly with Python for debugging
 if __name__ == "__main__":

@@ -578,3 +578,11 @@ def generate_graph(event, graph_controller: GraphController, graph_args, save_gr
     # DEBUG: Save the generated graph to a file
     if save_graph_file:
         export_graph(None, graph_controller)
+
+def generate_synthetic_maintenance_logs(event, graph_controller: GraphController):
+    print("Generating synthetic maintenance logs...")
+    graph_controller.generate_synthetic_maintenance_logs()
+
+    maintenance_log_viewer = pn.state.cache["maintenance_logs_viewer"]
+    df_logs = graph_controller.get_maintenance_logs_df()
+    maintenance_log_viewer.value = df_logs
