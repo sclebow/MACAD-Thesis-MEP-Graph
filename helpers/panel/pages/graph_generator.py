@@ -4,20 +4,20 @@ import datetime
 
 from helpers.panel.button_callbacks import generate_graph
 
-def layout_graph_generator(graph_generator_container, graph_controller):
+def layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS):
     graph_generator_container.append(
         pn.pane.Markdown("## Graph Generator", sizing_mode="stretch_width"),
     )
-    
-    construction_year_input = pn.widgets.IntInput(name="Construction Year", value=datetime.datetime.now().year, step=1)
-    total_load_input = pn.widgets.FloatInput(name="Total Load (kW)", value=1000, step=50)
-    building_length_input = pn.widgets.FloatInput(name="Building Length (m)", value=20.0, step=1.0)
-    building_width_input = pn.widgets.FloatInput(name="Building Width (m)", value=20.0, step=1.0)
-    num_floors_input = pn.widgets.IntInput(name="Number of Floors", value=4, step=1)
-    floor_height_input = pn.widgets.FloatInput(name="Floor Height (m)", value=3.5, step=0.1)
-    cluster_strength_input = pn.widgets.FloatInput(name="Cluster Length (m)", value=0.95, step=0.05)
-    seed_input = pn.widgets.IntInput(name="Random Seed", value=42, step=1)
-    
+
+    construction_year_input = pn.widgets.IntInput(name="Construction Year", value=DEFAULT_BUILDING_PARAMS["construction_year"], step=1)
+    total_load_input = pn.widgets.FloatInput(name="Total Load (kW)", value=DEFAULT_BUILDING_PARAMS["total_load"], step=50)
+    building_length_input = pn.widgets.FloatInput(name="Building Length (m)", value=DEFAULT_BUILDING_PARAMS["building_length"], step=1.0)
+    building_width_input = pn.widgets.FloatInput(name="Building Width (m)", value=DEFAULT_BUILDING_PARAMS["building_width"], step=1.0)
+    num_floors_input = pn.widgets.IntInput(name="Number of Floors", value=DEFAULT_BUILDING_PARAMS["num_floors"], step=1)
+    floor_height_input = pn.widgets.FloatInput(name="Floor Height (m)", value=DEFAULT_BUILDING_PARAMS["floor_height"], step=0.1)
+    cluster_strength_input = pn.widgets.FloatInput(name="Cluster Strength", value=DEFAULT_BUILDING_PARAMS["cluster_strength"], step=0.05)
+    seed_input = pn.widgets.IntInput(name="Random Seed", value=DEFAULT_BUILDING_PARAMS["seed"], step=1)
+
     generate_button = pn.widgets.Button(name="Generate Graph", button_type="primary", icon="cogs", align="center")
     generate_button.on_click(lambda event: generate_graph(event, graph_controller, {
         "construction_year": construction_year_input.value,

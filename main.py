@@ -5,7 +5,7 @@
 import panel as pn
 import pandas as pd
 
-from helpers.panel.button_callbacks import update_current_date, run_simulation
+from helpers.panel.button_callbacks import update_current_date, run_simulation, generate_graph
 
 # Enable Panel debug mode
 # pn.config.debug = True
@@ -22,6 +22,17 @@ from helpers.panel.pages.settings import layout_settings
 from helpers.panel.pages.graph_generator import layout_graph_generator
 
 pn.extension('plotly')
+
+DEFAULT_BUILDING_PARAMS = {
+    "construction_year": pd.Timestamp.now().year,
+    "total_load": 1000,  # in kW
+    "building_length": 20.0,  # in meters
+    "building_width": 20.0,   # in meters
+    "num_floors": 4,
+    "floor_height": 3.5,      # in meters
+    "cluster_strength": 0.95, # between 0 and 1
+    "seed": 42
+}
 
 graph_controller = GraphController()
 
@@ -81,7 +92,7 @@ app = pn.Column(
 pn.state.cache["app"] = app
 
 # Layout the System View
-layout_system_view(system_view_container, graph_controller, app)
+layout_system_view(system_view_container, graph_controller)
 
 # Layout the Failure Prediction tab
 layout_failure_prediction(failure_prediction_container, graph_controller)
@@ -96,7 +107,7 @@ layout_analytics(analytics_container, graph_controller)
 layout_settings(settings_container, graph_controller)
 
 # Layout Graph Generator
-layout_graph_generator(graph_generator_container, graph_controller)
+layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS)
 
 # DEBUG Set default tabs
 main_tabs.active = 5
@@ -105,6 +116,9 @@ print("Starting Application...")
 
 # Make the app servable for panel serve command
 app.servable()
+
+# Generate a default graph on startup
+generate_graph(None, graph_controller, DEFAULT_BUILDING_PARAMS)
 
 # Auto-run simulation on load
 run_simulation(None, graph_controller)

@@ -1,17 +1,17 @@
 import panel as pn
 from helpers.panel.button_callbacks import upload_graph_from_file, export_graph, reset_graph, run_simulation, update_node_details, update_graph_container_visualization
 
-def layout_system_view(system_view_container, graph_controller, app):
+def layout_system_view(system_view_container, graph_controller):
     graph_container = pn.pane.Plotly(sizing_mode="scale_both")
     pn.state.cache["graph_container"] = graph_container
     # upload_file_dropper = pn.widgets.FileDropper(name="Upload Graph", accepted_filetypes=['.mepg', '.graphml'])
     upload_file_dropper = pn.widgets.FileInput(name="Upload Graph")
     upload_file_dropper.param.watch(lambda event: upload_graph_from_file(event.new, upload_file_dropper.filename, graph_controller), 'value')
 
-    # Upload a default file
-    default_file_path = "example_graph.mepg"
-    default_file = open(default_file_path, "rb").read()
-    upload_file_dropper.value = default_file
+    # # Upload a default file
+    # default_file_path = "example_graph.mepg"
+    # default_file = open(default_file_path, "rb").read()
+    # upload_file_dropper.value = default_file
 
     visualization_type_dict = {
         "2D Equipment": "2d_type",
