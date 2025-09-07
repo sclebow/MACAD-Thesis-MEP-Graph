@@ -20,6 +20,8 @@ from helpers.panel.pages.maintenance import layout_maintenance
 from helpers.panel.pages.analytics import layout_analytics
 from helpers.panel.pages.settings import layout_settings
 
+pn.extension('plotly')
+
 graph_controller = GraphController()
 
 # Create containers for each tab

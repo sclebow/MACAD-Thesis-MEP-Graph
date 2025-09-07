@@ -97,16 +97,12 @@ def calculate_remaining_useful_life(graph, current_date):
 
         # Add condition factor  
         current_condition = attrs.get('current_condition', RULConfig.DEFAULT_INITIAL_CONDITION)
-<<<<<<< Updated upstream
-        condition_factor = 0.5 + (current_condition * 0.5)  # Range: 0.5 to 1.0
-=======
         if current_condition is None:
             current_condition = RULConfig.DEFAULT_INITIAL_CONDITION
 
         minimum_condition_factor = 0.5
         condition_factor = minimum_condition_factor + (current_condition * minimum_condition_factor)  # Range: minimum_condition_factor to 1.0
         # condition_factor = 0.5 + (current_condition * 0.5)  # Range: 0.5 to 1.0
->>>>>>> Stashed changes
 
         # Apply all factors
         RUL_with_condition = RUL_with_overdue * condition_factor
