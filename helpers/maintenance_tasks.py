@@ -208,11 +208,6 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
     Create a calendar schedule for the tasks, grouping by month, as a dictionary.
     Includes all months between the earliest and latest task dates, even if no tasks exist in those months."""
 
-    # Initial tasks_deferred_count in the graph
-    for node in graph.nodes:
-        graph.nodes[node]['tasks_deferred_count'] = 0
-        graph.nodes[node]['replacement_required'] = False # Ensure this is initialized
-
     tasks_df = pd.DataFrame(tasks)
 
     tasks_df['equipment_installation_date'] = pd.to_datetime(tasks_df['equipment_installation_date'], format='%Y-%m-%d')
@@ -224,9 +219,6 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
 
     # Sort tasks by scheduled month
     tasks_df = tasks_df.sort_values(by='scheduled_month')
-
-    # print("Tasks DataFrame:")
-    # print(tasks_df.head())
 
     # Get earliest installation date
     earliest_date = tasks_df['equipment_installation_date'].min()
@@ -242,10 +234,6 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
     print(f"Months already passed: {months_already_passed}")
     num_months_to_schedule += months_already_passed
     print(f"Adjusted number of months to schedule: {num_months_to_schedule}")
-
-    # print()
-    # print(f"Creating calendar schedule starting from {earliest_month} for {num_months_to_schedule} months")
-    # print(f"Budget (Time: {monthly_budget_time}, Money: {monthly_budget_money})")
 
     rollover_time_budget = 0.0
     rollover_money_budget = 0.0
@@ -327,7 +315,6 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
             tasks_for_month = pd.concat([tasks_for_month, new_tasks_df], ignore_index=True)
             tasks_df = pd.concat([tasks_df, new_tasks_df], ignore_index=True)
 
-
         # Check if any nodes require replacement
         for node, attrs in graph.nodes(data=True):
             if attrs.get('replacement_required'):
@@ -346,7 +333,6 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
         # If there are no tasks, continue to the next month
         if tasks_for_month.empty:
             # Update RUL
-            graph = apply_rul_to_graph(graph, current_date=month.start_time)
             month_record['graph'] = graph.copy()
             monthly_records_dict[month] = month_record
             continue

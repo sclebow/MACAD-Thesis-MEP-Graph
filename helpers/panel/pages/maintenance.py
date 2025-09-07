@@ -1,11 +1,45 @@
 import panel as pn
-from helpers.panel.button_callbacks import maintenance_task_list_upload, update_hours_budget, update_money_budget, update_weeks_to_schedule, replacement_task_list_upload, run_simulation
+from helpers.panel.button_callbacks import maintenance_task_list_upload, update_hours_budget, update_money_budget, update_weeks_to_schedule, replacement_task_list_upload, maintenance_log_upload
 
 def layout_maintenance(maintenance_container, graph_controller):
+
+    condition_level_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False)
+    print("Setting condition_level_viewer in cache")
+    pn.state.cache["condition_level_viewer"] = condition_level_viewer
+    condition_level_container = pn.Column(
+        pn.pane.Markdown("### Current Date: Condition Levels of Equipment"),
+        condition_level_viewer,
+    )
+
+    maintenance_logs_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False)
+    pn.state.cache["maintenance_logs_viewer"] = maintenance_logs_viewer
     maintenance_logs_container = pn.Column(
         pn.pane.Markdown("### Maintenance Logs"),
-        pn.widgets.DataFrame(sizing_mode="stretch_width"),
+        maintenance_logs_viewer
     )
+
+    maintenance_and_condition_grid_container = pn.GridSpec(nrows=1, ncols=2)
+    maintenance_and_condition_grid_container[0, 0  ] = condition_level_container
+    maintenance_and_condition_grid_container[0, 1: ] = maintenance_logs_container
+
+    maintenance_and_condition_container = pn.Column()
+    maintenance_logs_file_input = pn.widgets.FileInput(name="Upload Maintenance Logs")
+    maintenance_logs_file_input.param.watch(lambda event: maintenance_log_upload(event, graph_controller), "value")
+
+    default_maintenance_logs_file_path = "tables/example_maintenance_logs.csv"
+    default_maintenance_logs_file = open(default_maintenance_logs_file_path, "rb").read()
+    maintenance_logs_file_input.value = default_maintenance_logs_file
+
+    maintenance_and_condition_container.append(
+        pn.Row(
+            pn.pane.Markdown("### Upload Maintenance Logs: "),
+            maintenance_logs_file_input,
+        ),
+    )
+    maintenance_and_condition_container.append(
+        maintenance_and_condition_grid_container
+    )
+
     maintenance_schedule_container = pn.Column(
         pn.pane.Markdown("### Maintenance Schedule"),
         sizing_mode="stretch_both"
@@ -27,6 +61,7 @@ def layout_maintenance(maintenance_container, graph_controller):
         pn.pane.Markdown("### Maintenance Task List"),
         maintenance_task_list_input,
         maintenance_task_list_viewer,
+        sizing_mode="stretch_both"
     )
 
     replacement_task_list_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False)
@@ -43,6 +78,7 @@ def layout_maintenance(maintenance_container, graph_controller):
         pn.pane.Markdown("### Replacement Task List"),
         replacement_task_list_input,
         replacement_task_list_viewer,
+        sizing_mode="stretch_both"
     )
 
     budget_hours_input = pn.widgets.NumberInput(name="Monthly Budget (Hours)", value=40, step=1)
@@ -62,7 +98,7 @@ def layout_maintenance(maintenance_container, graph_controller):
     )
 
     maintenance_tabs = pn.Tabs(
-        ("Maintenance Logs", maintenance_logs_container),
+        ("Maintenance Logs & Condition Levels", maintenance_and_condition_container),
         ("Simulation Schedule", maintenance_schedule_container),
         ("Maintenance Task List", maintenance_task_list_container),
         ("Replacement Task List", replacement_task_list_container),
@@ -71,4 +107,4 @@ def layout_maintenance(maintenance_container, graph_controller):
     )
     maintenance_container.append(maintenance_tabs)
 
-    maintenance_tabs.active = 3 # Set default tab to "Task List" for debugging
+    maintenance_tabs.active = 1 # Set default tab to "Task List" for debugging

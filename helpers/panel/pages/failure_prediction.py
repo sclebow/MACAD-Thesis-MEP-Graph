@@ -40,16 +40,10 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
     )
     pn.state.cache["cost_forecast_container"] = cost_forecast_container
     failure_timeline_header_markdown = pn.pane.Markdown("### Failure Timeline")
-    pn.state.cache["failure_timeline_header_markdown"] = failure_timeline_header_markdown
     task_timeline_container = pn.pane.Plotly(sizing_mode="stretch_width")
     pn.state.cache["task_timeline_container"] = task_timeline_container
     failure_timeline_header = pn.Column(
-        pn.Row(
-            failure_timeline_header_markdown,
-            pn.widgets.Button(name="Reset View", button_type="default", icon="refresh", on_click=failure_timeline_reset_view),
-            pn.widgets.Button(button_type="default", icon="zoom-in", on_click=failure_timeline_zoom_in),
-            pn.widgets.Button(button_type="default", icon="zoom-out", on_click=failure_timeline_zoom_out),
-        ),
+        failure_timeline_header_markdown,
         task_timeline_container,
         sizing_mode="stretch_both"
     )

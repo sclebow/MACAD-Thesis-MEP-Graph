@@ -9,6 +9,8 @@ import pandas as pd
 
 from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes, clean_graph_none_values
 
+from helpers.node_risk import apply_risk_scores_to_graph
+from helpers.rul_helper import apply_rul_to_graph
 from helpers.visualization import *
 from helpers.maintenance_tasks import process_maintenance_tasks
 
@@ -65,7 +67,7 @@ class GraphController:
         return presets.get(self.legend_preset, presets["compact_tr"])
     
     def load_graph_from_file(self, file_bytes):
-        """Load graph from file bytes and apply processing"""
+        # """Load graph from file bytes and apply processing"""
         try:
             file_buffer = io.BytesIO(file_bytes)
             G = nx.read_graphml(file_buffer)
@@ -74,17 +76,8 @@ class GraphController:
             self._validate_graph_data(G)
             
             # Apply risk scores and RUL with error handling
-            try:
-                from helpers.node_risk import apply_risk_scores_to_graph
-                G = apply_risk_scores_to_graph(G)
-            except Exception as e:
-                print(f"Warning: Risk score calculation failed: {e}")
-            
-            try:
-                from helpers.rul_helper import apply_rul_to_graph
-                G = apply_rul_to_graph(G)
-            except Exception as e:
-                print(f"Warning: RUL calculation failed: {e}")
+            G = apply_risk_scores_to_graph(G)
+            G = apply_rul_to_graph(G)
             
             self.current_graph[0] = G
             return {'success': True, 'message': 'Graph loaded successfully'}
@@ -99,6 +92,8 @@ class GraphController:
                 if value is None and key in ['x', 'y', 'z', 'propagated_power', 'power_rating']:
                     attrs[key] = 0.0
                     print(f"Warning: Set {key} to 0.0 for node {node_id}")
+            if 'tasks_deferred_count' not in attrs or attrs['tasks_deferred_count'] is None:
+                attrs['tasks_deferred_count'] = 0 # Initialize if missing
         
         for edge in graph.edges(data=True):
             edge_attrs = edge[2]
@@ -135,10 +130,6 @@ class GraphController:
             distribution_equipment = place_distribution_equipment(building_attrs, riser_floor_attributes, voltage_info)
             cluster_strength = building_params.get('cluster_strength', 0.95)
             G = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info, end_loads, cluster_strength)
-            
-            # Apply risk scores and RUL
-            from helpers.node_risk import apply_risk_scores_to_graph
-            from helpers.rul_helper import apply_rul_to_graph
             
             G = apply_risk_scores_to_graph(G)
             G = apply_rul_to_graph(G)
@@ -299,3 +290,29 @@ class GraphController:
         current_date_graph = self.get_current_date_graph()
 
         return generate_failure_timeline_figure(current_date_graph, self.current_date)
+    
+    def upload_maintenance_logs(self, file_content):
+        """Upload maintenance logs from file content"""
+        self.maintenance_logs = pd.read_csv(io.BytesIO(file_content))
+        self.maintenance_logs = self.maintenance_logs.to_dict(orient='records')
+
+    def get_maintenance_logs_df(self):
+        """Get the maintenance logs DataFrame"""
+        return pd.DataFrame(self.maintenance_logs)
+    
+    def get_current_condition_level_df(self, ignore_end_loads=True):
+        """Get the current condition level DataFrame"""
+        current_date_graph = self.get_current_date_graph()
+
+        node_condition_dict = {}        
+        for node_id, attrs in current_date_graph.nodes(data=True):
+            if ignore_end_loads and attrs.get('type') == 'end_load':
+                continue
+            node_condition_dict[node_id] = {
+                'Node ID': node_id,
+                'Condition Level': attrs.get('current_condition', 'N/A'),
+                'RUL (months)': attrs.get('remaining_useful_life_days', 'N/A'),
+                'Last Maintenance Date': attrs.get('last_maintenance_date', 'N/A'),
+                'Tasks Deferred Count': attrs.get('tasks_deferred_count', 0)
+            }
+        return pd.DataFrame.from_dict(node_condition_dict, orient='index')
