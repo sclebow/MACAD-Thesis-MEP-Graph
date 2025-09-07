@@ -22,7 +22,7 @@ class RULConfig:
         'panelboard': 20,
         'panel': 20,
         'end_load': 15,
-        'unknown': 20
+        # 'unknown': 20
     }
     
     # Base failure rates by equipment type (annual probability)
@@ -33,7 +33,7 @@ class RULConfig:
         'panelboard': 0.030,              # 3.0% annual
         'panel': 0.030,                   # 3.0% annual
         'end_load': 0.050,                # 5.0% annual
-        'unknown': 0.025                  # 2.5% default
+        # 'unknown': 0.025                  # 2.5% default
     }
     
     # Aging factors
@@ -51,28 +51,10 @@ class RULConfig:
     REPLACEMENT_THRESHOLD = "HIGH"         # Risk state for replacement, if set to None, accelerated replacement will not be simulated
     
     # Debug settings
-    ENABLE_RUL_WARNINGS = False             # Print warnings for low RUL
+    ENABLE_RUL_WARNINGS = False            # Print warnings for low RUL
     ENABLE_DEBUG_OUTPUT = False            # Detailed calculation output
-    IGNORE_UTILITY_TRANSFORMERS = True      # Ignore utility transformers in RUL calculations
-    IGNORE_END_LOADS = True                 # Ignore end loads in RUL calculations
-
-# Helper functions for parameters
-def get_equipment_lifespan(equipment_type: str) -> float:
-    """Get expected lifespan for equipment type"""
-    equipment_type = equipment_type.lower() if equipment_type else 'unknown'
-    return RULConfig.DEFAULT_LIFESPANS.get(equipment_type, RULConfig.DEFAULT_LIFESPANS['unknown'])
-
-def get_base_failure_rate(equipment_type: str) -> float:
-    """Get annual base failure rate for equipment type"""
-    equipment_type = equipment_type.lower() if equipment_type else 'unknown'
-    return RULConfig.BASE_FAILURE_RATES.get(equipment_type, RULConfig.BASE_FAILURE_RATES['unknown'])
-
-def calculate_aging_factor(age_years: float) -> float:
-    """Calculate aging impact on failure rate"""
-    if age_years is None:
-        age_years = 0.0
-    aging_multiplier = 1.0 + (age_years * RULConfig.AGING_ACCELERATION_FACTOR)
-    return min(aging_multiplier, RULConfig.MAX_AGING_MULTIPLIER) 
+    TYPES_TO_IGNORE = {'utility_transformer': True, 
+                       'end_load': True}  # Types to ignore in RUL calculations
 
 def calculate_remaining_useful_life(graph, current_date):
     """
@@ -81,45 +63,25 @@ def calculate_remaining_useful_life(graph, current_date):
     """
     rul_dict = {}
     for node, attrs in graph.nodes(data=True):
-        if RULConfig.IGNORE_UTILITY_TRANSFORMERS and attrs.get('type') == 'utility_transformer':
-            continue
-        if RULConfig.IGNORE_END_LOADS and attrs.get('type') == 'end_load':
-            continue
+        if attrs.get('type') in RULConfig.TYPES_TO_IGNORE:
+            if RULConfig.TYPES_TO_IGNORE[attrs.get('type')]:
+                continue
 
         # Extract attributes, with defaults if missing
         installation_date = attrs.get('installation_date')
-        
-        # Handle different field name formats
-        if installation_date is None:
-            # Try alternative field names
-            year_of_installation = attrs.get('Year_of_installation')
-            if year_of_installation is not None:
-                # Convert year to date format (assume January 1st)
-                installation_date = f"{int(year_of_installation)}-01-01"
-        
-        # installation_date is in YYYY-MM-DD format 
-        if installation_date is None:
-            # Debug: Check what fields are actually available
-            if RULConfig.ENABLE_DEBUG_OUTPUT:
-                print(f"Debug: Node {node} attributes: {list(attrs.keys())}")
-            print(f"Warning: Node {node} has no installation date. Skipping RUL calculation.")
-            continue
         installation_date = datetime.datetime.strptime(installation_date, '%Y-%m-%d')
 
-        expected_lifespan_years = attrs.get('expected_lifespan') or get_equipment_lifespan(attrs.get('type', 'unknown'))
-        if expected_lifespan_years is None:
-            expected_lifespan_years = get_equipment_lifespan('unknown')  # Use default
-        if attrs.get('expected_lifespan_days') is None:
-            attrs['expected_lifespan_days'] = expected_lifespan_years * 365.25  # Convert years to days
+        expected_lifespan_years = attrs.get('expected_lifespan')
         expected_end_date = installation_date + relativedelta(years=int(expected_lifespan_years))
 
         expected_lifespan_days = (expected_end_date - installation_date).days
+        attrs['expected_lifespan_days'] = expected_lifespan_days  # Store for reference
 
         # Calculate operating days using installation_date and current_date
         operating_days = (current_date - installation_date).days
 
         # Calculate overdue_factor using tasks_deferred_count
-        tasks_deferred_count = attrs.get('tasks_deferred_count', 0) or 0
+        tasks_deferred_count = attrs.get('tasks_deferred_count')
         overdue_factor = tasks_deferred_count * RULConfig.TASK_DEFERMENT_FACTOR
 
         # RUL baseline (in days)
@@ -130,17 +92,24 @@ def calculate_remaining_useful_life(graph, current_date):
 
         # Add equipment age factor
         age_years = (current_date - installation_date).days / 365.25
-        aging_factor = calculate_aging_factor(age_years)
+        aging_factor = 1.0 + (age_years * RULConfig.AGING_ACCELERATION_FACTOR)
+        aging_factor = min(aging_factor, RULConfig.MAX_AGING_MULTIPLIER)
 
         # Add condition factor  
         current_condition = attrs.get('current_condition', RULConfig.DEFAULT_INITIAL_CONDITION)
         if current_condition is None:
             current_condition = RULConfig.DEFAULT_INITIAL_CONDITION
-        condition_factor = 0.5 + (current_condition * 0.5)  # Range: 0.5 to 1.0
+
+        minimum_condition_factor = 0.5
+        condition_factor = minimum_condition_factor + (current_condition * minimum_condition_factor)  # Range: minimum_condition_factor to 1.0
+        # condition_factor = 0.5 + (current_condition * 0.5)  # Range: 0.5 to 1.0
 
         # Apply all factors
         RUL_with_condition = RUL_with_overdue * condition_factor
         RUL_adjusted = RUL_with_condition / aging_factor
+
+        # Ensure RUL is not negative
+        RUL_adjusted = max(RUL_adjusted, 0)
 
         # Store additional tracking info for analysis
         attrs['age_years'] = age_years
@@ -148,12 +117,10 @@ def calculate_remaining_useful_life(graph, current_date):
         attrs['aging_factor'] = aging_factor
         attrs['condition_factor'] = condition_factor
 
-        # Ensure RUL is not negative
-        RUL_adjusted = max(RUL_adjusted, 0)
-
         # Calculate failure probability for risk assessment
-        equipment_type = attrs.get('type', 'unknown')
-        base_failure_rate = get_base_failure_rate(equipment_type)
+        equipment_type = attrs.get('type')
+        base_failure_rate = RULConfig.BASE_FAILURE_RATES.get(equipment_type)
+
         annual_failure_probability = base_failure_rate * aging_factor * (2.0 - current_condition)
         annual_failure_probability = min(annual_failure_probability, 0.95)
 
@@ -336,49 +303,35 @@ def apply_condition_improvement(graph, node_id: str, improvement_effect: float, 
     if RULConfig.ENABLE_DEBUG_OUTPUT:
         print(f"Condition for {node_id} improved: {old_condition:.2f} -> {new_condition:.2f} due to {maintenance_type}")
 
-
-def update_component_condition(graph, node_id: str, new_condition: float, reason: str = "Manual update") -> bool:
-    """
-    Update component condition and track the change
-    """
-    if node_id not in graph.nodes:
-        print(f"Error: Component {node_id} not found in graph")
-        return False
-    
-    # Get current condition
-    old_condition = graph.nodes[node_id].get('current_condition', RULConfig.DEFAULT_INITIAL_CONDITION)
-    
-    # Set new condition with bounds checking
-    new_condition = max(0.0, min(1.0, new_condition))
-    graph.nodes[node_id]['current_condition'] = new_condition
-    
-    # Track condition history
-    if 'condition_history' not in graph.nodes[node_id]:
-        graph.nodes[node_id]['condition_history'] = []
-    
-    graph.nodes[node_id]['condition_history'].append({
-        'date': datetime.datetime.now().isoformat(),
-        'old_condition': old_condition,
-        'new_condition': new_condition,
-        'reason': reason
-    })
-    
-    # Recalculate RUL with new condition
-    apply_rul_to_graph(graph)
-    
-    if RULConfig.ENABLE_DEBUG_OUTPUT:
-        print(f"Updated {node_id} condition: {old_condition:.2f} → {new_condition:.2f} ({reason})")
-    
-    return True
-
 def adjust_rul_parameters(**kwargs) -> dict:
     """
     Adjust RUL calculation parameters (Scott's "dials")
+    Supports nested dictionary updates using dot notation (e.g., DEFAULT_LIFESPANS.transformer)
     """
     changed_params = {}
     
+    print("Adjusting RUL parameters:")
+    print(kwargs)
+
     for param_name, new_value in kwargs.items():
-        if hasattr(RULConfig, param_name):
+        # Handle nested dictionary updates (e.g., "DEFAULT_LIFESPANS.transformer")
+        if '.' in param_name:
+            dict_name, key = param_name.split('.', 1)
+            if hasattr(RULConfig, dict_name):
+                target_dict = getattr(RULConfig, dict_name)
+                if isinstance(target_dict, dict) and key in target_dict:
+                    old_value = target_dict[key]
+                    target_dict[key] = new_value
+                    changed_params[param_name] = {'old': old_value, 'new': new_value}
+                    
+                    if RULConfig.ENABLE_DEBUG_OUTPUT:
+                        print(f"Parameter {param_name}: {old_value} → {new_value}")
+                else:
+                    print(f"Warning: Unknown dictionary key {key} in {dict_name}")
+            else:
+                print(f"Warning: Unknown parameter {dict_name}")
+        # Handle regular parameter updates
+        elif hasattr(RULConfig, param_name):
             old_value = getattr(RULConfig, param_name)
             setattr(RULConfig, param_name, new_value)
             changed_params[param_name] = {'old': old_value, 'new': new_value}
@@ -387,7 +340,9 @@ def adjust_rul_parameters(**kwargs) -> dict:
                 print(f"Parameter {param_name}: {old_value} → {new_value}")
         else:
             print(f"Warning: Unknown parameter {param_name}")
-    
+
+    print(RULConfig.__dict__)
+
     return changed_params
 
 def get_current_parameters() -> dict:
@@ -401,88 +356,75 @@ def get_current_parameters() -> dict:
     
     return params
 
-def reset_all_conditions(graph, condition: float = 1.0, reason: str = "System reset"):
-    """
-    Reset all component conditions (useful for testing)
-    """
-    count = 0
-    for node_id, attrs in graph.nodes(data=True):
-        if attrs.get('type') != 'end_load':
-            update_component_condition(graph, node_id, condition, reason)
-            count += 1
+# def get_component_summary(graph, node_id: str) -> dict:
+#     """
+#     Get comprehensive summary for a specific component
+#     """
+#     if node_id not in graph.nodes:
+#         return {'error': f'Component {node_id} not found'}
     
-    print(f"Reset {count} components to condition {condition:.1f}")
-    return count
+#     attrs = graph.nodes[node_id]
+    
+#     # Calculate current age
+#     installation_date = attrs.get('installation_date')
+#     if installation_date:
+#         try:
+#             install_date = datetime.datetime.strptime(installation_date, '%Y-%m-%d')
+#             age_years = (datetime.datetime.now() - install_date).days / 365.25
+#         except:
+#             age_years = 0
+#     else:
+#         age_years = 0
+    
+#     summary = {
+#         'component_id': node_id,
+#         'type': attrs.get('type', 'unknown'),
+#         'age_years': round(age_years, 1),
+#         'installation_date': installation_date,
+#         'current_condition': attrs.get('current_condition', 1.0),
+#         'tasks_deferred_count': attrs.get('tasks_deferred_count', 0),
+#         'aging_factor': attrs.get('aging_factor', 1.0),
+#         'condition_factor': attrs.get('condition_factor', 1.0),
+#         'annual_failure_probability': attrs.get('annual_failure_probability', 0.0),
+#         'risk_level': attrs.get('risk_level', 'UNKNOWN'),
+#         'rul_years': attrs.get('remaining_useful_life_days', 0) / 365.25 if attrs.get('remaining_useful_life_days') else 0,
+#         'expected_lifespan': get_equipment_lifespan(attrs.get('type', 'unknown'))
+#     }
+    
+#     return summary
 
-def get_component_summary(graph, node_id: str) -> dict:
-    """
-    Get comprehensive summary for a specific component
-    """
-    if node_id not in graph.nodes:
-        return {'error': f'Component {node_id} not found'}
+# def get_system_risk_overview(graph) -> dict:
+#     """
+#     Get system-wide risk overview
+#     """
+#     components = []
+#     risk_counts = {'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0, 'UNKNOWN': 0}
+#     total_failure_probability = 0
     
-    attrs = graph.nodes[node_id]
-    
-    # Calculate current age
-    installation_date = attrs.get('installation_date')
-    if installation_date:
-        try:
-            install_date = datetime.datetime.strptime(installation_date, '%Y-%m-%d')
-            age_years = (datetime.datetime.now() - install_date).days / 365.25
-        except:
-            age_years = 0
-    else:
-        age_years = 0
-    
-    summary = {
-        'component_id': node_id,
-        'type': attrs.get('type', 'unknown'),
-        'age_years': round(age_years, 1),
-        'installation_date': installation_date,
-        'current_condition': attrs.get('current_condition', 1.0),
-        'tasks_deferred_count': attrs.get('tasks_deferred_count', 0),
-        'aging_factor': attrs.get('aging_factor', 1.0),
-        'condition_factor': attrs.get('condition_factor', 1.0),
-        'annual_failure_probability': attrs.get('annual_failure_probability', 0.0),
-        'risk_level': attrs.get('risk_level', 'UNKNOWN'),
-        'rul_years': attrs.get('remaining_useful_life_days', 0) / 365.25 if attrs.get('remaining_useful_life_days') else 0,
-        'expected_lifespan': get_equipment_lifespan(attrs.get('type', 'unknown'))
-    }
-    
-    return summary
-
-def get_system_risk_overview(graph) -> dict:
-    """
-    Get system-wide risk overview
-    """
-    components = []
-    risk_counts = {'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0, 'UNKNOWN': 0}
-    total_failure_probability = 0
-    
-    for node_id, attrs in graph.nodes(data=True):
-        if attrs.get('type') == 'end_load':
-            continue  # Skip end loads
+#     for node_id, attrs in graph.nodes(data=True):
+#         if attrs.get('type') == 'end_load':
+#             continue  # Skip end loads
             
-        summary = get_component_summary(graph, node_id)
-        components.append(summary)
+#         summary = get_component_summary(graph, node_id)
+#         components.append(summary)
         
-        risk_level = summary.get('risk_level', 'UNKNOWN')
-        risk_counts[risk_level] += 1
+#         risk_level = summary.get('risk_level', 'UNKNOWN')
+#         risk_counts[risk_level] += 1
         
-        failure_prob = summary.get('annual_failure_probability', 0)
-        total_failure_probability += failure_prob
+#         failure_prob = summary.get('annual_failure_probability', 0)
+#         total_failure_probability += failure_prob
     
-    total_components = len(components)
+#     total_components = len(components)
     
-    overview = {
-        'total_components': total_components,
-        'risk_distribution': risk_counts,
-        'high_risk_components': risk_counts['CRITICAL'] + risk_counts['HIGH'],
-        'avg_failure_probability': total_failure_probability / max(total_components, 1),
-        'components_needing_attention': [
-            c for c in components 
-            if c.get('risk_level') in ['CRITICAL', 'HIGH'] or c.get('rul_years', 0) < 2
-        ]
-    }
+#     overview = {
+#         'total_components': total_components,
+#         'risk_distribution': risk_counts,
+#         'high_risk_components': risk_counts['CRITICAL'] + risk_counts['HIGH'],
+#         'avg_failure_probability': total_failure_probability / max(total_components, 1),
+#         'components_needing_attention': [
+#             c for c in components 
+#             if c.get('risk_level') in ['CRITICAL', 'HIGH'] or c.get('rul_years', 0) < 2
+#         ]
+#     }
     
-    return overview
+#     return overview

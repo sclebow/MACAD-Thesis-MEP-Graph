@@ -5,7 +5,7 @@
 import panel as pn
 import pandas as pd
 
-from helpers.panel.button_callbacks import *
+from helpers.panel.button_callbacks import update_current_date, run_simulation
 
 # Enable Panel debug mode
 # pn.config.debug = True
@@ -19,6 +19,8 @@ from helpers.panel.pages.failure_prediction import layout_failure_prediction
 from helpers.panel.pages.maintenance import layout_maintenance
 from helpers.panel.pages.analytics import layout_analytics
 from helpers.panel.pages.settings import layout_settings
+
+pn.extension('plotly')
 
 graph_controller = GraphController()
 
@@ -54,16 +56,22 @@ run_simulation_button = pn.widgets.Button(name="Run Simulation", button_type="pr
 default_current_date = pd.Timestamp.now() + pd.DateOffset(years=25)
 graph_controller.current_date = default_current_date
 
-current_date_input = pn.widgets.DatePicker(name="Current Date", value=default_current_date)
+current_date_input = pn.widgets.DatePicker(name="Current Date", value=default_current_date, align="center")
 # Watch for changes to the date input
 current_date_input.param.watch(lambda event: update_current_date(event, graph_controller), 'value')
+
+app_status_container = pn.Row(
+    align="center",
+)
+pn.state.cache['app_status_container'] = app_status_container
 
 # Create main application layout
 app = pn.Column(
     pn.Row(
         pn.pane.Markdown("## MEP Digital Twin\nBuilding Systems Management"),
         run_simulation_button,
-        current_date_input
+        current_date_input,
+        app_status_container,
     ),
     main_tabs,
 )
@@ -84,7 +92,7 @@ layout_analytics(analytics_container, graph_controller)
 layout_settings(settings_container, graph_controller)
 
 # DEBUG Set default tabs
-main_tabs.active = 3
+main_tabs.active = 4
 
 print("Starting Application...")
 

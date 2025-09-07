@@ -189,8 +189,16 @@ def replacement_task_list_upload(event, graph_controller: GraphController, repla
     df = graph_controller.get_replacement_task_list_df()
     replacement_task_list_viewer.value = df
 
+def update_app_status(message: str):
+    app_status_container = pn.state.cache['app_status_container']
+    app_status_container.clear()
+    app_status_container.append(pn.pane.Markdown(f"### Dashboard Status:", align="center"))
+    app_status_container.append(pn.pane.Markdown(f"{message}", align="center"))
+
 def run_simulation(event, graph_controller: GraphController):
     print("\nRunning simulation...")
+
+    update_app_status("Running RUL Simulation... Please wait.")
     graph_controller.run_rul_simulation()
 
     # Get the schedule maintenance_schedule_container from pn.state.cache
@@ -199,6 +207,7 @@ def run_simulation(event, graph_controller: GraphController):
     # Get the schedule from cache
     schedule = graph_controller.prioritized_schedule
     
+    update_app_status("RUL Simulation Completed, Updating Dashboard...")
     # Convert the prioritized schedule to a DataFrame for display
     all_tasks = []
     for month, record in schedule.items():
@@ -221,6 +230,7 @@ def run_simulation(event, graph_controller: GraphController):
     tasks_df = tasks_df.sort_values(['month', 'priority'])
     
     # Create summary statistics
+    update_app_status("Updating Summary Statistics and Visualizations...")
     summary_stats = []
     for month, record in schedule.items():
         executed_count = len(record['executed_tasks'])
@@ -250,11 +260,13 @@ def run_simulation(event, graph_controller: GraphController):
     maintenance_schedule_container.append(results_panel)
 
     # Update the failure timeline container
+    update_app_status("Updating Failure Timeline...")
     task_timeline_container = pn.state.cache.get("task_timeline_container")
     fig = graph_controller.get_bar_chart_figure()
     task_timeline_container.object = fig
 
     # Update the system_health_container
+    update_app_status("Updating System Health Overview...")
     system_health_container = pn.state.cache.get("system_health_container")
     system_health_container.clear()
     system_health_str_list = []
@@ -288,6 +300,7 @@ def run_simulation(event, graph_controller: GraphController):
     system_health_container.append(pn.pane.Markdown("\n\n".join(system_health_str_list)))
 
     # Update the critical_component_container
+    update_app_status("Updating Critical Component Overview...")
     critical_component_container = pn.state.cache.get("critical_component_container")
     critical_component_container.clear()
     critical_component_list = []
@@ -300,6 +313,7 @@ def run_simulation(event, graph_controller: GraphController):
     critical_component_container.append(pn.pane.Markdown("\n\n".join(critical_component_list)))
 
     # Update the next_12_months_container
+    update_app_status("Updating Next 12 Months Overview...")
     next_12_months_container = pn.state.cache.get("next_12_months_container")
     next_12_months_data = graph_controller.get_next_12_months_data()
     next_12_months_container.clear()
@@ -319,6 +333,7 @@ def run_simulation(event, graph_controller: GraphController):
     next_12_months_container.append(pn.pane.Markdown("\n\n".join(next_12_months_list)))
 
     # Update the cost_forecast_container
+    update_app_status("Updating Cost Forecast Overview...")
     cost_forecast_container = pn.state.cache.get("cost_forecast_container")
     cost_forecast_container.clear()
     cost_forecast_str_list = []
@@ -339,11 +354,13 @@ def run_simulation(event, graph_controller: GraphController):
     cost_forecast_container.append(pn.pane.Markdown("\n\n".join(cost_forecast_str_list)))
 
     # Create the failure timeline figure
+    update_app_status("Creating Failure Timeline Figure...")
     failure_timeline_fig, node_dict = graph_controller.get_current_date_failure_timeline_figure()
     failure_timeline_container = pn.state.cache.get("failure_timeline_container")
     failure_timeline_container.object = failure_timeline_fig
 
     # Update the failure schedule
+    update_app_status("Updating Failure Schedule...")
     failure_schedule_dataframe = pn.state.cache.get("failure_schedule_dataframe")
     df = pd.DataFrame.from_dict(node_dict, orient="index")
     failure_schedule_dataframe.value = df
@@ -352,6 +369,7 @@ def run_simulation(event, graph_controller: GraphController):
     average_system_health_container.clear()
     
     # Get previous month graph
+    update_app_status("Updating KPI Cards...")
     previous_month_graph = graph_controller.get_previous_month_graph()
     def get_average_condition(graph):
         node_conditions = []
@@ -448,6 +466,7 @@ def run_simulation(event, graph_controller: GraphController):
     remaining_useful_life_plot = pn.state.cache.get("remaining_useful_life_plot")
 
     # Get graphs between last three months and next six months
+    update_app_status("Updating Analytics Visualizations...")
     graphs = [
         graph_controller.get_future_month_graph(i) for i in range(-3, 7)
     ]
@@ -468,6 +487,8 @@ def run_simulation(event, graph_controller: GraphController):
     maintenance_costs_plot = pn.state.cache.get("maintenance_costs_plot")
     fig = get_maintenance_costs_fig(prioritized_schedule=graph_controller.prioritized_schedule, current_date=graph_controller.current_date)
     maintenance_costs_plot.object = fig
+
+    update_app_status("Dashboard Update Complete.")
 
 def update_current_date(event, graph_controller: GraphController):
     graph_controller.current_date = event.new

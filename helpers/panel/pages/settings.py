@@ -1,64 +1,76 @@
 import panel as pn
-from helpers.panel.button_callbacks import save_settings, import_data, export_data, clear_all_data
+from helpers.panel.button_callbacks import save_settings, import_data, export_data, clear_all_data, run_simulation
+from helpers.rul_helper import adjust_rul_parameters, get_current_parameters
 
 def layout_settings(settings_container, graph_controller):
     settings_header = pn.Row(
         pn.Column(
             pn.pane.Markdown("## ⚙ Application Settings", sizing_mode="stretch_width"),
-            pn.pane.Markdown("Configure system preferences and thresholds.", sizing_mode="stretch_width")
+            pn.pane.Markdown("Configure system preferences and thresholds.  Changing Settings will trigger a simulation update.", sizing_mode="stretch_width")
         ),
-        pn.widgets.Button(name="Save Changes", button_type="primary", on_click=save_settings, align=("center")),
     )
     settings_container.append(settings_header)
     settings_container.append(pn.layout.Divider(sizing_mode="stretch_width"))
-
     settings_container.append(
-        pn.Column(
-            pn.pane.Markdown("### Alert Thresholds"),
-            pn.Row(
-                pn.Column(
-                    pn.widgets.IntInput(
-                        name="Critical Condition Threshold (%)",
-                        value=30,
-                        step=1,
-                        start=1,
-                        end=100,
-                        sizing_mode="stretch_width"
-                    ),
-                    pn.pane.Markdown("Equipment below this condition triggers critical alerts"),
-                    pn.widgets.IntInput(
-                        name="Low RUL Threshold (months)",
-                        value=6,
-                        step=1,
-                        start=1,
-                        end=100,
-                        sizing_mode="stretch_width"
-                    ),
-                    pn.pane.Markdown("Equipment with RUL below this triggers alerts")
-                ),
-                pn.Column(
-                    pn.widgets.IntInput(
-                        name="Warning Condition Threshold (%)",
-                        value=50,
-                        step=1,
-                        start=1,
-                        end=100,
-                        sizing_mode="stretch_width"
-                    ),
-                    pn.pane.Markdown("Equipment below this condition shows warnings"),
-                    pn.widgets.IntInput(
-                        name="High Risk Threshold (%)",
-                        value=80,
-                        step=1,
-                        start=1,
-                        end=100,
-                        sizing_mode="stretch_width"
-                    ),
-                    pn.pane.Markdown("Equipment below this condition triggers high-risk alerts"),
-                )
-            )
-        )
+        pn.pane.Markdown("### RUL Prediction Parameters", sizing_mode="stretch_width")
     )
+
+    current_params = get_current_parameters()
+
+    def create_input_widget(param, value):
+        input_widget = None
+
+        if isinstance(value, float):
+            input_widget = pn.widgets.FloatInput(
+                step=0.01,
+                align="center",
+            )
+        elif isinstance(value, bool):
+            input_widget = pn.widgets.Checkbox(
+                align="center",
+            )
+        elif isinstance(value, int):
+            input_widget = pn.widgets.IntInput(
+                align="center",
+            )
+        elif isinstance(value, str):
+            input_widget = pn.widgets.TextInput(
+                align="center",
+            )
+        elif isinstance(value, dict):
+            input_widget = pn.Column()
+            for key, item in value.items():
+                sub_widget = create_input_widget(f"{param}.{key}", item)
+                if sub_widget:
+                    input_widget.append(sub_widget)
+        else:
+            print(f"WARNING: No input widget created for parameter {param} of type {type(value)}")
+            return None
+
+        if not isinstance(value, list) and not isinstance(value, dict):
+            input_widget.value = value
+            def update_param(event, param_name=param):
+                adjust_rul_parameters(**{param_name: event.new})
+                # Also trigger simulation after parameter update
+                run_simulation(None, graph_controller)
+            input_widget.param.watch(update_param, 'value')
+        elif isinstance(value, dict):
+            # For dictionaries, the sub-widgets already have their event handlers set up
+            pass
+        else:
+            input_widget.value = value
+
+        row = pn.Row(
+            pn.pane.Markdown(f"**{param.replace('_', ' ').title()}:**", width=200),
+            input_widget,
+        )
+
+        return row
+
+    for param, value in current_params.items():
+        input_widget = create_input_widget(param, value)
+        if input_widget:
+            settings_container.append(input_widget)
 
     settings_container.append(pn.layout.Divider(sizing_mode="stretch_width"))
 

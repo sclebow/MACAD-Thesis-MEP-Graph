@@ -255,7 +255,7 @@ class GraphController:
         if not self.current_graph[0]:
             return None
 
-        return generate_bar_chart_figure(self.prioritized_schedule) if self.prioritized_schedule else None
+        return generate_bar_chart_figure(self.prioritized_schedule, self.current_date)
 
     def get_current_date_graph(self):
         """Get the current date graph"""
