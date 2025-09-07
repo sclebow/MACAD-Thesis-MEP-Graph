@@ -544,12 +544,6 @@ def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
     """
     fig = go.Figure()
 
-    months = list(prioritized_schedule.keys())
-    
-    # Get the max amount of tasks from any month
-    max_tasks_executed_for_month = max(len(prioritized_schedule[month].get('executed_tasks', [])) for month in months)
-    max_tasks_deferred_for_month = max(len(prioritized_schedule[month].get('deferred_tasks', [])) for month in months)
-
     numbers_of_executed = []
     numbers_of_deferred = []
 
@@ -577,23 +571,19 @@ def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
     ))
 
     fig.update_layout(
-        # title='Task Status Over Time', 
+        title='Task Status Each Month', 
         xaxis_title='Time', 
         yaxis_title='Number of Tasks',
         barmode='stack'  # This makes it a stacked bar chart
     )
-    # fig.update_yaxes(range=[0, max_total_tasks + 10])
-
-    # Show no x axis tick marks
-    # fig.update_xaxes(showticklabels=False)
-
-    # fig.update_layout(height=300)
 
     # Ensure zoom buttons only affect x-axis, default range is last 6 months + next 12 months
     default_range = [
         (current_date - pd.DateOffset(months=6)).to_pydatetime(),
         (current_date + pd.DateOffset(months=12)).to_pydatetime()
     ]
+    default_range_count = default_range[1].month - default_range[0].month + (default_range[1].year - default_range[0].year) * 12
+
     fig.update_layout(
         xaxis=dict(
             rangeselector=dict(
@@ -622,7 +612,7 @@ def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
                         method="relayout",
                         args=[{
                             "xaxis.range": default_range,
-                            "xaxis.count": default_range[1] - default_range[0]
+                            "xaxis.count": default_range_count
                         }]
                     )
                 ],
@@ -778,6 +768,9 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp
         yanchor='bottom',
         font=dict(color='red')
     )
+
+    # Update the height based on number of nodes
+    fig.update_layout(height=300 + 20 * len(node_dict))
 
     return fig, node_dict
 

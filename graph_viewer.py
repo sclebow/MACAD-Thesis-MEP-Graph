@@ -13,12 +13,12 @@ import math
 import datetime
 
 # Import helper files
-from helpers.maintenance_tasks import process_maintenance_tasks
+# from helpers.maintenance_tasks import process_maintenance_tasks
 # from helpers.node_risk import *
 # from helpers.rul_helper import apply_rul_to_graph
 # Import MEP graph generator
 from helpers.rul_helper import apply_maintenance_log_to_graph
-from helpers.controllers.graph_controller import *
+from helpers.controllers.graph_controller import GraphController
 
 print("\n" * 5)
 
@@ -573,11 +573,11 @@ def autoload_example_graph():
                 # Check if the graph is a directed graph
                 if not isinstance(G, nx.DiGraph):
                     raise ValueError("The example graph must be a directed graph.")
-                fig = visualize_graph_two_d(G, use_full_names=name_toggle.value)
+                fig = graph_controller.get_visualization_data('2d_type')
                 plot_pane.object = fig
-                fig_risk = visualize_graph_two_d_risk(G, use_full_names=name_toggle.value)
+                fig_risk = graph_controller.get_visualization_data('2d_risk')
                 plot_risk_pane.object = fig_risk
-                three_d_fig = visualize_graph_three_d(G, use_full_names=name_toggle.value)
+                three_d_fig = graph_controller.get_visualization_data('3d_type')
                 three_d_pane.object = three_d_fig
                 current_graph[0] = G
 
@@ -585,7 +585,7 @@ def autoload_example_graph():
 
                 update_dropdowns(G)
                 # Trigger the maintenance process now that the graph is loaded
-                process_tasks_callback()
+                graph_controller.run_rul_simulation()
 
                 file_bytes = f.read()
                 result = graph_controller.load_graph_from_file(file_bytes)
@@ -892,7 +892,6 @@ prioritized_schedule = None
 
 # Process the maintenance tasks
 def process_tasks_callback(event=None):
-    from helpers.controllers.graph_controller import _generate_2d_graph_figure
     # Check if graph is loaded
     if current_graph[0] is None:
         print("No graph loaded. Please load or generate a graph first.")
@@ -1146,13 +1145,13 @@ maintenance_task_panel = pn.Column(
 )
 
 # Set up the button callback
-process_tasks_button.on_click(process_tasks_callback)
-# Automatically process tasks when graph is loaded
-def auto_process_tasks_if_graph_loaded():
-    if current_graph[0] is not None:
-        process_tasks_callback()
+process_tasks_button.on_click(lambda event: graph_controller.run_rul_simulation())
+# # Automatically process tasks when graph is loaded
+# def auto_process_tasks_if_graph_loaded():
+#     if current_graph[0] is not None:
+#         process_tasks_callback()
 
-auto_process_tasks_if_graph_loaded()  # Initial call to populate the app if graph is already loaded
+# auto_process_tasks_if_graph_loaded()  # Initial call to populate the app if graph is already loaded
 
 app.append(pn.Column(
     "### Process Maintenance Tasks",

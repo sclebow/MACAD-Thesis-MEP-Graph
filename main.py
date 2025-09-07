@@ -5,7 +5,7 @@
 import panel as pn
 import pandas as pd
 
-from helpers.panel.button_callbacks import update_current_date, run_simulation
+from helpers.panel.button_callbacks import update_current_date, run_simulation, generate_graph
 
 # Enable Panel debug mode
 # pn.config.debug = True
@@ -19,8 +19,37 @@ from helpers.panel.pages.failure_prediction import layout_failure_prediction
 from helpers.panel.pages.maintenance import layout_maintenance
 from helpers.panel.pages.analytics import layout_analytics
 from helpers.panel.pages.settings import layout_settings
+from helpers.panel.pages.graph_generator import layout_graph_generator
 
 pn.extension('plotly')
+
+# DEFAULT_BUILDING_PARAMS = {
+#     "construction_year": pd.Timestamp.now().year,
+#     "total_load": 1000,  # in kW
+#     "building_length": 20.0,  # in meters
+#     "building_width": 20.0,   # in meters
+#     "num_floors": 4,
+#     "floor_height": 3.5,      # in meters
+#     "cluster_strength": 0.95, # between 0 and 1
+#     "seed": 42
+# }
+
+DEFAULT_BUILDING_PARAMS = {
+    "construction_year": pd.Timestamp.now().year,
+    "total_load": 200,  # in kW
+    "building_length": 20.0,  # in meters
+    "building_width": 20.0,   # in meters
+    "num_floors": 1,
+    "floor_height": 3.5,      # in meters
+    "cluster_strength": 0.95, # between 0 and 1
+    "seed": 42
+}
+
+DEFAULT_SIMULATION_PARAMS = {
+    "budget_hours": 40,
+    "budget_money": 10000,
+    "weeks_to_schedule": 360
+}
 
 graph_controller = GraphController()
 
@@ -30,6 +59,7 @@ failure_prediction_container = pn.Column()
 maintenance_container = pn.Column()
 analytics_container = pn.Column()
 settings_container = pn.Column()
+graph_generator_container = pn.Column()
 
 # Create main tabs page
 # Create a stylesheet for the tabs
@@ -46,6 +76,7 @@ main_tabs = pn.Tabs(
     ("Maintenance", maintenance_container),
     ("Analytics", analytics_container),
     ("Settings", settings_container),
+    ("Graph Generator", graph_generator_container),
     dynamic=True,
     tabs_location="left",
     stylesheets=[stylesheet]
@@ -75,9 +106,10 @@ app = pn.Column(
     ),
     main_tabs,
 )
+pn.state.cache["app"] = app
 
 # Layout the System View
-layout_system_view(system_view_container, graph_controller, app)
+layout_system_view(system_view_container, graph_controller)
 
 # Layout the Failure Prediction tab
 layout_failure_prediction(failure_prediction_container, graph_controller)
@@ -89,15 +121,21 @@ layout_maintenance(maintenance_container, graph_controller)
 layout_analytics(analytics_container, graph_controller)
 
 # Layout Settings
-layout_settings(settings_container, graph_controller)
+layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS)
+
+# Layout Graph Generator
+layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS)
 
 # DEBUG Set default tabs
-main_tabs.active = 1
+main_tabs.active = 0
 
 print("Starting Application...")
 
 # Make the app servable for panel serve command
 app.servable()
+
+# Generate a default graph on startup
+generate_graph(None, graph_controller, DEFAULT_BUILDING_PARAMS)
 
 # Auto-run simulation on load
 run_simulation(None, graph_controller)

@@ -1,8 +1,10 @@
 import panel as pn
-from helpers.panel.button_callbacks import save_settings, import_data, export_data, clear_all_data, run_simulation
+from helpers.panel.button_callbacks import save_settings, import_data, export_data, clear_all_data, run_simulation, update_hours_budget, update_money_budget, update_weeks_to_schedule
 from helpers.rul_helper import adjust_rul_parameters, get_current_parameters
 
-def layout_settings(settings_container, graph_controller):
+def layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS):
+    pn.state.cache["settings_container"] = settings_container
+
     settings_header = pn.Row(
         pn.Column(
             pn.pane.Markdown("## ⚙ Application Settings", sizing_mode="stretch_width"),
@@ -10,8 +12,37 @@ def layout_settings(settings_container, graph_controller):
         ),
     )
     settings_container.append(settings_header)
-    settings_container.append(pn.layout.Divider(sizing_mode="stretch_width"))
-    settings_container.append(
+
+    settings_row = pn.Row()
+
+    left_column = pn.Column()
+    right_column = pn.Column()
+
+    settings_row.append(left_column)
+    settings_row.append(right_column)
+
+    settings_container.append(settings_row)
+
+    budget_hours_input = pn.widgets.NumberInput(name="Monthly Budget (Hours)", value=DEFAULT_SIMULATION_PARAMS["budget_hours"], step=1)
+    budget_hours_input.param.watch(lambda event: update_hours_budget(event, graph_controller), "value")
+
+    budget_money_input = pn.widgets.NumberInput(name="Monthly Budget (Dollars)", value=DEFAULT_SIMULATION_PARAMS["budget_money"], step=100)
+    budget_money_input.param.watch(lambda event: update_money_budget(event, graph_controller), "value")
+
+    num_weeks_to_schedule_input = pn.widgets.NumberInput(name="Weeks to Schedule", value=DEFAULT_SIMULATION_PARAMS["weeks_to_schedule"], step=1)
+    num_weeks_to_schedule_input.param.watch(lambda event: update_weeks_to_schedule(event, graph_controller), "value")
+
+    maintenance_budget_container = pn.Column(
+        pn.pane.Markdown("### Maintenance Budget"),
+        budget_hours_input,
+        budget_money_input,
+        num_weeks_to_schedule_input
+    )
+
+    right_column.append(maintenance_budget_container)
+    # right_column.append(pn.layout.Divider(sizing_mode="stretch_width"))
+
+    left_column.append(
         pn.pane.Markdown("### RUL Prediction Parameters", sizing_mode="stretch_width")
     )
 
@@ -70,53 +101,53 @@ def layout_settings(settings_container, graph_controller):
     for param, value in current_params.items():
         input_widget = create_input_widget(param, value)
         if input_widget:
-            settings_container.append(input_widget)
+            left_column.append(input_widget)
 
-    settings_container.append(pn.layout.Divider(sizing_mode="stretch_width"))
+    # settings_container.append(pn.layout.Divider(sizing_mode="stretch_width"))
 
-    settings_container.append(
-        pn.Column(
-            pn.pane.Markdown("### System Configuration"),
-            pn.pane.Markdown("**Automatic Backup**"),
-            pn.pane.Markdown("Automatically backup system data"),
-            pn.Row(
-                pn.widgets.Select(
-                    name="Backup Frequency",
-                    options=[
-                        "Daily",
-                        "Weekly",
-                        "Monthly"
-                    ],
-                    sizing_mode="stretch_width"
-                ),
-                pn.widgets.Select(
-                    name = "Data Retention Period",
-                    options=[
-                        "1 Year",
-                        "2 Years",
-                        "3 Years"
-                    ],
-                    value="2 Years",
-                    sizing_mode="stretch_width"
-                ),
-            )
-        )
-    )
+    # settings_container.append(
+    #     pn.Column(
+    #         pn.pane.Markdown("### System Configuration"),
+    #         pn.pane.Markdown("**Automatic Backup**"),
+    #         pn.pane.Markdown("Automatically backup system data"),
+    #         pn.Row(
+    #             pn.widgets.Select(
+    #                 name="Backup Frequency",
+    #                 options=[
+    #                     "Daily",
+    #                     "Weekly",
+    #                     "Monthly"
+    #                 ],
+    #                 sizing_mode="stretch_width"
+    #             ),
+    #             pn.widgets.Select(
+    #                 name = "Data Retention Period",
+    #                 options=[
+    #                     "1 Year",
+    #                     "2 Years",
+    #                     "3 Years"
+    #                 ],
+    #                 value="2 Years",
+    #                 sizing_mode="stretch_width"
+    #             ),
+    #         )
+    #     )
+    # )
 
-    settings_container.append(pn.layout.Divider(sizing_mode="stretch_width"))
+    # settings_container.append(pn.layout.Divider(sizing_mode="stretch_width"))
 
-    settings_container.append(
+    right_column.append(
         pn.Column(
             pn.pane.Markdown("### Data Management"),
             pn.Row(
-                pn.widgets.Button(name="Import Data", button_type="default", on_click=import_data, icon="upload", sizing_mode="stretch_width"),
-                pn.widgets.Button(name="Export Data", button_type="default", on_click=export_data, icon="download", sizing_mode="stretch_width")
+                # pn.widgets.Button(name="Import Data", button_type="default", on_click=lambda event: import_data(event, graph_controller), icon="upload", sizing_mode="stretch_width"),
+                pn.widgets.Button(name="Export Data", button_type="default", on_click=lambda event: export_data(event, graph_controller), icon="download", sizing_mode="stretch_width")
             ),
-            pn.pane.HTML("<span style='color: red;'><h4>Danger Zone:</h4></span>"),
-            pn.pane.Markdown("These actions cannot be undone. Please be careful."),
-            pn.Row(
-                pn.widgets.Button(name="Clear All Data", button_type="default", on_click=clear_all_data, icon="trash", sizing_mode="stretch_width"),
-                pn.pane.Markdown("", sizing_mode="stretch_width")
-            )
+            # pn.pane.HTML("<span style='color: red;'><h4>Danger Zone:</h4></span>"),
+            # pn.pane.Markdown("These actions cannot be undone. Please be careful."),
+            # pn.Row(
+            #     pn.widgets.Button(name="Clear All Data", button_type="default", on_click=clear_all_data, icon="trash", sizing_mode="stretch_width"),
+            #     pn.pane.Markdown("", sizing_mode="stretch_width")
+            # )
         )
     )

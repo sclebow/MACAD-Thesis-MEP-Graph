@@ -39,15 +39,21 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         # sizing_mode="stretch_both"
     )
     pn.state.cache["cost_forecast_container"] = cost_forecast_container
+
     failure_timeline_header_markdown = pn.pane.Markdown("### Failure Timeline")
-    task_timeline_container = pn.pane.Plotly(sizing_mode="stretch_width")
+    task_timeline_container = pn.pane.Plotly(
+        sizing_mode="stretch_width"
+    )
     pn.state.cache["task_timeline_container"] = task_timeline_container
     failure_timeline_header = pn.Column(
-        failure_timeline_header_markdown,
+        # failure_timeline_header_markdown,
         task_timeline_container,
         sizing_mode="stretch_both"
     )
-    failure_timeline_container = pn.pane.Plotly(sizing_mode="scale_both")
+    failure_timeline_container = pn.pane.Plotly(
+        # sizing_mode="scale_both"
+        sizing_mode="stretch_width"
+    )
     pn.state.cache["failure_timeline_container"] = failure_timeline_container
     failure_timeline_container.param.watch(lambda event: update_failure_component_details(graph_controller, failure_timeline_container), 'click_data')
     component_details_container = pn.Column(

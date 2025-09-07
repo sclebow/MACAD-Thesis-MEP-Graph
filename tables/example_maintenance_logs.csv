@@ -1,13 +1,2 @@
 date, equipment_id, condition_level, notes
-2023-01-01, T-01, 2, "Routine maintenance performed."
-2023-01-02, P-01, 2, "Routine maintenance performed."
-2023-01-03, S-01, 2, "Routine maintenance performed."
-2023-01-04, T-02, 4, "Emergency repair completed."
-2023-01-05, P-02, 4, "Emergency repair completed."
-2023-01-06, S-02, 4, "Emergency repair completed."
-2023-01-07, T-03, 8, "Major refurbishment completed."
-2023-01-08, P-03, 8, "Major refurbishment completed."
-2023-01-09, S-03, 8, "Major refurbishment completed."
-2023-01-10, T-04, 12, "Full replacement completed."
-2023-01-11, P-04, 12, "Full replacement completed."
-2023-01-12, S-04, 12, "Full replacement completed."
+2023-01-01, SP1.0.208.H, 0.8, Equipment is aging but functional.
