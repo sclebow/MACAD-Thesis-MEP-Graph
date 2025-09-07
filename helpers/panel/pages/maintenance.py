@@ -81,28 +81,12 @@ def layout_maintenance(maintenance_container, graph_controller):
         sizing_mode="stretch_both"
     )
 
-    budget_hours_input = pn.widgets.NumberInput(name="Monthly Budget (Hours)", value=40, step=1)
-    budget_hours_input.param.watch(lambda event: update_hours_budget(event, graph_controller), "value")
-
-    budget_money_input = pn.widgets.NumberInput(name="Monthly Budget (Dollars)", value=10000, step=100)
-    budget_money_input.param.watch(lambda event: update_money_budget(event, graph_controller), "value")
-
-    num_weeks_to_schedule_input = pn.widgets.NumberInput(name="Weeks to Schedule", value=360, step=1)
-    num_weeks_to_schedule_input.param.watch(lambda event: update_weeks_to_schedule(event, graph_controller), "value")
-
-    maintenance_budget_container = pn.Column(
-        pn.pane.Markdown("### Maintenance Budget"),
-        budget_hours_input,
-        budget_money_input,
-        num_weeks_to_schedule_input
-    )
-
     maintenance_tabs = pn.Tabs(
         ("Maintenance Logs & Condition Levels", maintenance_and_condition_container),
         ("Simulation Schedule", maintenance_schedule_container),
         ("Maintenance Task List", maintenance_task_list_container),
         ("Replacement Task List", replacement_task_list_container),
-        ("Budget", maintenance_budget_container),
+        # ("Budget", maintenance_budget_container),
         sizing_mode="stretch_width"
     )
     maintenance_container.append(maintenance_tabs)

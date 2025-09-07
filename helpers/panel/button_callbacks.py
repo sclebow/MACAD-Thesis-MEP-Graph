@@ -4,6 +4,7 @@ import networkx as nx
 import datetime
 import base64
 import pandas as pd
+import pickle
 
 from helpers.controllers.graph_controller import GraphController
 from helpers.panel.analytics_viz import _create_enhanced_kpi_card
@@ -97,11 +98,40 @@ def run_lifecycle_analysis_simulation(event):
 def save_settings(event):
     print("Save Settings button clicked")
 
-def import_data(event):
+def import_data(event, graph_controller):
     print("Import Data button clicked")
 
-def export_data(event):
+
+def export_data(event, graph_controller):
     print("Export Data button clicked")
+    data_dict = graph_controller.export_data()
+
+    # Prepare Pickle file content
+    pickle_bytes = pickle.dumps(data_dict)
+    b64_content = base64.b64encode(pickle_bytes).decode('utf-8')
+    filename = f"exported_data_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pkl"
+
+    # Create download HTML
+    download_html = f"""
+    <script>
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:application/octet-stream;base64,{b64_content}');
+    element.setAttribute('download', '{filename}');
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    </script>
+    """
+
+    # Display the download HTML (this triggers the download)
+    download_pane = pn.pane.HTML(download_html)
+
+    # You can add this to a temporary container or use a notification
+    print(f"Exporting data as {filename}")
+
+    settings_container = pn.state.cache.get('settings_container')
+    settings_container.append(download_pane)
 
 def clear_all_data(event):
     print("Clear All Data button clicked")
@@ -185,11 +215,17 @@ def maintenance_task_list_upload(event, graph_controller: GraphController, maint
 def update_hours_budget(event, graph_controller: GraphController):
     graph_controller.update_hours_budget(event.new)
 
+    run_simulation(None, graph_controller)
+
 def update_money_budget(event, graph_controller: GraphController):
     graph_controller.update_money_budget(event.new)
 
+    run_simulation(None, graph_controller)
+
 def update_weeks_to_schedule(event, graph_controller: GraphController):
     graph_controller.update_weeks_to_schedule(event.new)
+
+    run_simulation(None, graph_controller)
 
 def replacement_task_list_upload(event, graph_controller: GraphController, replacement_task_list_viewer):
     # Read byte content from the uploaded file

@@ -316,3 +316,21 @@ class GraphController:
                 'Tasks Deferred Count': attrs.get('tasks_deferred_count', 0)
             }
         return pd.DataFrame.from_dict(node_condition_dict, orient='index')
+
+
+    def export_data(self):
+        """Export current graph and related data as a dictionary"""
+        if not self.current_graph[0]:
+            return None
+        
+        data_dict = {
+            'graph': self.current_graph[0],
+            'maintenance_tasks': self.maintenance_tasks,
+            'replacement_tasks': self.replacement_tasks,
+            'monthly_budget_money': self.monthly_budget_money,
+            'monthly_budget_time': self.monthly_budget_time,
+            'months_to_schedule': self.months_to_schedule,
+            'prioritized_schedule': self.prioritized_schedule,
+            'current_date': self.current_date
+        }
+        return data_dict
