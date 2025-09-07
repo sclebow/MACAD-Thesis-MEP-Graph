@@ -58,7 +58,7 @@ graph_controller.current_date = default_current_date
 
 current_date_input = pn.widgets.DatePicker(name="Current Date", value=default_current_date, align="center")
 # Watch for changes to the date input
-current_date_input.param.watch(lambda event: update_current_date(event, graph_controller), 'value')
+current_date_input.param.watch(lambda event: update_current_date(event.new, graph_controller), 'value')
 
 app_status_container = pn.Row(
     align="center",

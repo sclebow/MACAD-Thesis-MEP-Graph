@@ -293,5 +293,26 @@ class GraphController:
     
     def upload_maintenance_logs(self, file_content):
         """Upload maintenance logs from file content"""
-        self.maintenance_tasks = pd.read_csv(io.BytesIO(file_content))
-        self.maintenance_tasks = self.maintenance_tasks.to_dict(orient='records')
+        self.maintenance_logs = pd.read_csv(io.BytesIO(file_content))
+        self.maintenance_logs = self.maintenance_logs.to_dict(orient='records')
+
+    def get_maintenance_logs_df(self):
+        """Get the maintenance logs DataFrame"""
+        return pd.DataFrame(self.maintenance_logs)
+    
+    def get_current_condition_level_df(self, ignore_end_loads=True):
+        """Get the current condition level DataFrame"""
+        current_date_graph = self.get_current_date_graph()
+
+        node_condition_dict = {}        
+        for node_id, attrs in current_date_graph.nodes(data=True):
+            if ignore_end_loads and attrs.get('type') == 'end_load':
+                continue
+            node_condition_dict[node_id] = {
+                'Node ID': node_id,
+                'Condition Level': attrs.get('current_condition', 'N/A'),
+                'RUL (months)': attrs.get('remaining_useful_life_days', 'N/A'),
+                'Last Maintenance Date': attrs.get('last_maintenance_date', 'N/A'),
+                'Tasks Deferred Count': attrs.get('tasks_deferred_count', 0)
+            }
+        return pd.DataFrame.from_dict(node_condition_dict, orient='index')

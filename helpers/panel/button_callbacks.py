@@ -170,6 +170,10 @@ def maintenance_log_upload(event, graph_controller: GraphController):
 
     graph_controller.upload_maintenance_logs(file_content)
 
+    maintenance_log_viewer = pn.state.cache["maintenance_logs_viewer"]
+    df_logs = graph_controller.get_maintenance_logs_df()
+    maintenance_log_viewer.value = df_logs
+
 def maintenance_task_list_upload(event, graph_controller: GraphController, maintenance_task_list_viewer):
     # Read byte content from the uploaded file
     file_content = event.new  # event.new is already bytes
@@ -256,12 +260,13 @@ def run_simulation(event, graph_controller: GraphController):
     
     # Create tabs for different views
     results_panel = pn.Tabs(
-        ("Task Details", pn.widgets.DataFrame(tasks_df, sizing_mode="stretch_width", height=400)),
-        ("Monthly Summary", pn.widgets.DataFrame(summary_df, sizing_mode="stretch_width", height=400)),
-        sizing_mode="stretch_width"
+        ("Task Details", pn.widgets.DataFrame(tasks_df, sizing_mode="stretch_both")),
+        ("Monthly Summary", pn.widgets.DataFrame(summary_df, sizing_mode="stretch_both")),
+        sizing_mode="stretch_both"
     )
     
     maintenance_schedule_container.clear()
+    maintenance_schedule_container.sizing_mode = "stretch_both"
     maintenance_schedule_container.append(pn.pane.Markdown("### Simulation Results"))
     maintenance_schedule_container.append(results_panel)
 
@@ -494,10 +499,17 @@ def run_simulation(event, graph_controller: GraphController):
     fig = get_maintenance_costs_fig(prioritized_schedule=graph_controller.prioritized_schedule, current_date=graph_controller.current_date)
     maintenance_costs_plot.object = fig
 
+    # Update the condition level viewer
+    update_app_status("Updating Condition Level Viewer...")
+    condition_level_viewer = pn.state.cache["condition_level_viewer"]
+    df_condition = graph_controller.get_current_condition_level_df()
+    condition_level_viewer.value = df_condition
+
     update_app_status("Dashboard Update Complete.")
 
-def update_current_date(event, graph_controller: GraphController):
-    graph_controller.current_date = event.new
+def update_current_date(date, graph_controller: GraphController):
+    print(f"Updating current date to {date}")
+    graph_controller.current_date = date
 
 def update_failure_component_details(graph_controller: GraphController, failure_timeline_container):
     component_details_container = pn.state.cache["component_details_container"]
