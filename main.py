@@ -34,6 +34,12 @@ DEFAULT_BUILDING_PARAMS = {
     "seed": 42
 }
 
+DEFAULT_SIMULATION_PARAMS = {
+    "budget_hours": 40,
+    "budget_money": 10000,
+    "weeks_to_schedule": 360
+}
+
 graph_controller = GraphController()
 
 # Create containers for each tab
@@ -104,7 +110,7 @@ layout_maintenance(maintenance_container, graph_controller)
 layout_analytics(analytics_container, graph_controller)
 
 # Layout Settings
-layout_settings(settings_container, graph_controller)
+layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS)
 
 # Layout Graph Generator
 layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS)
