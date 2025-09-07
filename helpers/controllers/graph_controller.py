@@ -290,3 +290,8 @@ class GraphController:
         current_date_graph = self.get_current_date_graph()
 
         return generate_failure_timeline_figure(current_date_graph, self.current_date)
+    
+    def upload_maintenance_logs(self, file_content):
+        """Upload maintenance logs from file content"""
+        self.maintenance_tasks = pd.read_csv(io.BytesIO(file_content))
+        self.maintenance_tasks = self.maintenance_tasks.to_dict(orient='records')

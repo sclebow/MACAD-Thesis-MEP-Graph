@@ -208,11 +208,6 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
     Create a calendar schedule for the tasks, grouping by month, as a dictionary.
     Includes all months between the earliest and latest task dates, even if no tasks exist in those months."""
 
-    # # Initial tasks_deferred_count in the graph
-    # for node in graph.nodes:
-    #     graph.nodes[node]['tasks_deferred_count'] = 0
-    #     graph.nodes[node]['replacement_required'] = False # Ensure this is initialized
-
     tasks_df = pd.DataFrame(tasks)
 
     tasks_df['equipment_installation_date'] = pd.to_datetime(tasks_df['equipment_installation_date'], format='%Y-%m-%d')

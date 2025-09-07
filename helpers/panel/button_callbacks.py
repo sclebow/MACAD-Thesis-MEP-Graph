@@ -164,6 +164,12 @@ def update_graph_container_visualization(event, graph_controller: GraphControlle
     graph_controller.update_visualization_type(visualization_type_dict[event.new])
     graph_container.object = graph_controller.get_visualization_data()
 
+def maintenance_log_upload(event, graph_controller: GraphController):
+    # Read byte content from the uploaded file
+    file_content = event.new  # event.new is already bytes
+
+    graph_controller.upload_maintenance_logs(file_content)
+
 def maintenance_task_list_upload(event, graph_controller: GraphController, maintenance_task_list_viewer):
     # Read byte content from the uploaded file
     file_content = event.new  # event.new is already bytes
