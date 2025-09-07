@@ -544,16 +544,6 @@ def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
     """
     fig = go.Figure()
 
-    months = list(prioritized_schedule.keys())
-    
-    # Get the max amount of tasks from any month
-    max_tasks_scheduled_for_month = max(len(prioritized_schedule[month].get('tasks_scheduled_for_month', [])) for month in months)
-    max_tasks_executed_for_month = max(len(prioritized_schedule[month].get('executed_tasks', [])) for month in months)
-    max_tasks_deferred_for_month = max(len(prioritized_schedule[month].get('deferred_tasks', [])) for month in months)
-
-    max_tasks = max(max_tasks_scheduled_for_month, max_tasks_executed_for_month, max_tasks_deferred_for_month)
-
-    numbers_of_scheduled = []
     numbers_of_executed = []
     numbers_of_deferred = []
 
@@ -561,25 +551,80 @@ def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
     month_names = [month.start_time.strftime("%Y-%m") for month in month_datetime_periods]
 
     for month in prioritized_schedule:
-        numbers_of_scheduled.append(len(prioritized_schedule[month].get('tasks_scheduled_for_month')))
         numbers_of_executed.append(len(prioritized_schedule[month].get('executed_tasks')))
         numbers_of_deferred.append(len(prioritized_schedule[month].get('deferred_tasks')))
 
-    print(f"Most Scheduled Tasks: {max(numbers_of_scheduled)}")
-    print(f"Most Executed Tasks: {max(numbers_of_executed)}")
-    print(f"Most Deferred Tasks: {max(numbers_of_deferred)}")
+    # Create stacked bar chart - order matters for stacking
+    fig.add_trace(go.Bar(
+        x=month_names, 
+        y=numbers_of_executed, 
+        name='Executed', 
+        marker_color='green',
+        hovertemplate='<b>%{x}</b><br>Executed: %{y}<extra></extra>'
+    ))
+    fig.add_trace(go.Bar(
+        x=month_names, 
+        y=numbers_of_deferred, 
+        name='Deferred', 
+        marker_color='red',
+        hovertemplate='<b>%{x}</b><br>Deferred: %{y}<extra></extra>'
+    ))
 
-    fig.add_trace(go.Bar(x=month_names, y=numbers_of_scheduled, name='Scheduled', marker_color='blue'))
-    fig.add_trace(go.Bar(x=month_names, y=numbers_of_executed, name='Executed', marker_color='green'))
-    fig.add_trace(go.Bar(x=month_names, y=numbers_of_deferred, name='Deferred', marker_color='red'))
+    fig.update_layout(
+        title='Task Status Each Month', 
+        xaxis_title='Time', 
+        yaxis_title='Number of Tasks',
+        barmode='stack'  # This makes it a stacked bar chart
+    )
 
-    fig.update_layout(title='Task Status Over Time', xaxis_title='Time', yaxis_title='Number of Tasks')
-    fig.update_yaxes(range=[0, max_tasks + 10])
+    # Ensure zoom buttons only affect x-axis, default range is last 6 months + next 12 months
+    default_range = [
+        (current_date - pd.DateOffset(months=6)).to_pydatetime(),
+        (current_date + pd.DateOffset(months=12)).to_pydatetime()
+    ]
+    default_range_count = default_range[1].month - default_range[0].month + (default_range[1].year - default_range[0].year) * 12
 
-    # Show no x axis tick marks
-    # fig.update_xaxes(showticklabels=False)
+    fig.update_layout(
+        xaxis=dict(
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=3, label="3m", step="month", stepmode="backward"),
+                    dict(count=6, label="6m", step="month", stepmode="backward"),
+                    dict(count=1, label="1y", step="year", stepmode="backward"),
+                    dict(step="all")
+                ])
+            ),
+            rangeslider=dict(visible=True),
+            type="date",
+            range=default_range
+        )
+    )
 
-    fig.update_layout(height=300)
+    # Add a button to reset the x-axis range to default
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="left",
+                buttons=[
+                    dict(
+                        label="Reset Zoom",
+                        method="relayout",
+                        args=[{
+                            "xaxis.range": default_range,
+                            "xaxis.count": default_range_count
+                        }]
+                    )
+                ],
+                pad={"r": 10, "t": 10},
+                showactive=False,
+                x=1.025,
+                xanchor="left",
+                y=0.8,
+                yanchor="top"
+            ),
+        ]
+    )
 
     # Add a vertical line for the current date
     current_date_dt = pd.to_datetime(current_date).to_pydatetime()
@@ -723,6 +768,9 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp
         yanchor='bottom',
         font=dict(color='red')
     )
+
+    # Update the height based on number of nodes
+    fig.update_layout(height=300 + 20 * len(node_dict))
 
     return fig, node_dict
 

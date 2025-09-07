@@ -4,12 +4,18 @@ import networkx as nx
 import datetime
 import base64
 import pandas as pd
+import pickle
 
 from helpers.controllers.graph_controller import GraphController
 from helpers.panel.analytics_viz import _create_enhanced_kpi_card
 from helpers.visualization import get_remaining_useful_life_fig, get_risk_distribution_fig, get_equipment_conditions_fig, get_maintenance_costs_fig
 
-def upload_graph_from_file(file_content, filename, graph_controller, graph_container):
+def update_system_view_graph_container(graph_controller: GraphController):
+    fig = graph_controller.get_visualization_data()
+    graph_container = pn.state.cache.get("graph_container")
+    graph_container.object = fig
+
+def upload_graph_from_file(file_content, filename, graph_controller):
     """Handle file upload and update graph visualization"""
     print(f"Uploading file: {filename}")
     
@@ -18,14 +24,16 @@ def upload_graph_from_file(file_content, filename, graph_controller, graph_conta
     
     if result['success']:
         # Update the graph visualization
-        fig = graph_controller.get_visualization_data()
-        graph_container.object = fig
+        update_system_view_graph_container(graph_controller)
         print(f"Graph loaded successfully from {filename}")
     else:
         print(f"Error loading graph: {result.get('error', 'Unknown error')}")
+        graph_container = pn.state.cache.get("graph_container")
         graph_container.object = None
 
-def export_graph(event, graph_controller: GraphController, app):
+def export_graph(event, graph_controller: GraphController):
+    app = pn.state.cache.get('app')
+
     now = datetime.datetime.now()
     now_str = now.strftime("%Y%m%d_%H%M%S")
     filename = f"exported_graph_{now_str}.mepg"
@@ -97,11 +105,40 @@ def run_lifecycle_analysis_simulation(event):
 def save_settings(event):
     print("Save Settings button clicked")
 
-def import_data(event):
+def import_data(event, graph_controller):
     print("Import Data button clicked")
 
-def export_data(event):
+
+def export_data(event, graph_controller):
     print("Export Data button clicked")
+    data_dict = graph_controller.export_data()
+
+    # Prepare Pickle file content
+    pickle_bytes = pickle.dumps(data_dict)
+    b64_content = base64.b64encode(pickle_bytes).decode('utf-8')
+    filename = f"exported_data_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pkl"
+
+    # Create download HTML
+    download_html = f"""
+    <script>
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:application/octet-stream;base64,{b64_content}');
+    element.setAttribute('download', '{filename}');
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    </script>
+    """
+
+    # Display the download HTML (this triggers the download)
+    download_pane = pn.pane.HTML(download_html)
+
+    # You can add this to a temporary container or use a notification
+    print(f"Exporting data as {filename}")
+
+    settings_container = pn.state.cache.get('settings_container')
+    settings_container.append(download_pane)
 
 def clear_all_data(event):
     print("Clear All Data button clicked")
@@ -164,6 +201,16 @@ def update_graph_container_visualization(event, graph_controller: GraphControlle
     graph_controller.update_visualization_type(visualization_type_dict[event.new])
     graph_container.object = graph_controller.get_visualization_data()
 
+def maintenance_log_upload(event, graph_controller: GraphController):
+    # Read byte content from the uploaded file
+    file_content = event.new  # event.new is already bytes
+
+    graph_controller.upload_maintenance_logs(file_content)
+
+    maintenance_log_viewer = pn.state.cache["maintenance_logs_viewer"]
+    df_logs = graph_controller.get_maintenance_logs_df()
+    maintenance_log_viewer.value = df_logs
+
 def maintenance_task_list_upload(event, graph_controller: GraphController, maintenance_task_list_viewer):
     # Read byte content from the uploaded file
     file_content = event.new  # event.new is already bytes
@@ -175,11 +222,17 @@ def maintenance_task_list_upload(event, graph_controller: GraphController, maint
 def update_hours_budget(event, graph_controller: GraphController):
     graph_controller.update_hours_budget(event.new)
 
+    run_simulation(None, graph_controller)
+
 def update_money_budget(event, graph_controller: GraphController):
     graph_controller.update_money_budget(event.new)
 
+    run_simulation(None, graph_controller)
+
 def update_weeks_to_schedule(event, graph_controller: GraphController):
     graph_controller.update_weeks_to_schedule(event.new)
+
+    run_simulation(None, graph_controller)
 
 def replacement_task_list_upload(event, graph_controller: GraphController, replacement_task_list_viewer):
     # Read byte content from the uploaded file
@@ -250,12 +303,13 @@ def run_simulation(event, graph_controller: GraphController):
     
     # Create tabs for different views
     results_panel = pn.Tabs(
-        ("Task Details", pn.widgets.DataFrame(tasks_df, sizing_mode="stretch_width", height=400)),
-        ("Monthly Summary", pn.widgets.DataFrame(summary_df, sizing_mode="stretch_width", height=400)),
-        sizing_mode="stretch_width"
+        ("Task Details", pn.widgets.DataFrame(tasks_df, sizing_mode="stretch_both")),
+        ("Monthly Summary", pn.widgets.DataFrame(summary_df, sizing_mode="stretch_both")),
+        sizing_mode="stretch_both"
     )
     
     maintenance_schedule_container.clear()
+    maintenance_schedule_container.sizing_mode = "stretch_both"
     maintenance_schedule_container.append(pn.pane.Markdown("### Simulation Results"))
     maintenance_schedule_container.append(results_panel)
 
@@ -488,10 +542,17 @@ def run_simulation(event, graph_controller: GraphController):
     fig = get_maintenance_costs_fig(prioritized_schedule=graph_controller.prioritized_schedule, current_date=graph_controller.current_date)
     maintenance_costs_plot.object = fig
 
+    # Update the condition level viewer
+    update_app_status("Updating Condition Level Viewer...")
+    condition_level_viewer = pn.state.cache["condition_level_viewer"]
+    df_condition = graph_controller.get_current_condition_level_df()
+    condition_level_viewer.value = df_condition
+
     update_app_status("Dashboard Update Complete.")
 
-def update_current_date(event, graph_controller: GraphController):
-    graph_controller.current_date = event.new
+def update_current_date(date, graph_controller: GraphController):
+    print(f"Updating current date to {date}")
+    graph_controller.current_date = date
 
 def update_failure_component_details(graph_controller: GraphController, failure_timeline_container):
     component_details_container = pn.state.cache["component_details_container"]
@@ -505,3 +566,15 @@ def update_failure_component_details(graph_controller: GraphController, failure_
         component_details_str_list.append(f"### Component Details for {y}")
         component_details_str_list.append(hover)
         component_details_container.append(pn.pane.Markdown("\n\n".join(component_details_str_list)))
+
+def generate_graph(event, graph_controller: GraphController, graph_args, save_graph_file: bool = False):
+    """Generate and display a custom graph based on user inputs"""
+
+    graph_controller.generate_new_graph(building_params=graph_args)
+
+    update_system_view_graph_container(graph_controller)
+    run_simulation(None, graph_controller)
+
+    # DEBUG: Save the generated graph to a file
+    if save_graph_file:
+        export_graph(None, graph_controller)

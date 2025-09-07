@@ -9,6 +9,8 @@ import pandas as pd
 
 from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes, clean_graph_none_values
 
+from helpers.node_risk import apply_risk_scores_to_graph
+from helpers.rul_helper import apply_rul_to_graph
 from helpers.visualization import *
 from helpers.maintenance_tasks import process_maintenance_tasks
 
@@ -65,26 +67,17 @@ class GraphController:
         return presets.get(self.legend_preset, presets["compact_tr"])
     
     def load_graph_from_file(self, file_bytes):
-        """Load graph from file bytes and apply processing"""
+        # """Load graph from file bytes and apply processing"""
         try:
             file_buffer = io.BytesIO(file_bytes)
             G = nx.read_graphml(file_buffer)
             
             # Validate and clean graph data
-            self._validate_graph_data(G)
+            G = self._validate_graph_data(G)
             
             # Apply risk scores and RUL with error handling
-            try:
-                from helpers.node_risk import apply_risk_scores_to_graph
-                G = apply_risk_scores_to_graph(G)
-            except Exception as e:
-                print(f"Warning: Risk score calculation failed: {e}")
-            
-            try:
-                from helpers.rul_helper import apply_rul_to_graph
-                G = apply_rul_to_graph(G)
-            except Exception as e:
-                print(f"Warning: RUL calculation failed: {e}")
+            G = apply_risk_scores_to_graph(G)
+            G = apply_rul_to_graph(G)
             
             self.current_graph[0] = G
             return {'success': True, 'message': 'Graph loaded successfully'}
@@ -99,6 +92,8 @@ class GraphController:
                 if value is None and key in ['x', 'y', 'z', 'propagated_power', 'power_rating']:
                     attrs[key] = 0.0
                     print(f"Warning: Set {key} to 0.0 for node {node_id}")
+            if 'tasks_deferred_count' not in attrs or attrs['tasks_deferred_count'] is None:
+                attrs['tasks_deferred_count'] = 0 # Initialize if missing
         
         for edge in graph.edges(data=True):
             edge_attrs = edge[2]
@@ -106,48 +101,44 @@ class GraphController:
                 if value is None and key in ['voltage', 'current_rating', 'power']:
                     edge_attrs[key] = 0.0
                     print(f"Warning: Set {key} to 0.0 for edge {edge[0]}-{edge[1]}")
+
+        return clean_graph_none_values(graph)
     
     def generate_new_graph(self, building_params):
         """Generate new graph with given parameters"""
-        try:
-            construction_year = int(building_params['construction_year'])
-            
-            building_attributes = {
-                "total_load": int(building_params['total_load']),
-                "building_length": building_params['building_length'],
-                "building_width": building_params['building_width'],
-                "num_floors": int(building_params['num_floors']),
-                "floor_height": building_params['floor_height'],
-                "construction_date": datetime.datetime(construction_year, 1, 1).strftime("%Y-%m-%d"),
-            }
-            
-            # Set seed if provided
-            if building_params.get('seed'):
-                random.seed(int(building_params['seed']))
-            
-            # Generate the graph using existing functions
-            building_attrs = define_building_characteristics(building_attributes)
-            num_risers = determine_number_of_risers(building_attrs)
-            riser_locations = locate_risers(building_attrs, num_risers)
-            voltage_info = determine_voltage_level(building_attrs)
-            floor_loads, end_loads = distribute_loads(building_attrs, voltage_info)
-            riser_floor_attributes = determine_riser_attributes(building_attrs, riser_locations, floor_loads, end_loads, voltage_info)
-            distribution_equipment = place_distribution_equipment(building_attrs, riser_floor_attributes, voltage_info)
-            cluster_strength = building_params.get('cluster_strength', 0.95)
-            G = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info, end_loads, cluster_strength)
-            
-            # Apply risk scores and RUL
-            from helpers.node_risk import apply_risk_scores_to_graph
-            from helpers.rul_helper import apply_rul_to_graph
-            
-            G = apply_risk_scores_to_graph(G)
-            G = apply_rul_to_graph(G)
-            G = clean_graph_none_values(G)
-            
-            self.current_graph[0] = G
-            return {'success': True, 'graph': G}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
+        construction_year = int(building_params['construction_year'])
+        
+        building_attributes = {
+            "total_load": int(building_params['total_load']),
+            "building_length": building_params['building_length'],
+            "building_width": building_params['building_width'],
+            "num_floors": int(building_params['num_floors']),
+            "floor_height": building_params['floor_height'],
+            "construction_date": datetime.datetime(construction_year, 1, 1).strftime("%Y-%m-%d"),
+        }
+        
+        # Set seed if provided
+        if building_params.get('seed'):
+            random.seed(int(building_params['seed']))
+        
+        building_attrs = define_building_characteristics(building_attributes)
+        num_risers = determine_number_of_risers(building_attrs)
+        riser_locations = locate_risers(building_attrs, num_risers)
+        voltage_info = determine_voltage_level(building_attrs)
+        floor_loads, end_loads = distribute_loads(building_attrs, voltage_info)
+        riser_floor_attributes = determine_riser_attributes(building_attrs, riser_locations, floor_loads, end_loads, voltage_info)
+        distribution_equipment = place_distribution_equipment(building_attrs, riser_floor_attributes, voltage_info)
+        cluster_strength = building_params.get('cluster_strength')
+        graph = connect_nodes(building_attrs, riser_locations, distribution_equipment, voltage_info, end_loads, cluster_strength)
+
+        print(f"Generated graph with {graph.number_of_nodes()} nodes and {graph.number_of_edges()} edges.")
+        # Apply risk scores and RUL to the graph
+        graph = self._validate_graph_data(graph)
+        graph = apply_risk_scores_to_graph(graph)
+        graph = apply_rul_to_graph(graph)
+
+
+        self.current_graph[0] = graph
 
     def update_visualization_type(self, new_type):
         """Update the visualization type"""
@@ -196,25 +187,25 @@ class GraphController:
         
         return {'success': True}
     
-    def save_graph_to_file(self, filename):
-        """Save current graph to file"""
-        if not self.current_graph[0]:
-            return {'success': False, 'error': 'No graph loaded'}
+    # def save_graph_to_file(self, filename):
+    #     """Save current graph to file"""
+    #     if not self.current_graph[0]:
+    #         return {'success': False, 'error': 'No graph loaded'}
         
-        try:
-            if not filename.lower().endswith('.mepg'):
-                filename += '.mepg'
+    #     try:
+    #         if not filename.lower().endswith('.mepg'):
+    #             filename += '.mepg'
             
-            output_dir = 'graph_outputs'
-            os.makedirs(output_dir, exist_ok=True)
-            output_path = os.path.join(output_dir, filename)
+    #         output_dir = 'graph_outputs'
+    #         os.makedirs(output_dir, exist_ok=True)
+    #         output_path = os.path.join(output_dir, filename)
             
-            self.current_graph[0].graph["source"] = "Panel Graph Viewer Export"
-            nx.write_graphml(self.current_graph[0], output_path)
+    #         self.current_graph[0].graph["source"] = "Panel Graph Viewer Export"
+    #         nx.write_graphml(self.current_graph[0], output_path)
             
-            return {'success': True, 'path': output_path}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
+    #         return {'success': True, 'path': output_path}
+    #     except Exception as e:
+    #         return {'success': False, 'error': str(e)}
 
     def reset_graph(self):
         """Reset the graph controller"""
@@ -299,3 +290,47 @@ class GraphController:
         current_date_graph = self.get_current_date_graph()
 
         return generate_failure_timeline_figure(current_date_graph, self.current_date)
+    
+    def upload_maintenance_logs(self, file_content):
+        """Upload maintenance logs from file content"""
+        self.maintenance_logs = pd.read_csv(io.BytesIO(file_content))
+        self.maintenance_logs = self.maintenance_logs.to_dict(orient='records')
+
+    def get_maintenance_logs_df(self):
+        """Get the maintenance logs DataFrame"""
+        return pd.DataFrame(self.maintenance_logs)
+    
+    def get_current_condition_level_df(self, ignore_end_loads=True):
+        """Get the current condition level DataFrame"""
+        current_date_graph = self.get_current_date_graph()
+
+        node_condition_dict = {}        
+        for node_id, attrs in current_date_graph.nodes(data=True):
+            if ignore_end_loads and attrs.get('type') == 'end_load':
+                continue
+            node_condition_dict[node_id] = {
+                'Node ID': node_id,
+                'Condition Level': attrs.get('current_condition', 'N/A'),
+                'RUL (months)': attrs.get('remaining_useful_life_days', 'N/A'),
+                'Last Maintenance Date': attrs.get('last_maintenance_date', 'N/A'),
+                'Tasks Deferred Count': attrs.get('tasks_deferred_count', 0)
+            }
+        return pd.DataFrame.from_dict(node_condition_dict, orient='index')
+
+
+    def export_data(self):
+        """Export current graph and related data as a dictionary"""
+        if not self.current_graph[0]:
+            return None
+        
+        data_dict = {
+            'graph': self.current_graph[0],
+            'maintenance_tasks': self.maintenance_tasks,
+            'replacement_tasks': self.replacement_tasks,
+            'monthly_budget_money': self.monthly_budget_money,
+            'monthly_budget_time': self.monthly_budget_time,
+            'months_to_schedule': self.months_to_schedule,
+            'prioritized_schedule': self.prioritized_schedule,
+            'current_date': self.current_date
+        }
+        return data_dict
