@@ -594,6 +594,8 @@ def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
         (current_date - pd.DateOffset(months=6)).to_pydatetime(),
         (current_date + pd.DateOffset(months=12)).to_pydatetime()
     ]
+    default_range_count = default_range[1].month - default_range[0].month + (default_range[1].year - default_range[0].year) * 12
+
     fig.update_layout(
         xaxis=dict(
             rangeselector=dict(
@@ -622,7 +624,7 @@ def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
                         method="relayout",
                         args=[{
                             "xaxis.range": default_range,
-                            "xaxis.count": default_range[1] - default_range[0]
+                            "xaxis.count": default_range_count
                         }]
                     )
                 ],
@@ -778,6 +780,9 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp
         yanchor='bottom',
         font=dict(color='red')
     )
+
+    # Update the height based on number of nodes
+    fig.update_layout(height=300 + 20 * len(node_dict))
 
     return fig, node_dict
 
