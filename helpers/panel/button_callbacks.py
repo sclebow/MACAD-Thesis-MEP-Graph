@@ -567,13 +567,14 @@ def update_failure_component_details(graph_controller: GraphController, failure_
         component_details_str_list.append(hover)
         component_details_container.append(pn.pane.Markdown("\n\n".join(component_details_str_list)))
 
-def generate_graph(event, graph_controller: GraphController, graph_args):
+def generate_graph(event, graph_controller: GraphController, graph_args, save_graph_file: bool = False):
     """Generate and display a custom graph based on user inputs"""
 
     graph_controller.generate_new_graph(building_params=graph_args)
 
     update_system_view_graph_container(graph_controller)
     run_simulation(None, graph_controller)
-    
+
     # DEBUG: Save the generated graph to a file
-    export_graph(None, graph_controller)
+    if save_graph_file:
+        export_graph(None, graph_controller)

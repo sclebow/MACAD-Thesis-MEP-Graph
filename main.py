@@ -23,12 +23,23 @@ from helpers.panel.pages.graph_generator import layout_graph_generator
 
 pn.extension('plotly')
 
+# DEFAULT_BUILDING_PARAMS = {
+#     "construction_year": pd.Timestamp.now().year,
+#     "total_load": 1000,  # in kW
+#     "building_length": 20.0,  # in meters
+#     "building_width": 20.0,   # in meters
+#     "num_floors": 4,
+#     "floor_height": 3.5,      # in meters
+#     "cluster_strength": 0.95, # between 0 and 1
+#     "seed": 42
+# }
+
 DEFAULT_BUILDING_PARAMS = {
     "construction_year": pd.Timestamp.now().year,
-    "total_load": 1000,  # in kW
+    "total_load": 200,  # in kW
     "building_length": 20.0,  # in meters
     "building_width": 20.0,   # in meters
-    "num_floors": 4,
+    "num_floors": 1,
     "floor_height": 3.5,      # in meters
     "cluster_strength": 0.95, # between 0 and 1
     "seed": 42
@@ -116,7 +127,7 @@ layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS)
 layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS)
 
 # DEBUG Set default tabs
-main_tabs.active = 5
+main_tabs.active = 0
 
 print("Starting Application...")
 
