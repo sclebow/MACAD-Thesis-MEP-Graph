@@ -16,7 +16,19 @@ def _create_enhanced_kpi_card(title, value, trend, metric_type, unit):
         "System Health": "#22c55e",  # Green
         "Critical Equipment": "#ef4444",  # Red  
         "Avg. RUL": "#3b82f6",  # Blue
-        "System Reliability": "#8b5cf6"  # Purple
+        "System Reliability": "#8b5cf6",  # Purple
+        "Total Replacement": "#ef4444",   # Red
+        "Total Repair": "#22c55e",        # Green
+        "Potential Savings": "#10b981",   # Emerald
+        "Critical (12mo)": "#f59e0b",     # Amber/Orange
+        "Budget": "#f59e0b",              # Amber
+        "Savings": "#10b981",             # Emerald
+        "Risk": "#ef4444",                # Red        
+        "Lifespan Extension": "#3b82f6",
+        "Condition Improvement": "#22c55e",
+        "Risk Reduction": "#ef4444",
+        "Lifespan": "#3b82f6",
+        "Condition": "#22c55e"
     }
     
     accent_color = accent_colors.get(metric_type, "#6b7280")
@@ -26,7 +38,19 @@ def _create_enhanced_kpi_card(title, value, trend, metric_type, unit):
         "System Health": "🟢",
         "Critical Equipment": "🔴", 
         "Avg. RUL": "🔧",
-        "System Reliability": "🛡️"
+        "System Reliability": "🛡️",
+        "Total Replacement": "💸",
+        "Total Repair": "🛠️",
+        "Potential Savings": "💰",
+        "Critical (12mo)": "⚠️",
+        "Budget": "💰",
+        "Savings": "💸",
+        "Risk": "⚠️",
+        "Lifespan Extension": "⏳",
+        "Condition Improvement": "🟩",
+        "Risk Reduction": "🔻",
+        "Lifespan": "⏳",
+        "Condition": "🟩"
     }
     
     icon = icons.get(metric_type, "📊")
