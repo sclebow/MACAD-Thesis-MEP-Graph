@@ -2,6 +2,7 @@ import pandas as pd
 import panel as pn
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objects as go
 
 from helpers.panel.button_callbacks import failure_timeline_reset_view, failure_timeline_zoom_in, failure_timeline_zoom_out, export_failure_schedule, export_annual_budget_forecast, reset_lifecycle_analysis_controls, run_lifecycle_analysis_simulation, update_failure_component_details
 from helpers.panel.analytics_viz import _create_enhanced_kpi_card
@@ -92,7 +93,9 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
     failure_schedule_container.append(failure_schedule_dataframe)
     
     # Budget Planning Tab #
-    year_slider = pn.widgets.IntSlider(name='Year', start=2025, end=2030, value=2025)
+
+    # Multi-year controls
+    year_range_slider = pn.widgets.IntRangeSlider(name='Year Range', start=2020, end=2030, value=(2025, 2030))
     budget_input = pn.widgets.IntInput(name='Budget ($)', value=100000)
     simulate_btn = pn.widgets.Button(name='Simulate', button_type='primary')
 
@@ -108,22 +111,59 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         return result
 
     def run_simulation(year, budget):
-        # Dummy simulation logic; replace with your own
-        df = pd.DataFrame({
-            'year': [year],
-            'replacement': [120000],
-            'repair': [80000],
-            'savings': [40000],
-            'count': [5]
-        })
-        return {'year_data': df, 'type_data': df, 'cumulative_data': df, 'optimization': {
-            'totalReplacementCost': 120000,
-            'totalRepairCost': 80000,
-            'totalSavings': 40000,
-            'criticalTimeframeCount': 2,
-            'highCertaintyCount': 3,
-            'averageSavingsPerComponent': 8000
-        }}
+        # Real data integration: aggregate costs from CSVs
+        tasks = pd.read_csv('tables/example_maintenance_list.csv')
+        logs = pd.read_csv('tables/example_maintenance_logs.csv')
+        # Parse year from logs
+        logs['year'] = pd.to_datetime(logs['date']).dt.year
+        # Aggregate costs by year
+        year_min, year_max = year_range_slider.value
+        years = list(range(year_min, year_max + 1))
+        year_data = []
+        for y in years:
+            # For demo, use all tasks for each year (replace with real logic if available)
+            replacement_tasks = tasks[tasks['task_type'] == 'replacement']
+            repair_tasks = tasks[tasks['task_type'] != 'replacement']
+            replacement_cost = replacement_tasks['money_cost'].replace(-1, 0).sum()
+            repair_cost = repair_tasks['money_cost'].sum()
+            savings = replacement_cost - repair_cost
+            count = len(tasks)
+            year_data.append({
+                'year': y,
+                'replacement': replacement_cost,
+                'repair': repair_cost,
+                'savings': savings,
+                'count': count
+            })
+        df = pd.DataFrame(year_data)
+        # Type breakdown (aggregate over selected years)
+        type_df = tasks.groupby('equipment_type').agg({
+            'money_cost': 'sum',
+            'task_type': lambda x: (x == 'replacement').sum()
+        }).reset_index().rename(columns={'money_cost': 'replacement'})
+        repair_tasks = tasks[tasks['task_type'] != 'replacement']
+        type_df['repair'] = repair_tasks.groupby('equipment_type')['money_cost'].sum().reindex(type_df['equipment_type']).fillna(0).values
+        type_df['savings'] = type_df['replacement'] - type_df['repair']
+        type_df['count'] = tasks.groupby('equipment_type').size().values
+        # Cumulative data
+        cumulative_df = df.copy()
+        cumulative_df['cumulativeReplacement'] = cumulative_df['replacement'].cumsum()
+        cumulative_df['cumulativeRepair'] = cumulative_df['repair'].cumsum()
+        # Optimization (totals for selected years)
+        optimization = {
+            'totalReplacementCost': df['replacement'].sum(),
+            'totalRepairCost': df['repair'].sum(),
+            'totalSavings': df['savings'].sum(),
+            'criticalTimeframeCount': 2,  # TODO: derive from logs
+            'highCertaintyCount': 3,      # TODO: derive from logs
+            'averageSavingsPerComponent': df['savings'].sum() / max(df['count'].sum(), 1)
+        }
+        return {
+            'year_data': df,
+            'type_data': type_df,
+            'cumulative_data': cumulative_df,
+            'optimization': optimization
+        }
 
     def kpi_card(label, value):
         return pn.Column(
@@ -133,7 +173,7 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         )
 
     def update_kpis():
-        sim = get_simulation(year_slider.value, budget_input.value)
+        sim = get_simulation(year_range_slider.value, budget_input.value)
         opt = sim['optimization']
         return pn.Row(
             _create_enhanced_kpi_card("Total Replacement", f"${opt['totalReplacementCost']//1000}k", None, "Total Replacement", "k"),
@@ -143,28 +183,44 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         )
 
     def annual_budget_chart():
-        sim = get_simulation(year_slider.value, budget_input.value)
+        import plotly.graph_objects as go
+        sim = get_simulation(year_range_slider.value, budget_input.value)
         df = sim['year_data']
-        fig, ax = plt.subplots()
-        df.plot.bar(x='year', y=['replacement', 'repair'], ax=ax)
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure()
+        fig.add_bar(x=df['year'], y=df['replacement'], name='Replacement', marker_color='#ef4444')
+        fig.add_bar(x=df['year'], y=df['repair'], name='Repair', marker_color='#22c55e')
+        fig.update_layout(barmode='group', title='Annual Budget Forecast', xaxis_title='Year', yaxis_title='Cost ($)')
+        return pn.Column(
+            pn.pane.Markdown('### Annual Budget Forecast'),
+            pn.pane.Plotly(fig, config={'responsive': True})
+        )
 
     def cost_distribution_pie():
-        sim = get_simulation(year_slider.value, budget_input.value)
+        import plotly.graph_objects as go
+        sim = get_simulation(year_range_slider.value, budget_input.value)
         df = sim['type_data']
-        fig, ax = plt.subplots()
-        df.set_index('year')[['replacement']].plot.pie(ax=ax, subplots=True)
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure(go.Pie(labels=df['equipment_type'], values=df['replacement'], hole=0.3))
+        fig.update_layout(title='Cost Distribution by Type')
+        return pn.Column(
+            pn.pane.Markdown('### Cost Distribution by Type'),
+            pn.pane.Plotly(fig, config={'responsive': True})
+        )
 
     def cumulative_cost_area():
-        sim = get_simulation(year_slider.value, budget_input.value)
+        import plotly.graph_objects as go
+        sim = get_simulation(year_range_slider.value, budget_input.value)
         df = sim['cumulative_data']
-        fig, ax = plt.subplots()
-        df.plot.area(x='year', y=['replacement', 'repair'], ax=ax)
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df['year'], y=df['cumulativeReplacement'], fill='tozeroy', name='Cumulative Replacement', line_color='#ef4444'))
+        fig.add_trace(go.Scatter(x=df['year'], y=df['cumulativeRepair'], fill='tozeroy', name='Cumulative Repair', line_color='#22c55e'))
+        fig.update_layout(title='Cumulative Cost Analysis', xaxis_title='Year', yaxis_title='Cumulative Cost ($)')
+        return pn.Column(
+            pn.pane.Markdown('### Cumulative Cost Analysis'),
+            pn.pane.Plotly(fig, config={'responsive': True})
+        )
 
     def recommendations():
-        sim = get_simulation(year_slider.value, budget_input.value)
+        sim = get_simulation(year_range_slider.value, budget_input.value)
         opt = sim['optimization']
         return pn.Column(
             pn.pane.Markdown("### Optimization Recommendations"),
@@ -174,9 +230,12 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         )
 
     def cost_table():
-        sim = get_simulation(year_slider.value, budget_input.value)
+        sim = get_simulation(year_range_slider.value, budget_input.value)
         df = sim['type_data']
-        return pn.widgets.DataFrame(df, width=800)
+        return pn.Column(
+            pn.pane.Markdown('### Cost Summary by System Type'),
+            pn.widgets.DataFrame(df, width=800)
+        )
 
 
     budget_grid = pn.GridSpec(ncols=2, nrows=2, sizing_mode='stretch_both')
@@ -186,7 +245,7 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
     budget_grid[1, 1] = pn.bind(recommendations)
     
     budget_tab = pn.Column(
-        pn.Row(year_slider, budget_input, simulate_btn),
+        pn.Row(year_range_slider, budget_input, simulate_btn),
         pn.bind(update_kpis),
         budget_grid,
         pn.bind(cost_table)
@@ -238,45 +297,37 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
     def lifespan_chart():
         sim = get_lifecycle_sim(timeframe_input.value, strategy_select.value)
         df = sim['projection']
-        fig, ax = plt.subplots()
-        ax.plot(df['month'], df['lifespan'], label='Lifespan')
-        ax.set_xlabel('Month')
-        ax.set_ylabel('Lifespan')
-        ax.legend()
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df['month'], y=df['lifespan'], mode='lines', name='Lifespan', line_color='#3b82f6'))
+        fig.update_layout(title='Lifespan Over Time', xaxis_title='Month', yaxis_title='Lifespan')
+        return pn.pane.Plotly(fig, config={'responsive': True})
 
     def condition_chart():
         sim = get_lifecycle_sim(timeframe_input.value, strategy_select.value)
         df = sim['projection']
-        fig, ax = plt.subplots()
-        ax.plot(df['month'], df['condition'], label='Condition', color='green')
-        ax.set_xlabel('Month')
-        ax.set_ylabel('Condition')
-        ax.legend()
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df['month'], y=df['condition'], mode='lines', name='Condition', line_color='#22c55e'))
+        fig.update_layout(title='Condition Over Time', xaxis_title='Month', yaxis_title='Condition')
+        return pn.pane.Plotly(fig, config={'responsive': True})
 
     def risk_chart():
         sim = get_lifecycle_sim(timeframe_input.value, strategy_select.value)
         df = sim['projection']
-        fig, ax = plt.subplots()
-        ax.plot(df['month'], df['risk'], label='Risk', color='red')
-        ax.set_xlabel('Month')
-        ax.set_ylabel('Risk')
-        ax.legend()
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df['month'], y=df['risk'], mode='lines', name='Risk', line_color='#ef4444'))
+        fig.update_layout(title='Risk Over Time', xaxis_title='Month', yaxis_title='Risk')
+        return pn.pane.Plotly(fig, config={'responsive': True})
 
     def scenario_comparison():
         sim_current = get_lifecycle_sim(timeframe_input.value, 'Current')
         sim_preventive = get_lifecycle_sim(timeframe_input.value, 'Preventive')
         df_c = sim_current['projection']
         df_p = sim_preventive['projection']
-        fig, ax = plt.subplots()
-        ax.plot(df_c['month'], df_c['lifespan'], label='Current')
-        ax.plot(df_p['month'], df_p['lifespan'], label='Preventive')
-        ax.set_xlabel('Month')
-        ax.set_ylabel('Lifespan')
-        ax.legend()
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_c['month'], y=df_c['lifespan'], mode='lines', name='Current', line_color='#3b82f6'))
+        fig.add_trace(go.Scatter(x=df_p['month'], y=df_p['lifespan'], mode='lines', name='Preventive', line_color='#f59e0b'))
+        fig.update_layout(title='Scenario Comparison: Lifespan', xaxis_title='Month', yaxis_title='Lifespan')
+        return pn.pane.Plotly(fig, config={'responsive': True})
 
     lifecycle_tab = pn.Column(
         pn.Row(timeframe_input, strategy_select, compare_btn),

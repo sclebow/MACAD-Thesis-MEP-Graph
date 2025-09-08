@@ -2,16 +2,15 @@ import panel as pn
 import plotly.graph_objects as go
 import pandas as pd
 
-def _create_enhanced_kpi_card(title, value, trend, metric_type, unit):
+def _create_enhanced_kpi_card(title, value, trend, metric_type, unit, show_trend=True):
     """Create an enhanced styled KPI card with improved visual design."""
     def trend_string(delta, unit):
         if delta == 0 or delta is None:
             return '→ 0'
         arrow = '↗' if delta > 0 else '↘'
         return f"{arrow} {delta:+.3f} {unit}"
-    trend = trend_string(trend, unit)
-    
-    # Color scheme based on metric type
+    trend_val = trend_string(trend, unit)
+
     accent_colors = {
         "System Health": "#22c55e",  # Green
         "Critical Equipment": "#ef4444",  # Red  
@@ -30,10 +29,8 @@ def _create_enhanced_kpi_card(title, value, trend, metric_type, unit):
         "Lifespan": "#3b82f6",
         "Condition": "#22c55e"
     }
-    
     accent_color = accent_colors.get(metric_type, "#6b7280")
-    
-    # Icon based on metric type with better visual representation
+
     icons = {
         "System Health": "🟢",
         "Critical Equipment": "🔴", 
@@ -52,12 +49,28 @@ def _create_enhanced_kpi_card(title, value, trend, metric_type, unit):
         "Lifespan": "⏳",
         "Condition": "🟩"
     }
-    
     icon = icons.get(metric_type, "📊")
-    
+
     # Determine trend color based on trend direction
-    trend_color = "#22c55e" if "↗" in trend else "#ef4444" if "↘" in trend else "#64748b"
-    
+    if trend_val and isinstance(trend_val, str):
+        trend_color = "#22c55e" if "↗" in trend_val else "#ef4444" if "↘" in trend_val else "#64748b"
+    else:
+        trend_color = "#64748b"
+
+    trend_html = ""
+    if show_trend and trend is not None and trend_val != '→ 0':
+        trend_html = f'''<div style="
+            margin-left: 8px;
+            font-size: 13px;
+            color: {trend_color};
+            font-weight: 600;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            display: inline-block;
+            border: 1px solid {trend_color}22;
+        ">{trend_val}</div>'''
+
     card_html = f"""
     <div style="
         background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
@@ -81,7 +94,6 @@ def _create_enhanced_kpi_card(title, value, trend, metric_type, unit):
             background: {accent_color};
             box-shadow: 2px 0 4px rgba(0,0,0,0.1);
         "></div>
-        
         <!-- Background pattern -->
         <div style="
             position: absolute;
@@ -93,7 +105,6 @@ def _create_enhanced_kpi_card(title, value, trend, metric_type, unit):
             opacity: 0.05;
             border-radius: 50%;
         "></div>
-        
         <!-- Header with icon -->
         <div style="
             display: flex;
@@ -111,7 +122,6 @@ def _create_enhanced_kpi_card(title, value, trend, metric_type, unit):
                 letter-spacing: 0.5px;
             ">{title}</h3>
         </div>
-        
         <!-- Value -->
         <div style="
             margin-left: 8px;
@@ -125,21 +135,9 @@ def _create_enhanced_kpi_card(title, value, trend, metric_type, unit):
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             ">{value}</span>
         </div>
-        
-        <!-- Trend with enhanced styling -->
-        <div style="
-            margin-left: 8px;
-            font-size: 13px;
-            color: {trend_color};
-            font-weight: 600;
-            padding: 2px 6px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 4px;
-            display: inline-block;
-            border: 1px solid {trend_color}22;
-        ">{trend}</div>
+        {trend_html}
     </div>
     """
-    
+
     return pn.pane.HTML(card_html, sizing_mode="stretch_width", height=140)
 
