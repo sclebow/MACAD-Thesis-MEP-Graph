@@ -364,7 +364,9 @@ class GraphController:
                 if node_id == "MP0.0":
                     print(f"Generating log for node {node_id} in period {period} with min_condition_level {min_condition_level}") # DEBUG
 
-                condition_level = round(random.uniform(0.0, min_condition_level), 2)
+                # condition_level = round(random.uniform(0.0, min_condition_level), 2)
+                condition_level = round(random.betavariate(alpha=5, beta=1) * min_condition_level, 1)  # Skewed towards higher values
+                condition_level = max(0.0, min(1.0, condition_level))
 
                 log_entry = {
                     'date': (period.to_timestamp() + pd.DateOffset(days=random.randint(0, 27))).strftime("%Y-%m-%d"),
