@@ -64,6 +64,7 @@ import os
 import networkx as nx
 import sys
 import pandas as pd
+import random
 
 try:
     from helpers.animate_maintenance_tasks import animate_prioritized_schedule
@@ -199,11 +200,44 @@ def generate_maintenance_tasks_from_graph(graph, tasks) -> List[Dict[str, Any]]:
             maintenance_tasks.append(task)
     return maintenance_tasks
 
-def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.Graph,
-                                         replacement_tasks: List[Dict[str, Any]],
-                                         num_months_to_schedule: int, monthly_budget_time: float, 
-                                         monthly_budget_money: float, does_budget_rollover: bool=False,
-                                         current_date: pd.Timestamp=None):
+def generate_synthetic_condition_number(current_condition: float):
+    new_condition = round(random.betavariate(alpha=5, beta=1) * current_condition, 1)
+    # Clamp the condition to a realistic range [0.0, 1.0]
+    return max(0.0, min(1.0, new_condition))
+
+def generate_synthetic_maintenance_log_for_node(node_id: str, attrs: dict, current_period: pd.Period, maintenance_log_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Generate a synthetic maintenance log entry for a given node.
+    """
+
+    current_date = current_period.start_time
+    existing_condition = attrs.get('current_condition')
+    if existing_condition is None:
+        raise ValueError(f"Node {node_id} has no current_condition attribute.")
+    condition_level = generate_synthetic_condition_number(existing_condition)
+
+    log_entry = {
+        'date': current_date.strftime('%Y-%m-%d'),
+        'equipment_id': node_id,
+        'old_condition': existing_condition,
+        'observed_condition_level': condition_level,
+        'notes': f"Synthetic log entry for {node_id} on {current_date.strftime('%Y-%m-%d')}"
+    }
+    return log_entry
+
+def create_prioritized_calendar_schedule(
+        tasks: List[Dict[str, Any]], 
+        graph: nx.Graph,
+        replacement_tasks: List[Dict[str, Any]],
+        num_months_to_schedule: int, 
+        monthly_budget_time: float, 
+        monthly_budget_money: float, 
+        does_budget_rollover: bool=False,
+        current_date: pd.Timestamp=None, 
+        generate_synthetic_maintenance_logs: bool = True,
+        ignore_end_loads: bool = True, 
+        ignore_utility_transformers: bool = True
+                                        ) -> Dict[pd.Period, Dict[str, Any]]:
     """
     Create a calendar schedule for the tasks, grouping by month, as a dictionary.
     Includes all months between the earliest and latest task dates, even if no tasks exist in those months."""
@@ -240,7 +274,18 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
     time_budget_for_month = 0.0
     money_budget_for_month = 0.0
 
+    max_num_logs = 100 # Limit the number of synthetic logs to generate in total
+
+    logs_per_period = {i: 0 for i in range(num_months_to_schedule)}
+    for _ in range(max_num_logs):
+        period = random.choice(range(num_months_to_schedule))
+        logs_per_period[period] += 1
+
     monthly_records_dict = {}
+
+    print(f"Replacement task keys: {list(replacement_tasks[0].keys()) if replacement_tasks else 'No replacement tasks provided.'}")
+    # Sort replacement tasks by condition_level smallest to largest
+    replacement_tasks = sorted(replacement_tasks, key=lambda x: x['condition_level'])
 
     # Simulate each month, deferring tasks as needed to fit within budget
     for i in range(num_months_to_schedule):
@@ -254,7 +299,8 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
             'money_budget': 0.0,
             'graph': None,
             'executed_tasks': [],
-            'deferred_tasks': []
+            'deferred_tasks': [],
+            'synthetic_maintenance_logs': []
         }
 
         if does_budget_rollover:
@@ -281,40 +327,102 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
         # Update the graph's remaining useful life (RUL) and condition before processing the month
         graph = apply_rul_to_graph(graph, current_date=month.start_time)
 
-        # Check for condition-triggered tasks and add them to this month's schedule
-        newly_triggered_tasks = []
+        # Generate synthetic maintenance logs for this month if enabled
+        if generate_synthetic_maintenance_logs:
+            num_logs_to_generate = logs_per_period.get(i, 0)
+            # print(f"Generating {num_logs_to_generate} synthetic maintenance logs for month {month}.")
+            synthetic_logs = []
+            nodes_list = list(graph.nodes(data=True))
+            # Sort nodes by risk_score highest to lowest
+            nodes_list = sorted(nodes_list, key=lambda x: x[1].get('risk_score'), reverse=True)
+
+            if ignore_end_loads:
+                nodes_list = [n for n in nodes_list if n[1].get('type') != 'end_load']
+            if ignore_utility_transformers:
+                nodes_list = [n for n in nodes_list if n[1].get('type') != 'utility_transformer']
+            if nodes_list:
+                for _ in range(num_logs_to_generate):
+                    node_id, attrs = random.choice(nodes_list)
+                    try:
+                        log_entry = generate_synthetic_maintenance_log_for_node(node_id, attrs, month, month_record['synthetic_maintenance_logs'])
+                        synthetic_logs.append(log_entry)
+                        # Update the node's current_condition based on the observed condition level
+                        graph.nodes[node_id]['current_condition'] = log_entry['observed_condition_level']
+                        # print(f"Generated synthetic log for node {node_id}: {log_entry}")
+                    except ValueError as e:
+                        print(f"Skipping log generation for node {node_id}: {e}")
+            month_record['synthetic_maintenance_logs'] = synthetic_logs
+
+        # Check for condition-triggered replacement tasks and execute them before other tasks
+        executed_replacements = []
+        not_executed_replacements = []
+
         for node_id, attrs in graph.nodes(data=True):
             node_condition = attrs.get('current_condition', 1.0)
             node_type = attrs.get('type')
             # Find the most severe applicable replacement task
             for r_task in replacement_tasks:
-                if r_task['equipment_type'] == node_type and node_condition <= r_task['condition_level']:
-                    # Check if a similar task isn't already scheduled this month
-                    is_already_scheduled = any(
-                        (tasks_for_month['equipment_id'] == node_id) & 
-                        (tasks_for_month['task_id'] == r_task['task_id'])
-                    )
-                    if not is_already_scheduled:
-                        print(f"Condition for {node_id} ({node_condition:.2f}) triggered task: {r_task['task_name']}")
-                        new_task = {
-                            'task_instance_id': f"{r_task['task_id']}-{node_id}",
-                            'equipment_id': node_id, 'equipment_type': node_type,
-                            'task_type': r_task['task_name'], 'priority': 0, # Highest priority
-                            'time_cost': r_task['time_cost'], 'money_cost': r_task['money_cost'],
-                            'notes': r_task.get('notes'), 'description': r_task.get('description'),
-                            'task_id': r_task['task_id'], 'scheduled_month': month,
-                            'risk_score': attrs.get('risk_score', 100), # High risk score
-                            'is_replacement': r_task['rul_percentage_effect'] >= 1.0,
-                            'rul_percentage_effect': r_task['rul_percentage_effect']
-                        }
-                        newly_triggered_tasks.append(new_task)
-                        break # Stop after finding the first (most severe) matching task
-        
-        if newly_triggered_tasks:
-            new_tasks_df = pd.DataFrame(newly_triggered_tasks)
-            tasks_for_month = pd.concat([tasks_for_month, new_tasks_df], ignore_index=True)
-            tasks_df = pd.concat([tasks_df, new_tasks_df], ignore_index=True)
+                equipment_type = r_task['equipment_type']
+                condition_level = r_task['condition_level']
+                if equipment_type == node_type and node_condition <= condition_level:
+                    # Execute this replacement task
+                    task_id = r_task['task_id']
+                    task_name = r_task['task_name']
+                    task_instance_id = f"{task_id}-{node_id}"
+                    time_cost = r_task['time_cost']
+                    money_cost = r_task['money_cost']
+                    condition_improvement_amount = r_task['condition_improvement_amount']
+                    base_expected_lifespan_improvement_percentage = r_task.get('base_expected_lifespan_improvement_percentage', 0.0)
 
+                    # Check if within budget
+                    if time_budget_for_month >= time_cost and money_budget_for_month >= money_cost:
+                        # Apply condition improvement
+                        graph.nodes[node_id]['current_condition'] = node_condition + condition_improvement_amount
+
+                        # Apply expected lifespan improvement if applicable
+                        if "default_expected_lifespan" not in graph.nodes[node_id]:
+                            graph.nodes[node_id]['default_expected_lifespan'] = attrs.get('expected_lifespan')
+
+                        if task_name.lower() == 'full replacement':
+                            graph.nodes[node_id]['installation_date'] = month.start_time.strftime('%Y-%m-%d')
+                            graph.nodes[node_id]['tasks_deferred_count'] = 0
+                            graph.nodes[node_id]['current_condition'] = 1.0
+                            graph.nodes[node_id]['expected_lifespan'] = graph.nodes[node_id]['default_expected_lifespan']
+                        else:
+                            graph.nodes[node_id]['expected_lifespan'] = attrs.get('expected_lifespan') * (1 + base_expected_lifespan_improvement_percentage)
+                        
+                        graph.nodes[node_id]['expected_lifespan_days'] = graph.nodes[node_id]['expected_lifespan'] * 365
+
+                        # Update budgets
+                        time_budget_for_month -= time_cost
+                        money_budget_for_month -= money_cost
+                        # Record executed replacement
+                        executed_replacements.append({
+                            'task_instance_id': task_instance_id,
+                            'equipment_id': node_id,
+                            'task_name': task_name,
+                            'time_cost': time_cost,
+                            'money_cost': money_cost,
+                            'condition_improvement': condition_improvement_amount,
+                            'new_condition': graph.nodes[node_id]['current_condition'],
+                            'month_executed': month.start_time.strftime('%Y-%m-%d')
+                        })
+                        # Reset replacement_required flag
+                        graph.nodes[node_id]['replacement_required'] = False
+                        break # You can only do one replacement task per node per month
+                    
+                    else:
+                        not_executed_replacements.append({
+                            'task_instance_id': task_instance_id,
+                            'equipment_id': node_id,
+                            'task_name': task_name,
+                            'time_cost': time_cost,
+                            'money_cost': money_cost,
+                            'condition_improvement': condition_improvement_amount,
+                            'current_condition': node_condition,
+                            'month_attempted': month.start_time.strftime('%Y-%m-%d')
+                        })
+        
         # Check if any nodes require replacement
         for node, attrs in graph.nodes(data=True):
             if attrs.get('replacement_required'):
@@ -386,7 +494,7 @@ def create_prioritized_calendar_schedule(tasks: List[Dict[str, Any]], graph: nx.
     print("Finished processing all months.")
     return monthly_records_dict
 
-def process_maintenance_tasks(tasks: dict, replacement_tasks: dict, graph, monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int = 36, animate=False, current_date: pd.Timestamp = pd.Timestamp.now()) -> Dict[str, List[Dict[str, Any]]]:
+def process_maintenance_tasks(tasks: dict, replacement_tasks: dict, graph, monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int = 36, animate=False, current_date: pd.Timestamp = pd.Timestamp.now(), generate_synthetic_maintenance_logs: bool = True) -> Dict[str, List[Dict[str, Any]]]:
     """
     Process the maintenance tasks and prioritize them based on the graph and budgets.
     Returns a prioritized schedule of tasks grouped by month.
@@ -407,7 +515,8 @@ def process_maintenance_tasks(tasks: dict, replacement_tasks: dict, graph, month
         num_months_to_schedule=months_to_schedule, 
         monthly_budget_time=monthly_budget_time, 
         monthly_budget_money=monthly_budget_money,
-        current_date=current_date
+        current_date=current_date,
+        generate_synthetic_maintenance_logs=generate_synthetic_maintenance_logs
     )
 
     return prioritized_schedule

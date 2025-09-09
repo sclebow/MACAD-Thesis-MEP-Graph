@@ -134,14 +134,8 @@ print("Starting Application...")
 # Make the app servable for panel serve command
 app.servable()
 
-# Generate a default graph on startup
+# Generate a default graph on startup and run simulation (inside the graph generation)
 generate_graph(None, graph_controller, DEFAULT_BUILDING_PARAMS)
-
-# Auto-run simulation on load
-run_simulation(None, graph_controller)
-
-# Default to generating synthetic logs for easier testing
-generate_synthetic_maintenance_logs(None, graph_controller)
 
 # Allow running directly with Python for debugging
 if __name__ == "__main__":
