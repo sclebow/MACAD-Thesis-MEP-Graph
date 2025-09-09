@@ -71,7 +71,7 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
             
     return _hierarchy_pos(G, root, width, vert_gap, vert_loc, xcenter)
 
-def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=None, color_palette=None, colorbar_title=None, showlegend=False, colorbar_range=None, hide_trace_from_legend=False, legend_settings=None):
+def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=None, color_palette=None, colorbar_title=None, showlegend=False, colorbar_range=None, hide_trace_from_legend=False, legend_settings=None, graph_title=None):
     # Shared logic for 2D graph visualization
     try:
         # Select a valid root node (first node in the graph)
@@ -277,12 +277,14 @@ def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=Non
                 trace.showlegend = False
             if hasattr(trace, 'name') and not trace.name:
                 trace.showlegend = False
-        
+
+    if graph_title:
+        fig.update_layout(title=graph_title)        
 
     return fig
 
 def visualize_graph_two_d(graph, use_full_names=False, legend_settings=None):
-    return _generate_2d_graph_figure(graph, use_full_names=use_full_names, showlegend=True, hide_trace_from_legend=True, legend_settings=legend_settings)
+    return _generate_2d_graph_figure(graph, use_full_names=use_full_names, showlegend=True, hide_trace_from_legend=True, legend_settings=legend_settings, graph_title='Graph Colored by Type')
 
 def visualize_graph_two_d_risk(graph, use_full_names=False, legend_settings=None):
     # Color nodes by risk_score attribute
@@ -294,7 +296,8 @@ def visualize_graph_two_d_risk(graph, use_full_names=False, legend_settings=None
         color_palette='Inferno',
         colorbar_title='Risk Score',
         showlegend=False,
-        legend_settings=legend_settings
+        legend_settings=legend_settings,
+        graph_title='Graph Colored by Risk Score',
     )
 
 def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
@@ -530,6 +533,9 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
                             zaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=axis_range)
                         )
                     ))
+    
+    fig.update_layout(title='3D Graph Colored by Type')
+    
     return fig
 
 def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
@@ -770,7 +776,7 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp
     )
 
     # Update the height based on number of nodes
-    fig.update_layout(height=300 + 20 * len(node_dict))
+    fig.update_layout(height=300 + 20 * len(node_dict), title='Node Failure Timeline')
 
     return fig, node_dict
 
@@ -826,7 +832,7 @@ def get_equipment_conditions_fig(graphs: list[nx.Graph], periods: list, current_
         font=dict(color='red')
     )
 
-    fig.update_layout(xaxis_title='Period', yaxis_title='RUL')
+    fig.update_layout(xaxis_title='Period', yaxis_title='RUL', title='Average Remaining Useful Life by Equipment Type Over Time')
 
     return fig
 
@@ -843,6 +849,8 @@ def get_risk_distribution_fig(current_date_graph: nx.Graph):
         values=condition_counts.values,
         hole=0.4
     ))
+
+    fig.update_layout(title='Risk Level Distribution')
 
     return fig
 
@@ -868,7 +876,7 @@ def get_remaining_useful_life_fig(current_date_graph: nx.Graph):
             colorbar=dict(title='RUL (days)')
         ),
     ))
-    fig.update_layout(yaxis_title='Days', xaxis_title='Equipment')
+    fig.update_layout(yaxis_title='Days', xaxis_title='Equipment', title='Remaining Useful Life of Equipment')
 
     return fig
 
@@ -909,7 +917,7 @@ def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Times
         fill='tozeroy',
         line=dict(shape='spline')
     ))
-    fig.update_layout(xaxis_title='Period', yaxis_title='Cost in Period (Dollars)')
+    fig.update_layout(xaxis_title='Period', yaxis_title='Cost in Period (Dollars)', title='Total Maintenance Costs Over Time')
 
     # Add a vertical line for the current date
     current_date_dt = pd.to_datetime(current_date).to_pydatetime()
