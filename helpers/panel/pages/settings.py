@@ -1,8 +1,9 @@
 import panel as pn
 from helpers.panel.button_callbacks import save_settings, import_data, export_data, clear_all_data, run_simulation, update_hours_budget, update_money_budget, update_weeks_to_schedule
 from helpers.rul_helper import adjust_rul_parameters, get_current_parameters
+from helpers.controllers.graph_controller import GraphController
 
-def layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS):
+def layout_settings(settings_container, graph_controller: GraphController, DEFAULT_SIMULATION_PARAMS):
     pn.state.cache["settings_container"] = settings_container
 
     settings_header = pn.Row(
@@ -25,12 +26,15 @@ def layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PAR
 
     budget_hours_input = pn.widgets.NumberInput(name="Monthly Budget (Hours)", value=DEFAULT_SIMULATION_PARAMS["budget_hours"], step=1)
     budget_hours_input.param.watch(lambda event: update_hours_budget(event, graph_controller), "value")
+    graph_controller.update_hours_budget(DEFAULT_SIMULATION_PARAMS["budget_hours"])
 
     budget_money_input = pn.widgets.NumberInput(name="Monthly Budget (Dollars)", value=DEFAULT_SIMULATION_PARAMS["budget_money"], step=100)
     budget_money_input.param.watch(lambda event: update_money_budget(event, graph_controller), "value")
+    graph_controller.update_money_budget(DEFAULT_SIMULATION_PARAMS["budget_money"])
 
     num_weeks_to_schedule_input = pn.widgets.NumberInput(name="Weeks to Schedule", value=DEFAULT_SIMULATION_PARAMS["weeks_to_schedule"], step=1)
     num_weeks_to_schedule_input.param.watch(lambda event: update_weeks_to_schedule(event, graph_controller), "value")
+    graph_controller.update_weeks_to_schedule(DEFAULT_SIMULATION_PARAMS["weeks_to_schedule"])
 
     maintenance_budget_container = pn.Column(
         pn.pane.Markdown("### Maintenance Budget"),

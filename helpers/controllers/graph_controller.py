@@ -7,7 +7,7 @@ import math
 import datetime
 import pandas as pd
 
-from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes, clean_graph_none_values
+from graph_generator.mepg_generator import define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes, clean_graph_none_values
 
 from helpers.node_risk import apply_risk_scores_to_graph
 from helpers.rul_helper import apply_rul_to_graph
@@ -24,15 +24,16 @@ class GraphController:
         self.legend_preset = "compact_tr"  # Default preset
         self.maintenance_tasks = None
         self.replacement_tasks = None
-        self.monthly_budget_money = 10000.0  # Default budget
-        self.monthly_budget_time = 40.0  # Default budget
-        self.months_to_schedule = 360  # Default months to schedule
+        self.monthly_budget_money = None  # Default budget
+        self.monthly_budget_time = None  # Default budget
+        self.months_to_schedule = None  # Default months to schedule
         self.prioritized_schedule = None  # Store simulation results
         self.current_date = pd.Timestamp.now()
+        self.maintenance_logs = None  # Store maintenance logs
 
-    def run_rul_simulation(self):
+    def run_rul_simulation(self, generate_synthetic_maintenance_logs):
         """Run a maintenance task simulation and store results in pn.state.cache"""
-
+        print(f"Running RUL simulation with current date {self.current_date}, budget hours {self.monthly_budget_time}, budget money {self.monthly_budget_money}, weeks to schedule {self.months_to_schedule}")
         self.prioritized_schedule = process_maintenance_tasks(
             tasks=self.maintenance_tasks,
             replacement_tasks=self.replacement_tasks,
@@ -40,7 +41,9 @@ class GraphController:
             monthly_budget_time=self.monthly_budget_time,
             monthly_budget_money=self.monthly_budget_money,
             months_to_schedule=self.months_to_schedule,
-            current_date=self.current_date
+            current_date=self.current_date,
+            generate_synthetic_maintenance_logs=generate_synthetic_maintenance_logs,
+            maintenance_log_dict=self.maintenance_logs
         )
         
     def get_legend_settings(self):
@@ -186,26 +189,6 @@ class GraphController:
                 self.current_graph[0].nodes[node_id][k] = v
         
         return {'success': True}
-    
-    # def save_graph_to_file(self, filename):
-    #     """Save current graph to file"""
-    #     if not self.current_graph[0]:
-    #         return {'success': False, 'error': 'No graph loaded'}
-        
-    #     try:
-    #         if not filename.lower().endswith('.mepg'):
-    #             filename += '.mepg'
-            
-    #         output_dir = 'graph_outputs'
-    #         os.makedirs(output_dir, exist_ok=True)
-    #         output_path = os.path.join(output_dir, filename)
-            
-    #         self.current_graph[0].graph["source"] = "Panel Graph Viewer Export"
-    #         nx.write_graphml(self.current_graph[0], output_path)
-            
-    #         return {'success': True, 'path': output_path}
-    #     except Exception as e:
-    #         return {'success': False, 'error': str(e)}
 
     def reset_graph(self):
         """Reset the graph controller"""
@@ -311,8 +294,8 @@ class GraphController:
             node_condition_dict[node_id] = {
                 'Node ID': node_id,
                 'Condition Level': attrs.get('current_condition', 'N/A'),
-                'RUL (months)': attrs.get('remaining_useful_life_days', 'N/A'),
-                'Last Maintenance Date': attrs.get('last_maintenance_date', 'N/A'),
+                'RUL (months)': attrs.get('remaining_useful_life_days'),
+                'Expected Lifespan (years)': attrs.get('expected_lifespan', 'N/A'),
                 'Tasks Deferred Count': attrs.get('tasks_deferred_count', 0)
             }
         return pd.DataFrame.from_dict(node_condition_dict, orient='index')
@@ -331,6 +314,37 @@ class GraphController:
             'monthly_budget_time': self.monthly_budget_time,
             'months_to_schedule': self.months_to_schedule,
             'prioritized_schedule': self.prioritized_schedule,
-            'current_date': self.current_date
+            'current_date': self.current_date,
+            'maintenance_logs': self.maintenance_logs
         }
         return data_dict
+
+    def get_budget_overview_df(self):
+        """Get a DataFrame summarizing used vs. remaining budget"""
+        if not self.prioritized_schedule:
+            return pd.DataFrame(columns=['Month', 'Used Hours', 'Remaining Hours', 'Used Money', 'Remaining Money'])
+        
+        budget_data = []
+        for month, data in self.prioritized_schedule.items():
+            used_hours = 0
+            used_money = 0
+            for task in data.get('executed_tasks'):
+                used_hours += task.get('time_cost')
+                used_money += task.get('money_cost')
+            
+            for task in data.get('replacement_tasks_executed'):
+                used_hours += task.get('time_cost')
+                used_money += task.get('money_cost')
+
+            remaining_hours = (self.monthly_budget_time or 0) - used_hours
+            remaining_money = (self.monthly_budget_money or 0) - used_money
+            
+            budget_data.append({
+                'Month': month.strftime('%Y-%m'),
+                'Used Hours': used_hours,
+                'Remaining Hours': max(remaining_hours, 0),
+                'Used Money': used_money,
+                'Remaining Money': max(remaining_money, 0)
+            })
+        
+        return pd.DataFrame(budget_data)

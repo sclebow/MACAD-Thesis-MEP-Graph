@@ -23,33 +23,47 @@ from helpers.panel.pages.graph_generator import layout_graph_generator
 
 pn.extension('plotly')
 
-# DEFAULT_BUILDING_PARAMS = {
-#     "construction_year": pd.Timestamp.now().year,
-#     "total_load": 1000,  # in kW
-#     "building_length": 20.0,  # in meters
-#     "building_width": 20.0,   # in meters
-#     "num_floors": 4,
-#     "floor_height": 3.5,      # in meters
-#     "cluster_strength": 0.95, # between 0 and 1
-#     "seed": 42
-# }
+TEST_DATA_INDEX = 0
 
-DEFAULT_BUILDING_PARAMS = {
-    "construction_year": pd.Timestamp.now().year,
-    "total_load": 200,  # in kW
-    "building_length": 20.0,  # in meters
-    "building_width": 20.0,   # in meters
-    "num_floors": 1,
-    "floor_height": 3.5,      # in meters
-    "cluster_strength": 0.95, # between 0 and 1
-    "seed": 42
-}
+TEST_DATA = [
+    {
+        "DEFAULT_BUILDING_PARAMS": {
+            "construction_year": pd.Timestamp.now().year - 25,
+            "total_load": 1000,  # in kW
+            "building_length": 20.0,  # in meters
+            "building_width": 20.0,   # in meters
+            "num_floors": 4,
+            "floor_height": 3.5,      # in meters
+            "cluster_strength": 0.95, # between 0 and 1
+            "seed": 42
+        },
+        "DEFAULT_SIMULATION_PARAMS": {
+            "budget_hours": 40,
+            "budget_money": 10000,
+            "weeks_to_schedule": 360
+        }
+    },
+    {
+        "DEFAULT_BUILDING_PARAMS": {
+            "construction_year": pd.Timestamp.now().year - 25,
+            "total_load": 200,  # in kW
+            "building_length": 20.0,  # in meters
+            "building_width": 20.0,   # in meters
+        "num_floors": 1,
+        "floor_height": 3.5,      # in meters
+        "cluster_strength": 0.95, # between 0 and 1
+            "seed": 42
+        },
+        "DEFAULT_SIMULATION_PARAMS": {
+            "budget_hours": 1,
+            "budget_money": 10000,
+            "weeks_to_schedule": 360
+        }
+    },
+]
 
-DEFAULT_SIMULATION_PARAMS = {
-    "budget_hours": 40,
-    "budget_money": 10000,
-    "weeks_to_schedule": 360
-}
+DEFAULT_BUILDING_PARAMS = TEST_DATA[TEST_DATA_INDEX]["DEFAULT_BUILDING_PARAMS"]
+DEFAULT_SIMULATION_PARAMS = TEST_DATA[TEST_DATA_INDEX]["DEFAULT_SIMULATION_PARAMS"]
 
 graph_controller = GraphController()
 
@@ -82,9 +96,9 @@ main_tabs = pn.Tabs(
     stylesheets=[stylesheet]
 )
 
-run_simulation_button = pn.widgets.Button(name="Run Simulation", button_type="primary", icon="play", on_click=lambda event: run_simulation(event, graph_controller), align="center")
+# run_simulation_button = pn.widgets.Button(name="Run Simulation", button_type="primary", icon="play", on_click=lambda event: run_simulation(event, graph_controller), align="center")
 
-default_current_date = pd.Timestamp.now() + pd.DateOffset(years=25)
+default_current_date = pd.Timestamp.now()
 graph_controller.current_date = default_current_date
 
 current_date_input = pn.widgets.DatePicker(name="Current Date", value=default_current_date, align="center")
@@ -100,7 +114,7 @@ pn.state.cache['app_status_container'] = app_status_container
 app = pn.Column(
     pn.Row(
         pn.pane.Markdown("## MEP Digital Twin\nBuilding Systems Management"),
-        run_simulation_button,
+        # run_simulation_button,
         current_date_input,
         app_status_container,
     ),
@@ -127,18 +141,15 @@ layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS)
 layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS)
 
 # DEBUG Set default tabs
-main_tabs.active = 0
+# main_tabs.active = 2
 
 print("Starting Application...")
 
 # Make the app servable for panel serve command
 app.servable()
 
-# Generate a default graph on startup
+# Generate a default graph on startup and run simulation (inside the graph generation)
 generate_graph(None, graph_controller, DEFAULT_BUILDING_PARAMS)
-
-# Auto-run simulation on load
-run_simulation(None, graph_controller)
 
 # Allow running directly with Python for debugging
 if __name__ == "__main__":

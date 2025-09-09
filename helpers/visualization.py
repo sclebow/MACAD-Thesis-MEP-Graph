@@ -71,7 +71,7 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
             
     return _hierarchy_pos(G, root, width, vert_gap, vert_loc, xcenter)
 
-def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=None, color_palette=None, colorbar_title=None, showlegend=False, colorbar_range=None, hide_trace_from_legend=False, legend_settings=None):
+def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=None, color_palette=None, colorbar_title=None, showlegend=False, colorbar_range=None, hide_trace_from_legend=False, legend_settings=None, graph_title=None):
     # Shared logic for 2D graph visualization
     try:
         # Select a valid root node (first node in the graph)
@@ -277,12 +277,14 @@ def _generate_2d_graph_figure(graph, use_full_names=False, node_color_values=Non
                 trace.showlegend = False
             if hasattr(trace, 'name') and not trace.name:
                 trace.showlegend = False
-        
+
+    if graph_title:
+        fig.update_layout(title=graph_title)        
 
     return fig
 
 def visualize_graph_two_d(graph, use_full_names=False, legend_settings=None):
-    return _generate_2d_graph_figure(graph, use_full_names=use_full_names, showlegend=True, hide_trace_from_legend=True, legend_settings=legend_settings)
+    return _generate_2d_graph_figure(graph, use_full_names=use_full_names, showlegend=True, hide_trace_from_legend=True, legend_settings=legend_settings, graph_title='Graph Colored by Type')
 
 def visualize_graph_two_d_risk(graph, use_full_names=False, legend_settings=None):
     # Color nodes by risk_score attribute
@@ -294,7 +296,8 @@ def visualize_graph_two_d_risk(graph, use_full_names=False, legend_settings=None
         color_palette='Inferno',
         colorbar_title='Risk Score',
         showlegend=False,
-        legend_settings=legend_settings
+        legend_settings=legend_settings,
+        graph_title='Graph Colored by Risk Score',
     )
 
 def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
@@ -530,6 +533,9 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
                             zaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=axis_range)
                         )
                     ))
+    
+    fig.update_layout(title='3D Graph Colored by Type')
+    
     return fig
 
 def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
@@ -770,7 +776,7 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp
     )
 
     # Update the height based on number of nodes
-    fig.update_layout(height=300 + 20 * len(node_dict))
+    fig.update_layout(height=300 + 20 * len(node_dict), title='Node Failure Timeline')
 
     return fig, node_dict
 
@@ -825,8 +831,54 @@ def get_equipment_conditions_fig(graphs: list[nx.Graph], periods: list, current_
         yanchor='bottom',
         font=dict(color='red')
     )
+    
+    default_range = [
+        (current_date - pd.DateOffset(months=24)).to_pydatetime(),
+        (current_date + pd.DateOffset(months=60)).to_pydatetime()
+    ]
 
-    fig.update_layout(xaxis_title='Period', yaxis_title='RUL')
+    # Add time range selector
+    fig.update_layout(
+        xaxis=dict(
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=3, label="3m", step="month", stepmode="backward"),
+                    dict(count=6, label="6m", step="month", stepmode="backward"),
+                    dict(count=1, label="1y", step="year", stepmode="backward"),
+                    dict(step="all")
+                ])
+            ),
+            rangeslider=dict(visible=True),
+            type="date",
+            range=default_range
+        )
+    )
+
+    # Add a button to reset the x-axis range to default
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="right",
+                x=1,
+                y=1.15,
+                showactive=False,
+                buttons=[
+                    dict(
+                        label="Reset X-Axis",
+                        method="relayout",
+                        args=[{"xaxis.range": default_range}],
+                    )
+                ],
+            )
+        ]
+    )
+
+    fig.update_layout(
+        xaxis_title='Time Range',
+        yaxis_title='RUL', 
+        title='Average Remaining Useful Life by Equipment Type Over Time'
+    )
 
     return fig
 
@@ -843,6 +895,8 @@ def get_risk_distribution_fig(current_date_graph: nx.Graph):
         values=condition_counts.values,
         hole=0.4
     ))
+
+    fig.update_layout(title='Risk Level Distribution')
 
     return fig
 
@@ -868,19 +922,22 @@ def get_remaining_useful_life_fig(current_date_graph: nx.Graph):
             colorbar=dict(title='RUL (days)')
         ),
     ))
-    fig.update_layout(yaxis_title='Days', xaxis_title='Equipment')
+    fig.update_layout(yaxis_title='Days', xaxis_title='Equipment', title='Remaining Useful Life of Equipment')
 
     return fig
 
-def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Timestamp, number_of_previous_months: int=3, number_of_future_months: int=6):
+def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Timestamp, number_of_previous_months: int=12, number_of_future_months: int=24):
     """Create a line chart of monthly total maintenance costs."""
     # Get period of current date
     current_period = pd.Period(current_date, freq='M')
 
-    # Get the relevant periods for the chart
+    # Use all periods in the prioritized_schedule to ensure continuity
+    start_period = min(prioritized_schedule.keys())
+    end_period = max(prioritized_schedule.keys())
+    
     all_periods = pd.period_range(
-        start=(current_period - number_of_previous_months),
-        end=(current_period + number_of_future_months),
+        start=start_period,
+        end=end_period,
         freq='M'
     )
 
@@ -889,13 +946,26 @@ def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Times
 
     executed_tasks_lists = [v.get('executed_tasks') for v in filtered_schedule.values()]
 
+    executed_replacement_tasks_lists = [v.get('replacement_tasks_executed', []) for v in filtered_schedule.values()]
+
     total_money_costs = []
-    for executed_task_list in executed_tasks_lists:
+    total_maintenance_costs = []
+    total_replacement_costs = []
+    for executed_task_list, executed_replacement_task_list in zip(executed_tasks_lists, executed_replacement_tasks_lists):
         total_money_cost = 0
+        total_maintenance_cost = 0
+        total_replacement_cost = 0
         for task in executed_task_list:
             money_cost = task.get('money_cost')
             total_money_cost += money_cost
+            total_maintenance_cost += money_cost
+        for task in executed_replacement_task_list:
+            money_cost = task.get('money_cost')
+            total_money_cost += money_cost
+            total_replacement_cost += money_cost
         total_money_costs.append(total_money_cost)
+        total_maintenance_costs.append(total_maintenance_cost)
+        total_replacement_costs.append(total_replacement_cost)
 
     # Convert periods to datetime
     all_periods = all_periods.to_timestamp()
@@ -909,7 +979,23 @@ def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Times
         fill='tozeroy',
         line=dict(shape='spline')
     ))
-    fig.update_layout(xaxis_title='Period', yaxis_title='Cost in Period (Dollars)')
+    fig.add_trace(go.Scatter(
+        x=all_periods,
+        y=total_maintenance_costs,
+        mode='lines+markers',
+        name='Maintenance Costs',
+        fill='tozeroy',
+        line=dict(shape='spline')
+    ))
+    fig.add_trace(go.Scatter(
+        x=all_periods,
+        y=total_replacement_costs,
+        mode='lines+markers',
+        name='Replacement Costs',
+        fill='tozeroy',
+        line=dict(shape='spline')
+    ))
+    fig.update_layout(xaxis_title='Period', yaxis_title='Cost in Period (Dollars)', title='Total Maintenance Costs Over Time')
 
     # Add a vertical line for the current date
     current_date_dt = pd.to_datetime(current_date).to_pydatetime()
@@ -924,6 +1010,47 @@ def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Times
         xanchor='left',
         yanchor='bottom',
         font=dict(color='red')
+    )
+
+    default_range = [
+        (current_date - pd.DateOffset(months=number_of_previous_months)).to_pydatetime(),
+        (current_date + pd.DateOffset(months=number_of_future_months)).to_pydatetime()
+    ]
+
+    # Add time range selector
+    fig.update_layout(
+        xaxis=dict(
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=3, label="3m", step="month", stepmode="backward"),
+                    dict(count=6, label="6m", step="month", stepmode="backward"),
+                    dict(count=1, label="1y", step="year", stepmode="backward"),
+                    dict(step="all")
+                ])
+            ),
+            rangeslider=dict(visible=True),
+            type="date",
+            range=default_range
+        )
+    )
+    # Add a button to reset the x-axis range to default
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="right",
+                x=1,
+                y=1.15,
+                showactive=False,
+                buttons=[
+                    dict(
+                        label="Reset X-Axis",
+                        method="relayout",
+                        args=[{"xaxis.range": default_range}],
+                    )
+                ],
+            )
+        ]
     )
 
     return fig

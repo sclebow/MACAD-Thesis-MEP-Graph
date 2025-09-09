@@ -211,6 +211,8 @@ def maintenance_log_upload(event, graph_controller: GraphController):
     df_logs = graph_controller.get_maintenance_logs_df()
     maintenance_log_viewer.value = df_logs
 
+    pn.state.cache["generate_synthetic_maintenance_logs"] = False # Disable synthetic log generation after upload
+
 def maintenance_task_list_upload(event, graph_controller: GraphController, maintenance_task_list_viewer):
     # Read byte content from the uploaded file
     file_content = event.new  # event.new is already bytes
@@ -252,7 +254,7 @@ def run_simulation(event, graph_controller: GraphController):
     print("\nRunning simulation...")
 
     update_app_status("Running RUL Simulation... Please wait.")
-    graph_controller.run_rul_simulation()
+    graph_controller.run_rul_simulation(generate_synthetic_maintenance_logs=pn.state.cache["generate_synthetic_maintenance_logs"])
 
     # Get the schedule maintenance_schedule_container from pn.state.cache
     maintenance_schedule_container = pn.state.cache['maintenance_schedule_container']
@@ -300,14 +302,60 @@ def run_simulation(event, graph_controller: GraphController):
         })
     
     summary_df = pd.DataFrame(summary_stats)
+
+    # Process executed and not executed replacement tasks
+    replacement_task_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False, show_index=False)
+    replacement_tasks = []
+    for month, record in schedule.items():
+        print(f"Record keys for month {month}: {list(record.keys())}")
+        for task in record['replacement_tasks_executed']:
+            print(f"Month {month} has executed replacement task: {task}")
+            task_copy = dict(task)
+            task_copy['month'] = str(month)
+            task_copy['status'] = 'executed'
+            replacement_tasks.append(task_copy)
+        print(f"Month {month} has {len(record['replacement_tasks_not_executed'])} deferred replacement tasks.")
+        for task in record['replacement_tasks_not_executed']:
+            task_copy = dict(task)
+            task_copy['month'] = str(month)
+            task_copy['status'] = 'deferred'
+            replacement_tasks.append(task_copy)
+    replacement_task_viewer.value = pd.DataFrame(replacement_tasks)
     
     # Create tabs for different views
     results_panel = pn.Tabs(
         ("Task Details", pn.widgets.DataFrame(tasks_df, sizing_mode="stretch_both")),
         ("Monthly Summary", pn.widgets.DataFrame(summary_df, sizing_mode="stretch_both")),
+        ("Replacement Tasks", replacement_task_viewer),
         sizing_mode="stretch_both"
     )
+
+    # DEBUG: Set default tab to Replacement Tasks for debugging
+    results_panel.active = 0
+
+    # Update the budget viewer
+    maintenance_budget_viewer = pn.state.cache.get("maintenance_budget_viewer")
+    budget_df = graph_controller.get_budget_overview_df()
+    maintenance_budget_viewer.value = budget_df
+
+    # Update the budget markdown summary
+    maintenance_budget_markdown_summary = pn.state.cache.get("maintenance_budget_markdown_summary")
+    maintenance_budget_markdown_summary_str_list = []
     
+    total_money_budget_spent_to_date = budget_df[budget_df['Month'] <= str(graph_controller.current_date.to_period('M'))]['Used Money'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Money Budget Spent to Date**: ${total_money_budget_spent_to_date:,.2f}")
+
+    total_hours_budget_spent_to_date = budget_df[budget_df['Month'] <= str(graph_controller.current_date.to_period('M'))]['Used Hours'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Hours Budget Spent to Date**: {total_hours_budget_spent_to_date:,.2f}")
+
+    average_monthly_money_budget = budget_df['Used Money'].mean()
+    maintenance_budget_markdown_summary_str_list.append(f"**Average Monthly Money Used (Full Schedule)**: ${average_monthly_money_budget:,.2f}")
+
+    average_monthly_hours_budget = budget_df['Used Hours'].mean()
+    maintenance_budget_markdown_summary_str_list.append(f"**Average Monthly Hours Used (Full Schedule)**: {average_monthly_hours_budget:,.2f}")
+
+    maintenance_budget_markdown_summary.object = "\n\n".join(maintenance_budget_markdown_summary_str_list)
+
     maintenance_schedule_container.clear()
     maintenance_schedule_container.sizing_mode = "stretch_both"
     maintenance_schedule_container.append(pn.pane.Markdown("### Simulation Results"))
@@ -519,12 +567,20 @@ def run_simulation(event, graph_controller: GraphController):
 
     remaining_useful_life_plot = pn.state.cache.get("remaining_useful_life_plot")
 
-    # Get graphs between last three months and next six months
+    # # Get graphs between last three months and next six months
+    # update_app_status("Updating Analytics Visualizations...")
+    # graphs = [
+    #     graph_controller.get_future_month_graph(i) for i in range(-3, 7)
+    # ]
+    # periods = [(pd.Timestamp(graph_controller.current_date) + pd.DateOffset(months=i)).to_period('M') for i in range(-3, 7)]
+
+    # Get all graphs and periods for better trend analysis
     update_app_status("Updating Analytics Visualizations...")
-    graphs = [
-        graph_controller.get_future_month_graph(i) for i in range(-3, 7)
-    ]
-    periods = [(pd.Timestamp(graph_controller.current_date) + pd.DateOffset(months=i)).to_period('M') for i in range(-3, 7)]
+    graphs = []
+    periods = list(graph_controller.prioritized_schedule.keys())
+    for period in periods:
+        graph = graph_controller.prioritized_schedule[period].get('graph')
+        graphs.append(graph)
 
     fig = get_remaining_useful_life_fig(current_date_graph)
     remaining_useful_life_plot.object = fig
@@ -553,6 +609,7 @@ def run_simulation(event, graph_controller: GraphController):
 def update_current_date(date, graph_controller: GraphController):
     print(f"Updating current date to {date}")
     graph_controller.current_date = date
+    run_simulation(None, graph_controller)
 
 def update_failure_component_details(graph_controller: GraphController, failure_timeline_container):
     component_details_container = pn.state.cache["component_details_container"]
@@ -578,3 +635,4 @@ def generate_graph(event, graph_controller: GraphController, graph_args, save_gr
     # DEBUG: Save the generated graph to a file
     if save_graph_file:
         export_graph(None, graph_controller)
+
