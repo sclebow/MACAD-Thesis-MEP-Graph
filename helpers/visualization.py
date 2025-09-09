@@ -926,7 +926,7 @@ def get_remaining_useful_life_fig(current_date_graph: nx.Graph):
 
     return fig
 
-def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Timestamp, number_of_previous_months: int=3, number_of_future_months: int=6):
+def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Timestamp, number_of_previous_months: int=12, number_of_future_months: int=24):
     """Create a line chart of monthly total maintenance costs."""
     # Get period of current date
     current_period = pd.Period(current_date, freq='M')
@@ -1010,6 +1010,47 @@ def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Times
         xanchor='left',
         yanchor='bottom',
         font=dict(color='red')
+    )
+
+    default_range = [
+        (current_date - pd.DateOffset(months=number_of_previous_months)).to_pydatetime(),
+        (current_date + pd.DateOffset(months=number_of_future_months)).to_pydatetime()
+    ]
+
+    # Add time range selector
+    fig.update_layout(
+        xaxis=dict(
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=3, label="3m", step="month", stepmode="backward"),
+                    dict(count=6, label="6m", step="month", stepmode="backward"),
+                    dict(count=1, label="1y", step="year", stepmode="backward"),
+                    dict(step="all")
+                ])
+            ),
+            rangeslider=dict(visible=True),
+            type="date",
+            range=default_range
+        )
+    )
+    # Add a button to reset the x-axis range to default
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="right",
+                x=1,
+                y=1.15,
+                showactive=False,
+                buttons=[
+                    dict(
+                        label="Reset X-Axis",
+                        method="relayout",
+                        args=[{"xaxis.range": default_range}],
+                    )
+                ],
+            )
+        ]
     )
 
     return fig
