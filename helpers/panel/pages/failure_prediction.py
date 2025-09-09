@@ -2,6 +2,9 @@ import pandas as pd
 import panel as pn
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objects as go
+import hashlib
+import datetime
 
 from helpers.panel.button_callbacks import failure_timeline_reset_view, failure_timeline_zoom_in, failure_timeline_zoom_out, export_failure_schedule, export_annual_budget_forecast, reset_lifecycle_analysis_controls, run_lifecycle_analysis_simulation, update_failure_component_details
 from helpers.panel.analytics_viz import _create_enhanced_kpi_card
@@ -92,7 +95,9 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
     failure_schedule_container.append(failure_schedule_dataframe)
     
     # Budget Planning Tab #
-    year_slider = pn.widgets.IntSlider(name='Year', start=2025, end=2030, value=2025)
+
+    # Multi-year controls
+    year_range_slider = pn.widgets.IntRangeSlider(name='Year Range', start=2020, end=2030, value=(2025, 2030))
     budget_input = pn.widgets.IntInput(name='Budget ($)', value=100000)
     simulate_btn = pn.widgets.Button(name='Simulate', button_type='primary')
 
@@ -108,22 +113,59 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         return result
 
     def run_simulation(year, budget):
-        # Dummy simulation logic; replace with your own
-        df = pd.DataFrame({
-            'year': [year],
-            'replacement': [120000],
-            'repair': [80000],
-            'savings': [40000],
-            'count': [5]
-        })
-        return {'year_data': df, 'type_data': df, 'cumulative_data': df, 'optimization': {
-            'totalReplacementCost': 120000,
-            'totalRepairCost': 80000,
-            'totalSavings': 40000,
-            'criticalTimeframeCount': 2,
-            'highCertaintyCount': 3,
-            'averageSavingsPerComponent': 8000
-        }}
+        # Real data integration: aggregate costs from CSVs
+        tasks = pd.read_csv('tables/example_maintenance_list.csv')
+        logs = pd.read_csv('tables/example_maintenance_logs.csv')
+        # Parse year from logs
+        logs['year'] = pd.to_datetime(logs['date']).dt.year
+        # Aggregate costs by year
+        year_min, year_max = year_range_slider.value
+        years = list(range(year_min, year_max + 1))
+        year_data = []
+        for y in years:
+            # For demo, use all tasks for each year (replace with real logic if available)
+            replacement_tasks = tasks[tasks['task_type'] == 'replacement']
+            repair_tasks = tasks[tasks['task_type'] != 'replacement']
+            replacement_cost = replacement_tasks['money_cost'].replace(-1, 0).sum()
+            repair_cost = repair_tasks['money_cost'].sum()
+            savings = replacement_cost - repair_cost
+            count = len(tasks)
+            year_data.append({
+                'year': y,
+                'replacement': replacement_cost,
+                'repair': repair_cost,
+                'savings': savings,
+                'count': count
+            })
+        df = pd.DataFrame(year_data)
+        # Type breakdown (aggregate over selected years)
+        type_df = tasks.groupby('equipment_type').agg({
+            'money_cost': 'sum',
+            'task_type': lambda x: (x == 'replacement').sum()
+        }).reset_index().rename(columns={'money_cost': 'replacement'})
+        repair_tasks = tasks[tasks['task_type'] != 'replacement']
+        type_df['repair'] = repair_tasks.groupby('equipment_type')['money_cost'].sum().reindex(type_df['equipment_type']).fillna(0).values
+        type_df['savings'] = type_df['replacement'] - type_df['repair']
+        type_df['count'] = tasks.groupby('equipment_type').size().values
+        # Cumulative data
+        cumulative_df = df.copy()
+        cumulative_df['cumulativeReplacement'] = cumulative_df['replacement'].cumsum()
+        cumulative_df['cumulativeRepair'] = cumulative_df['repair'].cumsum()
+        # Optimization (totals for selected years)
+        optimization = {
+            'totalReplacementCost': df['replacement'].sum(),
+            'totalRepairCost': df['repair'].sum(),
+            'totalSavings': df['savings'].sum(),
+            'criticalTimeframeCount': 2,  # TODO: derive from logs
+            'highCertaintyCount': 3,      # TODO: derive from logs
+            'averageSavingsPerComponent': df['savings'].sum() / max(df['count'].sum(), 1)
+        }
+        return {
+            'year_data': df,
+            'type_data': type_df,
+            'cumulative_data': cumulative_df,
+            'optimization': optimization
+        }
 
     def kpi_card(label, value):
         return pn.Column(
@@ -133,7 +175,7 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         )
 
     def update_kpis():
-        sim = get_simulation(year_slider.value, budget_input.value)
+        sim = get_simulation(year_range_slider.value, budget_input.value)
         opt = sim['optimization']
         return pn.Row(
             _create_enhanced_kpi_card("Total Replacement", f"${opt['totalReplacementCost']//1000}k", None, "Total Replacement", "k"),
@@ -143,28 +185,44 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         )
 
     def annual_budget_chart():
-        sim = get_simulation(year_slider.value, budget_input.value)
+        import plotly.graph_objects as go
+        sim = get_simulation(year_range_slider.value, budget_input.value)
         df = sim['year_data']
-        fig, ax = plt.subplots()
-        df.plot.bar(x='year', y=['replacement', 'repair'], ax=ax)
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure()
+        fig.add_bar(x=df['year'], y=df['replacement'], name='Replacement', marker_color='#ef4444')
+        fig.add_bar(x=df['year'], y=df['repair'], name='Repair', marker_color='#22c55e')
+        fig.update_layout(barmode='group', title='Annual Budget Forecast', xaxis_title='Year', yaxis_title='Cost ($)')
+        return pn.Column(
+            pn.pane.Markdown('### Annual Budget Forecast'),
+            pn.pane.Plotly(fig, config={'responsive': True})
+        )
 
     def cost_distribution_pie():
-        sim = get_simulation(year_slider.value, budget_input.value)
+        import plotly.graph_objects as go
+        sim = get_simulation(year_range_slider.value, budget_input.value)
         df = sim['type_data']
-        fig, ax = plt.subplots()
-        df.set_index('year')[['replacement']].plot.pie(ax=ax, subplots=True)
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure(go.Pie(labels=df['equipment_type'], values=df['replacement'], hole=0.3))
+        fig.update_layout(title='Cost Distribution by Type')
+        return pn.Column(
+            pn.pane.Markdown('### Cost Distribution by Type'),
+            pn.pane.Plotly(fig, config={'responsive': True})
+        )
 
     def cumulative_cost_area():
-        sim = get_simulation(year_slider.value, budget_input.value)
+        import plotly.graph_objects as go
+        sim = get_simulation(year_range_slider.value, budget_input.value)
         df = sim['cumulative_data']
-        fig, ax = plt.subplots()
-        df.plot.area(x='year', y=['replacement', 'repair'], ax=ax)
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df['year'], y=df['cumulativeReplacement'], fill='tozeroy', name='Cumulative Replacement', line_color='#ef4444'))
+        fig.add_trace(go.Scatter(x=df['year'], y=df['cumulativeRepair'], fill='tozeroy', name='Cumulative Repair', line_color='#22c55e'))
+        fig.update_layout(title='Cumulative Cost Analysis', xaxis_title='Year', yaxis_title='Cumulative Cost ($)')
+        return pn.Column(
+            pn.pane.Markdown('### Cumulative Cost Analysis'),
+            pn.pane.Plotly(fig, config={'responsive': True})
+        )
 
     def recommendations():
-        sim = get_simulation(year_slider.value, budget_input.value)
+        sim = get_simulation(year_range_slider.value, budget_input.value)
         opt = sim['optimization']
         return pn.Column(
             pn.pane.Markdown("### Optimization Recommendations"),
@@ -174,22 +232,56 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         )
 
     def cost_table():
-        sim = get_simulation(year_slider.value, budget_input.value)
+        sim = get_simulation(year_range_slider.value, budget_input.value)
         df = sim['type_data']
-        return pn.widgets.DataFrame(df, width=800)
+        return pn.Column(
+            pn.pane.Markdown('### Cost Summary by System Type'),
+            pn.widgets.DataFrame(df, width=800)
+        )
 
 
-    budget_grid = pn.GridSpec(ncols=2, nrows=2, sizing_mode='stretch_both')
-    budget_grid[0, 0] = pn.bind(annual_budget_chart)
-    budget_grid[0, 1] = pn.bind(cost_distribution_pie)
-    budget_grid[1, 0] = pn.bind(cumulative_cost_area)
-    budget_grid[1, 1] = pn.bind(recommendations)
-    
+    # Budget Planning Tab Layout (add scenario parameter controls)
+    strategy_select = pn.widgets.RadioButtonGroup(name='Maintenance Strategy', options=['Current', 'Preventive', 'Reactive'], button_type='success')
+    # Generate KPI cards for budget planning tab
+    kpi_cards_row = update_kpis()
+
+    main_sim_controls_row = pn.Row(
+        budget_input,
+        horizon_input,
+        strategy_select,
+        year_range_slider,
+        simulate_btn,
+        sizing_mode="stretch_width"
+    )
+
+    # Only keep one set of scenario controls and one set of manual node overrides in the Scenario Planner accordion
+    scenario_planner_accordion = pn.Accordion(
+    (
+        "Scenario Planner",
+        pn.Column(
+            # Only one set of scenario controls
+            main_sim_controls_row,
+            # Only one set of manual node overrides
+            override_ui,
+            # Scenario list and comparison
+            scenario_list_ui,
+            sizing_mode="stretch_width"
+        )
+    ),
+    active=[0],
+    sizing_mode="stretch_width"
+)
+
     budget_tab = pn.Column(
-        pn.Row(year_slider, budget_input, simulate_btn),
-        pn.bind(update_kpis),
-        budget_grid,
-        pn.bind(cost_table)
+        pn.Row(kpi_cards_row, sizing_mode="stretch_width"),
+        scenario_planner_accordion,
+        pn.Row(
+            pn.Column(annual_budget_chart, cost_distribution_pie, sizing_mode="stretch_width"),
+            pn.Column(cumulative_cost_area, cost_table, sizing_mode="stretch_width"),
+            sizing_mode="stretch_width"
+        ),
+        pn.Row(recommendations, sizing_mode="stretch_width"),
+        sizing_mode="stretch_width"
     )
 
     budget_planning_container[0:, 0:] = budget_tab
@@ -238,45 +330,37 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
     def lifespan_chart():
         sim = get_lifecycle_sim(timeframe_input.value, strategy_select.value)
         df = sim['projection']
-        fig, ax = plt.subplots()
-        ax.plot(df['month'], df['lifespan'], label='Lifespan')
-        ax.set_xlabel('Month')
-        ax.set_ylabel('Lifespan')
-        ax.legend()
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df['month'], y=df['lifespan'], mode='lines', name='Lifespan', line_color='#3b82f6'))
+        fig.update_layout(title='Lifespan Over Time', xaxis_title='Month', yaxis_title='Lifespan')
+        return pn.pane.Plotly(fig, config={'responsive': True})
 
     def condition_chart():
         sim = get_lifecycle_sim(timeframe_input.value, strategy_select.value)
         df = sim['projection']
-        fig, ax = plt.subplots()
-        ax.plot(df['month'], df['condition'], label='Condition', color='green')
-        ax.set_xlabel('Month')
-        ax.set_ylabel('Condition')
-        ax.legend()
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df['month'], y=df['condition'], mode='lines', name='Condition', line_color='#22c55e'))
+        fig.update_layout(title='Condition Over Time', xaxis_title='Month', yaxis_title='Condition')
+        return pn.pane.Plotly(fig, config={'responsive': True})
 
     def risk_chart():
         sim = get_lifecycle_sim(timeframe_input.value, strategy_select.value)
         df = sim['projection']
-        fig, ax = plt.subplots()
-        ax.plot(df['month'], df['risk'], label='Risk', color='red')
-        ax.set_xlabel('Month')
-        ax.set_ylabel('Risk')
-        ax.legend()
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df['month'], y=df['risk'], mode='lines', name='Risk', line_color='#ef4444'))
+        fig.update_layout(title='Risk Over Time', xaxis_title='Month', yaxis_title='Risk')
+        return pn.pane.Plotly(fig, config={'responsive': True})
 
     def scenario_comparison():
         sim_current = get_lifecycle_sim(timeframe_input.value, 'Current')
         sim_preventive = get_lifecycle_sim(timeframe_input.value, 'Preventive')
         df_c = sim_current['projection']
         df_p = sim_preventive['projection']
-        fig, ax = plt.subplots()
-        ax.plot(df_c['month'], df_c['lifespan'], label='Current')
-        ax.plot(df_p['month'], df_p['lifespan'], label='Preventive')
-        ax.set_xlabel('Month')
-        ax.set_ylabel('Lifespan')
-        ax.legend()
-        return pn.pane.Matplotlib(fig, tight=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_c['month'], y=df_c['lifespan'], mode='lines', name='Current', line_color='#3b82f6'))
+        fig.add_trace(go.Scatter(x=df_p['month'], y=df_p['lifespan'], mode='lines', name='Preventive', line_color='#f59e0b'))
+        fig.update_layout(title='Scenario Comparison: Lifespan', xaxis_title='Month', yaxis_title='Lifespan')
+        return pn.pane.Plotly(fig, config={'responsive': True})
 
     lifecycle_tab = pn.Column(
         pn.Row(timeframe_input, strategy_select, compare_btn),
@@ -361,3 +445,335 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         pn.pane.Markdown("### Replacement Timing Optimization"),
     )
     lifecycle_analysis_container[3:, 2:] = replacement_timing_optimization_container"""
+
+def load_and_validate_data():
+    # Load component types
+    components = pd.read_csv('tables/component_types.csv')
+    print('DEBUG: component_types.csv columns:', list(components.columns))
+    print('DEBUG: component_types.csv sample rows:')
+    print(components.head())
+    # Load maintenance tasks
+    tasks = pd.read_csv('tables/example_maintenance_list.csv')
+    # Load maintenance logs
+    try:
+        logs = pd.read_csv('tables/example_maintenance_logs.csv')
+    except Exception:
+        logs = pd.DataFrame()
+    # Validate required fields
+    required_component_fields = [
+        'criticality', 'replacement_cost', 'repair_factor', 'installation_date',
+        'operating_hours', 'expected_lifespan', 'maintenance_frequency', 'risk_score_base', 'propagated_power'
+    ]
+    missing_fields = [f for f in required_component_fields if f not in components.columns]
+    if missing_fields:
+        print(f"Warning: Missing fields in component_types.csv: {missing_fields}")
+    # Fill missing values or set defaults
+    for field in required_component_fields:
+        if field in components.columns:
+            components[field] = components[field].replace([-1, '', None], np.nan)
+            if components[field].isnull().any():
+                default = 0 if field != 'criticality' else 1
+                components[field] = components[field].fillna(default)
+    # Validate maintenance tasks
+    required_task_fields = ['task_type', 'recommended_frequency_months', 'money_cost']
+    missing_task_fields = [f for f in required_task_fields if f not in tasks.columns]
+    if missing_task_fields:
+        print(f"Warning: Missing fields in example_maintenance_list.csv: {missing_task_fields}")
+    # Fill missing task costs
+    if 'money_cost' in tasks.columns:
+        tasks['money_cost'] = tasks['money_cost'].replace([-1, '', None], np.nan).fillna(0)
+    # Validate logs
+    if not logs.empty and 'condition_level' in logs.columns:
+        logs['condition_level'] = logs['condition_level'].replace(['', None], np.nan).fillna(1.0)
+    return components, tasks, logs
+
+def prepare_simulation_nodes(components, tasks, logs, overrides=None):
+    """
+    Merge component, task, and log data into a per-node simulation-ready structure.
+    Returns a dict of node_id -> node_data.
+    Supports manual overrides via the 'overrides' dict: {node_id: {attr: value, ...}}
+    """
+    nodes = {}
+    # Map maintenance tasks by equipment type
+    task_map = tasks.groupby('equipment_type').apply(lambda df: df.to_dict('records')).to_dict()
+    # Map latest condition from logs
+    if not logs.empty and 'equipment_id' in logs.columns:
+        latest_log = logs.sort_values('date').groupby('equipment_id').last()['condition_level'].to_dict()
+    else:
+        latest_log = {}
+    for idx, row in components.iterrows():
+        node_id = row.get('Identifier', f'node_{idx}')
+        node_data = {
+            'id': node_id,
+            'type': row.get('Type', ''),
+            'criticality': float(row.get('criticality', 1)),
+            'replacement_cost': float(row.get('replacement_cost', 0)),
+            'repair_factor': float(row.get('repair_factor', 0.3)),
+            'expected_lifespan': float(row.get('expected_lifespan', 0)),
+            'risk_score_base': float(row.get('risk_score_base', 0)),
+            # Derived/linked data
+            'tasks': task_map.get(row.get('Type', ''), []),
+            'condition_level': float(latest_log.get(node_id, 1.0)),
+        }
+        # Apply manual overrides if present
+        if overrides and node_id in overrides:
+            for key, value in overrides[node_id].items():
+                node_data[key] = value
+        # Flag missing critical fields
+        for key in ['replacement_cost', 'expected_lifespan', 'criticality']:
+            if node_data[key] in [None, 0, '']:
+                node_data['data_issue'] = node_data.get('data_issue', []) + [key]
+        nodes[node_id] = node_data
+    return nodes
+
+def simulate_maintenance(nodes, horizon_months=12, budget_per_month=None, strategy='risk_first'):
+    """
+    Simulate maintenance, risk, and cost evolution for each node over the time horizon.
+    Returns a dict of monthly results per node and overall aggregates.
+    """
+    monthly_results = {node_id: [] for node_id in nodes}
+    for month in range(1, horizon_months + 1):
+        for node_id, node in nodes.items():
+            # Initialize per-month result
+            result = {
+                'month': month,
+                'action': 'none',
+                'RUL': node.get('expected_lifespan', 0),
+                'risk': node.get('risk_score_base', 0),
+                'cost': 0,
+                'condition_level': node.get('condition_level', 1.0),
+            }
+            # Simple RUL decay (placeholder, replace with rul_helper logic)
+            result['RUL'] = max(result['RUL'] - 1, 0)
+            # Simple risk calculation (placeholder, replace with node_risk logic)
+            result['risk'] = result['risk'] + (1.0 - result['condition_level']) * node.get('criticality', 1)
+            # Action selection (placeholder: repair if RUL < 3)
+            if result['RUL'] < 3:
+                result['action'] = 'repair'
+                result['cost'] = node.get('repair_factor', 0.3) * node.get('replacement_cost', 0)
+                result['RUL'] = node.get('expected_lifespan', 0)  # Reset RUL after repair
+                result['condition_level'] = 1.0
+            monthly_results[node_id].append(result)
+    # Aggregate results
+    aggregates = {
+        'total_cost': sum(r['cost'] for node in monthly_results.values() for r in node),
+        'actions': sum(1 for node in monthly_results.values() for r in node if r['action'] != 'none'),
+    }
+    return monthly_results, aggregates
+
+def simulate_maintenance_refined(nodes, horizon_months=12, budget_per_month=1000, strategy='risk_first'):
+    """
+    Refined simulation: realistic RUL decay, risk calculation, budget constraint, prioritized actions.
+    Returns monthly results and aggregates.
+    """
+    monthly_results = {node_id: [] for node_id in nodes}
+    for month in range(1, horizon_months + 1):
+        # Prepare action candidates
+        candidates = []
+        for node_id, node in nodes.items():
+            # RUL decay (simple: -1 per month, replace with rul_helper for real)
+            prev_rul = monthly_results[node_id][-1]['RUL'] if monthly_results[node_id] else node.get('expected_lifespan', 0)
+            rul = max(prev_rul - 1, 0)
+            # Risk calculation (simple: base + criticality * (1 - condition), replace with node_risk for real)
+            condition = monthly_results[node_id][-1]['condition_level'] if monthly_results[node_id] else node.get('condition_level', 1.0)
+            risk = node.get('risk_score_base', 0) + node.get('criticality', 1) * (1.0 - condition)
+            candidates.append({
+                'node_id': node_id,
+                'rul': rul,
+                'risk': risk,
+                'criticality': node.get('criticality', 1),
+                'replacement_cost': node.get('replacement_cost', 0),
+                'repair_factor': node.get('repair_factor', 0.3),
+                'condition': condition,
+            })
+        # Prioritize by risk and criticality
+        candidates.sort(key=lambda x: (x['risk'], x['criticality']), reverse=True)
+        budget_left = budget_per_month
+        # Apply actions within budget
+        for c in candidates:
+            action = 'none'
+            cost = 0
+            rul = c['rul']
+            condition = c['condition']
+            # Debug: print decision context
+            print(f"[DEBUG] Node {c['node_id']} Month {month}: RUL={rul}, Budget={budget_left}, RepairCost={c['repair_factor'] * c['replacement_cost']}, ReplaceCost={c['replacement_cost']}")
+            # If RUL < 3, consider repair or replace
+            if rul < 3:
+                repair_cost = c['repair_factor'] * c['replacement_cost']
+                replace_cost = c['replacement_cost']
+                # Prefer repair if enough budget, else replace
+                if budget_left >= repair_cost and repair_cost > 0:
+                    action = 'repair'
+                    cost = repair_cost
+                    rul = nodes[c['node_id']].get('expected_lifespan', 0)
+                    condition = 1.0
+                    print(f"[DEBUG] Node {c['node_id']} action: REPAIR (cost={cost})")
+                elif budget_left >= replace_cost and replace_cost > 0:
+                    action = 'replace'
+                    cost = replace_cost
+                    rul = nodes[c['node_id']].get('expected_lifespan', 0)
+                    condition = 1.0
+                    print(f"[DEBUG] Node {c['node_id']} action: REPLACE (cost={cost})")
+                else:
+                    action = 'defer'
+                    cost = 0
+                    # Deferment penalty: condition drops
+                    condition = max(condition - 0.1, 0)
+                    print(f"[DEBUG] Node {c['node_id']} action: DEFER (condition={condition})")
+            budget_left -= cost
+            monthly_results[c['node_id']].append({
+                'month': month,
+                'action': action,
+                'RUL': rul,
+                'risk': c['risk'],
+                'cost': cost,
+                'condition_level': condition,
+            })
+    # Aggregate results
+    aggregates = {
+        'total_cost': sum(r['cost'] for node in monthly_results.values() for r in node),
+        'actions': sum(1 for node in monthly_results.values() for r in node if r['action'] != 'none'),
+        'repairs': sum(1 for node in monthly_results.values() for r in node if r['action'] == 'repair'),
+        'replacements': sum(1 for node in monthly_results.values() for r in node if r['action'] == 'replace'),
+        'deferrals': sum(1 for node in monthly_results.values() for r in node if r['action'] == 'defer'),
+    }
+    return monthly_results, aggregates
+
+import panel as pn
+# Example Panel UI for manual overrides
+replacement_cost_input_T01 = pn.widgets.IntInput(name='Replacement Cost (T-01)', value=1000)
+criticality_input_T01 = pn.widgets.IntInput(name='Criticality (T-01)', value=5)
+repair_factor_input_P01 = pn.widgets.FloatInput(name='Repair Factor (P-01)', value=0.3)
+budget_input = pn.widgets.IntInput(name='Budget per Month', value=1000)
+horizon_input = pn.widgets.IntSlider(name='Simulation Horizon (Months)', start=1, end=60, value=12)
+strategy_select = pn.widgets.Select(name='Strategy', options=['risk_first', 'RUL_first'], value='risk_first')
+year_range_slider = pn.widgets.IntRangeSlider(name='Year Range', start=2025, end=2035, value=(2025, 2030))
+
+def run_simulation_with_overrides(event=None):
+    overrides = {
+        'T-01': {
+            'replacement_cost': replacement_cost_input_T01.value,
+            'criticality': criticality_input_T01.value
+        },
+        'P-01': {
+            'repair_factor': repair_factor_input_P01.value
+        }
+    }
+    components, tasks, logs = load_and_validate_data()
+    nodes = prepare_simulation_nodes(components, tasks, logs, overrides=overrides)
+    monthly_results, aggregates = simulate_maintenance_refined(nodes, horizon_months=15, budget_per_month=1000)
+    print('Simulation complete. Aggregates:', aggregates)
+    # Optionally update UI with results here
+
+simulate_button = pn.widgets.Button(name='Simulate with Overrides')
+simulate_button.on_click(run_simulation_with_overrides)
+
+override_ui = pn.Column(
+    pn.pane.Markdown('### Manual Node Overrides'),
+    replacement_cost_input_T01,
+    criticality_input_T01,
+    repair_factor_input_P01,
+    simulate_button
+)
+
+# To serve in Panel app: override_ui.servable()
+
+class Scenario:
+    def __init__(self, label, inputs, cache_key, monthly_results, yearly_aggregates, timestamp=None):
+        self.label = label
+        self.inputs = inputs
+        self.cache_key = cache_key
+        self.monthly_results = monthly_results
+        self.yearly_aggregates = yearly_aggregates
+        self.timestamp = timestamp or datetime.datetime.now()
+
+scenario_cache = {}
+
+def generate_cache_key(inputs, graph_version):
+    key_str = str(inputs) + str(graph_version)
+    return hashlib.md5(key_str.encode()).hexdigest()
+
+def run_scenario(label, inputs, graph_version, run_simulation_func):
+    cache_key = generate_cache_key(inputs, graph_version)
+    if cache_key in scenario_cache:
+        print(f"[CACHE] Loaded scenario '{label}' from cache.")
+        update_scenario_list()
+        return scenario_cache[cache_key]
+    monthly_results, yearly_aggregates = run_simulation_func(**inputs)
+    scenario = Scenario(label, inputs, cache_key, monthly_results, yearly_aggregates)
+    scenario_cache[cache_key] = scenario
+    print(f"[CACHE] Stored scenario '{label}' in cache.")
+    update_scenario_list()
+    return scenario
+
+# Scenario List UI
+scenario_labels = pn.widgets.Select(name='Saved Scenarios', options=[])
+scenario_info = pn.pane.Markdown('Select a scenario to view details.')
+scenario_label_input = pn.widgets.TextInput(name='Scenario Label', placeholder='Enter label...')
+save_scenario_btn = pn.widgets.Button(name='Save Scenario')
+compare_select_1 = pn.widgets.Select(name='Compare Scenario 1', options=[])
+compare_select_2 = pn.widgets.Select(name='Compare Scenario 2', options=[])
+compare_info = pn.pane.Markdown('Select two scenarios to compare.')
+
+# Save scenario with custom label
+def save_scenario(event):
+    label = scenario_label_input.value
+    if not label:
+        scenario_info.object = '**Error:** Please enter a label.'
+        return
+    inputs = {
+        'budget_per_month': budget_input.value,
+        'horizon_months': horizon_input.value,
+        'strategy': strategy_select.value,
+        'year_range': year_range_slider.value,
+        'overrides': {
+            'T-01': {
+                'replacement_cost': replacement_cost_input_T01.value,
+                'criticality': criticality_input_T01.value
+            }
+        }
+    }
+    graph_version = 'v1'
+    def dummy_simulation(**kwargs):
+        return {}, {}
+    scenario = run_scenario(label, inputs, graph_version, dummy_simulation)
+    update_scenario_list()
+    update_compare_selects()
+    scenario_info.object = f"Scenario '{label}' saved."
+save_scenario_btn.on_click(save_scenario)
+
+def update_scenario_list():
+    options = [s.label for s in scenario_cache.values()]
+    scenario_labels.options = options
+    compare_select_1.options = options
+    compare_select_2.options = options
+
+# Update compare selects
+def update_compare_selects():
+    options = [s.label for s in scenario_cache.values()]
+    compare_select_1.options = options
+    compare_select_2.options = options
+
+# Compare two scenarios
+def compare_scenarios(event):
+    label1 = compare_select_1.value
+    label2 = compare_select_2.value
+    s1 = next((s for s in scenario_cache.values() if s.label == label1), None)
+    s2 = next((s for s in scenario_cache.values() if s.label == label2), None)
+    if not s1 or not s2:
+        compare_info.object = '**Error:** Select two valid scenarios.'
+        return
+    info = f"**A/B Comparison**\n\n**{s1.label}**\nYearly Aggregates: {s1.yearly_aggregates}\n\n**{s2.label}**\nYearly Aggregates: {s2.yearly_aggregates}"
+    compare_info.object = info
+compare_select_1.param.watch(compare_scenarios, 'value')
+compare_select_2.param.watch(compare_scenarios, 'value')
+
+scenario_list_ui = pn.Column(
+    pn.pane.Markdown('### Scenario List & Comparison'),
+    scenario_labels,
+    scenario_info,
+    pn.Row(scenario_label_input, save_scenario_btn),
+    pn.Row(compare_select_1, compare_select_2),
+    compare_info
+)
+# Call update_compare_selects() after each scenario save

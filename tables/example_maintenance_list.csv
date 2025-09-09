@@ -3,14 +3,14 @@ T-01,transformer,visual inspection,9,"Visually inspect for corrosion, scoring, s
 T-02,transformer,test winding ratios,24,Test transformer winding ratios to ensure correct operation.,1,1,100,Use appropriate test equipment.
 T-03,transformer,test grounding,12,Test transformer grounding connections for integrity.,1,0.5,30,Ensure all ground connections are secure.
 T-04,transformer,test torque of bolted connections,18,Check and retorque all bolted electrical connections.,2,0.5,20,Follow manufacturer's torque specifications.
-T-05,transformer,replacement,-1,Replace transformer at end of service life or if failed.,1,8,-1,Coordinate with utility if required.
+T-05,transformer,replacement,120,Replace transformer at end of service life or if failed.,1,8,5000,Coordinate with utility if required.
 P-01,panel,visual inspection,4,"Visually inspect panel for signs of overheating, corrosion, or damage.",2,0.5,30,Check for missing or loose covers.
 P-02,panel,test grounding,12,Test panel grounding and bonding connections.,1,0.5,20,Verify all ground lugs are tight.
 P-03,panel,test gfci,6,Test all GFCI breakers and receptacles for proper operation.,1,0.25,10,Document any failed devices.
 P-04,panel,inspect breakers,9,Inspect all breakers for signs of wear or damage.,2,0.5,15,Replace any defective breakers.
-P-05,panel,replacement,-1,Replace panel at end of service life or if failed.,1,6,-1,Label all circuits after replacement.
+P-05,panel,replacement,100,Replace panel at end of service life or if failed.,1,6,2000,Label all circuits after replacement.
 S-01,switchboard,visual inspection,6,"Visually inspect switchboard for signs of overheating, corrosion, or damage.",2,2,60,Check for missing or loose covers.
 S-02,switchboard,test grounding,12,Test switchboard grounding and bonding connections.,1,2,40,Verify all ground lugs are tight.
 S-03,switchboard,test circuit breakers,6,Test all circuit breakers for proper operation.,1,1,20,Document any failed devices.
 S-04,switchboard,test voltage,12,Test switchboard voltage levels.,1,1,30,Ensure all voltage levels are within specifications.
-S-05,switchboard,replacement,-1,Replace switchboard at end of service life or if failed.,1,48,-1,Coordinate with utility if required.
+S-05,switchboard,replacement,110,Replace switchboard at end of service life or if failed.,1,48,3500,Coordinate with utility if required.
