@@ -544,12 +544,20 @@ def run_simulation(event, graph_controller: GraphController):
 
     remaining_useful_life_plot = pn.state.cache.get("remaining_useful_life_plot")
 
-    # Get graphs between last three months and next six months
+    # # Get graphs between last three months and next six months
+    # update_app_status("Updating Analytics Visualizations...")
+    # graphs = [
+    #     graph_controller.get_future_month_graph(i) for i in range(-3, 7)
+    # ]
+    # periods = [(pd.Timestamp(graph_controller.current_date) + pd.DateOffset(months=i)).to_period('M') for i in range(-3, 7)]
+
+    # Get all graphs and periods for better trend analysis
     update_app_status("Updating Analytics Visualizations...")
-    graphs = [
-        graph_controller.get_future_month_graph(i) for i in range(-3, 7)
-    ]
-    periods = [(pd.Timestamp(graph_controller.current_date) + pd.DateOffset(months=i)).to_period('M') for i in range(-3, 7)]
+    graphs = []
+    periods = list(graph_controller.prioritized_schedule.keys())
+    for period in periods:
+        graph = graph_controller.prioritized_schedule[period].get('graph')
+        graphs.append(graph)
 
     fig = get_remaining_useful_life_fig(current_date_graph)
     remaining_useful_life_plot.object = fig

@@ -141,7 +141,7 @@ layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS)
 layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS)
 
 # DEBUG Set default tabs
-main_tabs.active = 0
+main_tabs.active = 3
 
 print("Starting Application...")
 
