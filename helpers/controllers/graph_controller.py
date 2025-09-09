@@ -24,16 +24,16 @@ class GraphController:
         self.legend_preset = "compact_tr"  # Default preset
         self.maintenance_tasks = None
         self.replacement_tasks = None
-        self.monthly_budget_money = 10000.0  # Default budget
-        self.monthly_budget_time = 40.0  # Default budget
-        self.months_to_schedule = 360  # Default months to schedule
+        self.monthly_budget_money = None  # Default budget
+        self.monthly_budget_time = None  # Default budget
+        self.months_to_schedule = None  # Default months to schedule
         self.prioritized_schedule = None  # Store simulation results
         self.current_date = pd.Timestamp.now()
         self.maintenance_logs = None  # Store maintenance logs
 
     def run_rul_simulation(self, generate_synthetic_maintenance_logs):
         """Run a maintenance task simulation and store results in pn.state.cache"""
-
+        print(f"Running RUL simulation with current date {self.current_date}, budget hours {self.monthly_budget_time}, budget money {self.monthly_budget_money}, weeks to schedule {self.months_to_schedule}")
         self.prioritized_schedule = process_maintenance_tasks(
             tasks=self.maintenance_tasks,
             replacement_tasks=self.replacement_tasks,
@@ -294,8 +294,8 @@ class GraphController:
             node_condition_dict[node_id] = {
                 'Node ID': node_id,
                 'Condition Level': attrs.get('current_condition', 'N/A'),
-                'RUL (months)': attrs.get('remaining_useful_life_days', 'N/A'),
-                'Last Maintenance Date': attrs.get('last_maintenance_date', 'N/A'),
+                'RUL (months)': attrs.get('remaining_useful_life_days'),
+                'Expected Lifespan (years)': attrs.get('expected_lifespan', 'N/A'),
                 'Tasks Deferred Count': attrs.get('tasks_deferred_count', 0)
             }
         return pd.DataFrame.from_dict(node_condition_dict, orient='index')

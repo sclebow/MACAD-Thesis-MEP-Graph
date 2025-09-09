@@ -302,13 +302,36 @@ def run_simulation(event, graph_controller: GraphController):
         })
     
     summary_df = pd.DataFrame(summary_stats)
+
+    # Process executed and not executed replacement tasks
+    replacement_task_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False, show_index=False)
+    replacement_tasks = []
+    for month, record in schedule.items():
+        print(f"Record keys for month {month}: {list(record.keys())}")
+        for task in record['replacement_tasks_executed']:
+            print(f"Month {month} has executed replacement task: {task}")
+            task_copy = dict(task)
+            task_copy['month'] = str(month)
+            task_copy['status'] = 'executed'
+            replacement_tasks.append(task_copy)
+        print(f"Month {month} has {len(record['replacement_tasks_not_executed'])} deferred replacement tasks.")
+        for task in record['replacement_tasks_not_executed']:
+            task_copy = dict(task)
+            task_copy['month'] = str(month)
+            task_copy['status'] = 'deferred'
+            replacement_tasks.append(task_copy)
+    replacement_task_viewer.value = pd.DataFrame(replacement_tasks)
     
     # Create tabs for different views
     results_panel = pn.Tabs(
         ("Task Details", pn.widgets.DataFrame(tasks_df, sizing_mode="stretch_both")),
         ("Monthly Summary", pn.widgets.DataFrame(summary_df, sizing_mode="stretch_both")),
+        ("Replacement Tasks", replacement_task_viewer),
         sizing_mode="stretch_both"
     )
+
+    # DEBUG: Set default tab to Replacement Tasks for debugging
+    results_panel.active = 2
     
     maintenance_schedule_container.clear()
     maintenance_schedule_container.sizing_mode = "stretch_both"
@@ -555,6 +578,7 @@ def run_simulation(event, graph_controller: GraphController):
 def update_current_date(date, graph_controller: GraphController):
     print(f"Updating current date to {date}")
     graph_controller.current_date = date
+    run_simulation(None, graph_controller)
 
 def update_failure_component_details(graph_controller: GraphController, failure_timeline_container):
     component_details_container = pn.state.cache["component_details_container"]

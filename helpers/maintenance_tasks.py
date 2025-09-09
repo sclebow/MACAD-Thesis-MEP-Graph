@@ -285,7 +285,6 @@ def create_prioritized_calendar_schedule(
 
     monthly_records_dict = {}
 
-    print(f"Replacement task keys: {list(replacement_tasks[0].keys()) if replacement_tasks else 'No replacement tasks provided.'}")
     # Sort replacement tasks by condition_level smallest to largest
     replacement_tasks = sorted(replacement_tasks, key=lambda x: x['condition_level'])
 
@@ -379,6 +378,8 @@ def create_prioritized_calendar_schedule(
                     base_expected_lifespan_improvement_percentage = r_task.get('base_expected_lifespan_improvement_percentage', 0.0)
 
                     # Check if within budget
+                    # print(f"Node {node_id} requires replacement task {task_name} (condition {node_condition} <= {condition_level}). Checking budget...")
+                    # print(f"Time budget: {time_budget_for_month}, Money budget: {money_budget_for_month}, Task time cost: {time_cost}, Task money cost: {money_cost}")
                     if time_budget_for_month >= time_cost and money_budget_for_month >= money_cost:
                         # Apply condition improvement
                         graph.nodes[node_id]['current_condition'] = node_condition + condition_improvement_amount
@@ -409,13 +410,16 @@ def create_prioritized_calendar_schedule(
                             'money_cost': money_cost,
                             'condition_improvement': condition_improvement_amount,
                             'new_condition': graph.nodes[node_id]['current_condition'],
-                            'month_executed': month.start_time.strftime('%Y-%m-%d')
+                            'original_condition': node_condition,
+                            'month_executed': month.start_time.strftime('%Y-%m-%d'),
+                            'reason': 'Condition threshold exceeded'
                         })
                         # Reset replacement_required flag
                         graph.nodes[node_id]['replacement_required'] = False
                         break # You can only do one replacement task per node per month
                     
                     else:
+                        # print(f"Insufficient budget to execute replacement task {task_name} for node {node_id} in month {month}. Deferring.")
                         month_record['replacement_tasks_not_executed'].append({
                             'task_instance_id': task_instance_id,
                             'equipment_id': node_id,
@@ -424,21 +428,67 @@ def create_prioritized_calendar_schedule(
                             'money_cost': money_cost,
                             'condition_improvement': condition_improvement_amount,
                             'current_condition': node_condition,
-                            'month_attempted': month.start_time.strftime('%Y-%m-%d')
+                            'original_condition': node_condition,
+                            'month_attempted': month.start_time.strftime('%Y-%m-%d'),
+                            'reason': 'Condition threshold exceeded but insufficient budget'
                         })
         
         # Check if any nodes require replacement
         for node, attrs in graph.nodes(data=True):
             if attrs.get('replacement_required'):
-                # Check tasks for this node
-                tasks_for_node = tasks_for_month[tasks_for_month['equipment_id'] == node]
+                # Check replacement tasks for this node
+                node_type = attrs.get('type')
+                tasks_for_node = pd.DataFrame([t for t in replacement_tasks if t['equipment_type'] == node_type])
                 # Get replacement task
-                replacement_task = tasks_for_node[tasks_for_node['is_replacement'] == True]
+                replacement_task = tasks_for_node[tasks_for_node['task_name'].str.lower() == 'full replacement']
                 if not replacement_task.empty:
-                    # If there is a replacement task, schedule it for this month
-                    replacement_task = replacement_task.copy()
-                    replacement_task.loc[:, 'scheduled_month'] = month
-                    tasks_for_month = pd.concat([replacement_task, tasks_for_month])
+                    # Execute full replacement if budget allows
+                    r_task = replacement_task.iloc[0]
+                    task_id = r_task['task_id']
+                    task_instance_id = f"{task_id}-{node}"
+                    time_cost = r_task['time_cost']
+                    money_cost = r_task['money_cost']
+                    if time_budget_for_month >= time_cost and money_budget_for_month >= money_cost:
+                        # Perform replacement
+                        graph.nodes[node]['installation_date'] = month.start_time.strftime('%Y-%m-%d')
+                        graph.nodes[node]['tasks_deferred_count'] = 0
+                        graph.nodes[node]['current_condition'] = 1.0
+                        if "default_expected_lifespan" in graph.nodes[node]:
+                            graph.nodes[node]['expected_lifespan'] = graph.nodes[node]['default_expected_lifespan']
+                        else:
+                            graph.nodes[node]['expected_lifespan'] = attrs.get('expected_lifespan')
+                        graph.nodes[node]['expected_lifespan_days'] = graph.nodes[node]['expected_lifespan'] * 365
+                        # Update budgets
+                        time_budget_for_month -= time_cost
+                        money_budget_for_month -= money_cost
+                        # Record executed replacement
+                        month_record['replacement_tasks_executed'].append({
+                            'task_instance_id': task_instance_id,
+                            'equipment_id': node,
+                            'task_name': 'Full Replacement',
+                            'time_cost': time_cost,
+                            'money_cost': money_cost,
+                            'condition_improvement': 1.0 - attrs.get('current_condition', 1.0),
+                            'new_condition': 1.0,
+                            'original_condition': attrs.get('current_condition', 1.0),
+                            'month_executed': month.start_time.strftime('%Y-%m-%d'),
+                            'reason': 'Replacement RUL threshold exceeded'
+                        })
+                        # Reset replacement_required flag
+                        graph.nodes[node]['replacement_required'] = False
+                    else:
+                        month_record['replacement_tasks_not_executed'].append({
+                            'task_instance_id': task_instance_id,
+                            'equipment_id': node,
+                            'task_name': 'Full Replacement',
+                            'time_cost': time_cost,
+                            'money_cost': money_cost,
+                            'condition_improvement': 0.0,
+                            'current_condition': attrs.get('current_condition', 1.0),
+                            'original_condition': attrs.get('current_condition', 1.0),
+                            'month_attempted': month.start_time.strftime('%Y-%m-%d'),
+                            'reason': 'Replacement RUL threshold exceeded but insufficient budget'
+                        })
 
         month_record['tasks_scheduled_for_month'] = tasks_for_month
 

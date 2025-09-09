@@ -35,7 +35,7 @@ pn.extension('plotly')
 # }
 
 DEFAULT_BUILDING_PARAMS = {
-    "construction_year": pd.Timestamp.now().year,
+    "construction_year": pd.Timestamp.now().year - 25,
     "total_load": 200,  # in kW
     "building_length": 20.0,  # in meters
     "building_width": 20.0,   # in meters
@@ -45,8 +45,14 @@ DEFAULT_BUILDING_PARAMS = {
     "seed": 42
 }
 
+# DEFAULT_SIMULATION_PARAMS = {
+#     "budget_hours": 40,
+#     "budget_money": 10000,
+#     "weeks_to_schedule": 360
+# }
+
 DEFAULT_SIMULATION_PARAMS = {
-    "budget_hours": 40,
+    "budget_hours": 1,
     "budget_money": 10000,
     "weeks_to_schedule": 360
 }
@@ -84,7 +90,7 @@ main_tabs = pn.Tabs(
 
 run_simulation_button = pn.widgets.Button(name="Run Simulation", button_type="primary", icon="play", on_click=lambda event: run_simulation(event, graph_controller), align="center")
 
-default_current_date = pd.Timestamp.now() + pd.DateOffset(years=25)
+default_current_date = pd.Timestamp.now()
 graph_controller.current_date = default_current_date
 
 current_date_input = pn.widgets.DatePicker(name="Current Date", value=default_current_date, align="center")
