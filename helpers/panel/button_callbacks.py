@@ -211,6 +211,8 @@ def maintenance_log_upload(event, graph_controller: GraphController):
     df_logs = graph_controller.get_maintenance_logs_df()
     maintenance_log_viewer.value = df_logs
 
+    pn.state.cache["generate_synthetic_maintenance_logs"] = False # Disable synthetic log generation after upload
+
 def maintenance_task_list_upload(event, graph_controller: GraphController, maintenance_task_list_viewer):
     # Read byte content from the uploaded file
     file_content = event.new  # event.new is already bytes
@@ -252,7 +254,7 @@ def run_simulation(event, graph_controller: GraphController):
     print("\nRunning simulation...")
 
     update_app_status("Running RUL Simulation... Please wait.")
-    graph_controller.run_rul_simulation()
+    graph_controller.run_rul_simulation(generate_synthetic_maintenance_logs=pn.state.cache["generate_synthetic_maintenance_logs"])
 
     # Get the schedule maintenance_schedule_container from pn.state.cache
     maintenance_schedule_container = pn.state.cache['maintenance_schedule_container']
@@ -579,10 +581,3 @@ def generate_graph(event, graph_controller: GraphController, graph_args, save_gr
     if save_graph_file:
         export_graph(None, graph_controller)
 
-def generate_synthetic_maintenance_logs(event, graph_controller: GraphController):
-    print("Generating synthetic maintenance logs...")
-    graph_controller.generate_synthetic_maintenance_logs()
-
-    maintenance_log_viewer = pn.state.cache["maintenance_logs_viewer"]
-    df_logs = graph_controller.get_maintenance_logs_df()
-    maintenance_log_viewer.value = df_logs

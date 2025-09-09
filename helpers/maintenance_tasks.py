@@ -236,7 +236,8 @@ def create_prioritized_calendar_schedule(
         current_date: pd.Timestamp=None, 
         generate_synthetic_maintenance_logs: bool = True,
         ignore_end_loads: bool = True, 
-        ignore_utility_transformers: bool = True
+        ignore_utility_transformers: bool = True,
+        maintenance_log_dict: Dict[str, Any]=None
                                         ) -> Dict[pd.Period, Dict[str, Any]]:
     """
     Create a calendar schedule for the tasks, grouping by month, as a dictionary.
@@ -276,10 +277,11 @@ def create_prioritized_calendar_schedule(
 
     max_num_logs = 100 # Limit the number of synthetic logs to generate in total
 
-    logs_per_period = {i: 0 for i in range(num_months_to_schedule)}
-    for _ in range(max_num_logs):
-        period = random.choice(range(num_months_to_schedule))
-        logs_per_period[period] += 1
+    if generate_synthetic_maintenance_logs:
+        logs_per_period = {i: 0 for i in range(num_months_to_schedule)}
+        for _ in range(max_num_logs):
+            period = random.choice(range(num_months_to_schedule))
+            logs_per_period[period] += 1
 
     monthly_records_dict = {}
 
@@ -300,7 +302,9 @@ def create_prioritized_calendar_schedule(
             'graph': None,
             'executed_tasks': [],
             'deferred_tasks': [],
-            'synthetic_maintenance_logs': []
+            'synthetic_maintenance_logs': [],
+            'replacement_tasks_executed': [],
+            'replacement_tasks_not_executed': []
         }
 
         if does_budget_rollover:
@@ -352,11 +356,11 @@ def create_prioritized_calendar_schedule(
                     except ValueError as e:
                         print(f"Skipping log generation for node {node_id}: {e}")
             month_record['synthetic_maintenance_logs'] = synthetic_logs
+        else:
+            if maintenance_log_dict and month in maintenance_log_dict:
+                month_record['synthetic_maintenance_logs'] = maintenance_log_dict[month]
 
         # Check for condition-triggered replacement tasks and execute them before other tasks
-        executed_replacements = []
-        not_executed_replacements = []
-
         for node_id, attrs in graph.nodes(data=True):
             node_condition = attrs.get('current_condition', 1.0)
             node_type = attrs.get('type')
@@ -397,7 +401,7 @@ def create_prioritized_calendar_schedule(
                         time_budget_for_month -= time_cost
                         money_budget_for_month -= money_cost
                         # Record executed replacement
-                        executed_replacements.append({
+                        month_record['replacement_tasks_executed'].append({
                             'task_instance_id': task_instance_id,
                             'equipment_id': node_id,
                             'task_name': task_name,
@@ -412,7 +416,7 @@ def create_prioritized_calendar_schedule(
                         break # You can only do one replacement task per node per month
                     
                     else:
-                        not_executed_replacements.append({
+                        month_record['replacement_tasks_not_executed'].append({
                             'task_instance_id': task_instance_id,
                             'equipment_id': node_id,
                             'task_name': task_name,
@@ -494,7 +498,18 @@ def create_prioritized_calendar_schedule(
     print("Finished processing all months.")
     return monthly_records_dict
 
-def process_maintenance_tasks(tasks: dict, replacement_tasks: dict, graph, monthly_budget_time: float, monthly_budget_money: float, months_to_schedule: int = 36, animate=False, current_date: pd.Timestamp = pd.Timestamp.now(), generate_synthetic_maintenance_logs: bool = True) -> Dict[str, List[Dict[str, Any]]]:
+def process_maintenance_tasks(
+        tasks: dict, 
+        replacement_tasks: dict, 
+        graph: nx.Graph, 
+        monthly_budget_time: float, 
+        monthly_budget_money: float, 
+        months_to_schedule: int = 36, 
+        animate: bool = False, 
+        current_date: pd.Timestamp = pd.Timestamp.now(), 
+        generate_synthetic_maintenance_logs: bool = True,
+        maintenance_log_dict: Dict[str, Any]=None
+    ) -> Dict[str, List[Dict[str, Any]]]:
     """
     Process the maintenance tasks and prioritize them based on the graph and budgets.
     Returns a prioritized schedule of tasks grouped by month.
@@ -516,7 +531,8 @@ def process_maintenance_tasks(tasks: dict, replacement_tasks: dict, graph, month
         monthly_budget_time=monthly_budget_time, 
         monthly_budget_money=monthly_budget_money,
         current_date=current_date,
-        generate_synthetic_maintenance_logs=generate_synthetic_maintenance_logs
+        generate_synthetic_maintenance_logs=generate_synthetic_maintenance_logs,
+        maintenance_log_dict=maintenance_log_dict
     )
 
     return prioritized_schedule

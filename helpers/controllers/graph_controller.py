@@ -7,7 +7,7 @@ import math
 import datetime
 import pandas as pd
 
-from graph_generator.mepg_generator import generate_mep_graph, define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes, clean_graph_none_values
+from graph_generator.mepg_generator import define_building_characteristics, determine_number_of_risers, locate_risers, determine_voltage_level, distribute_loads, determine_riser_attributes, place_distribution_equipment, connect_nodes, clean_graph_none_values
 
 from helpers.node_risk import apply_risk_scores_to_graph
 from helpers.rul_helper import apply_rul_to_graph
@@ -29,8 +29,9 @@ class GraphController:
         self.months_to_schedule = 360  # Default months to schedule
         self.prioritized_schedule = None  # Store simulation results
         self.current_date = pd.Timestamp.now()
+        self.maintenance_logs = None  # Store maintenance logs
 
-    def run_rul_simulation(self):
+    def run_rul_simulation(self, generate_synthetic_maintenance_logs):
         """Run a maintenance task simulation and store results in pn.state.cache"""
 
         self.prioritized_schedule = process_maintenance_tasks(
@@ -40,7 +41,9 @@ class GraphController:
             monthly_budget_time=self.monthly_budget_time,
             monthly_budget_money=self.monthly_budget_money,
             months_to_schedule=self.months_to_schedule,
-            current_date=self.current_date
+            current_date=self.current_date,
+            generate_synthetic_maintenance_logs=generate_synthetic_maintenance_logs,
+            maintenance_log_dict=self.maintenance_logs
         )
         
     def get_legend_settings(self):
@@ -311,69 +314,7 @@ class GraphController:
             'monthly_budget_time': self.monthly_budget_time,
             'months_to_schedule': self.months_to_schedule,
             'prioritized_schedule': self.prioritized_schedule,
-            'current_date': self.current_date
+            'current_date': self.current_date,
+            'maintenance_logs': self.maintenance_logs
         }
         return data_dict
-
-    def generate_synthetic_maintenance_logs(self, max_num_logs=100, ignore_end_loads=True, ignore_utility_transformers=True):
-        """Generate synthetic maintenance logs for testing"""
-
-        # Get all previous periods from the graph controller's prioritized schedule
-        prioritized_schedule = self.prioritized_schedule
-
-        all_periods = list(prioritized_schedule.keys())
-
-        previous_periods = [period for period in all_periods if period <= self.current_date.to_period('M')]
-
-        # Randomly distribute max_num_logs across previous periods
-        logs_per_period = {period: 0 for period in previous_periods}
-        for _ in range(max_num_logs):
-            period = random.choice(previous_periods)
-            logs_per_period[period] += 1
-
-        synthetic_logs = []
-        for period, num_logs in logs_per_period.items():
-            if num_logs == 0:
-                continue
-            
-            period_data = prioritized_schedule.get(period)
-            period_graph = period_data.get('graph')
-            nodes = list(period_graph.nodes(data=True))
-
-            if ignore_end_loads:
-                nodes = [n for n in nodes if n[1].get('type') != 'end_load']
-            if ignore_utility_transformers:
-                nodes = [n for n in nodes if n[1].get('type') != 'utility_transformer']
-
-            # Gerenate logs for this period for the number of logs assigned, randomly selecting nodes
-            for _ in range(num_logs):
-                if not nodes:
-                    continue
-                
-                node_id, attrs = random.choice(nodes)
-
-                # Remove the node from the list to avoid duplicate logs for the same node in this period
-                nodes.remove((node_id, attrs))
-
-                # Minimum condition level of any generated log for this node in the synthetic logs
-                min_condition_level = 1.0
-                for log in synthetic_logs:
-                    if log['equipment_id'] == node_id:
-                        min_condition_level = min(min_condition_level, log['condition_level'])
-                
-                if node_id == "MP0.0":
-                    print(f"Generating log for node {node_id} in period {period} with min_condition_level {min_condition_level}") # DEBUG
-
-                # condition_level = round(random.uniform(0.0, min_condition_level), 2)
-                condition_level = round(random.betavariate(alpha=5, beta=1) * min_condition_level, 1)  # Skewed towards higher values
-                condition_level = max(0.0, min(1.0, condition_level))
-
-                log_entry = {
-                    'date': (period.to_timestamp() + pd.DateOffset(days=random.randint(0, 27))).strftime("%Y-%m-%d"),
-                    'equipment_id': node_id,
-                    'condition_level': condition_level,
-                    'notes': f"Synthetic maintenance log for {node_id} on {period}"
-                }
-                synthetic_logs.append(log_entry)
-
-        self.maintenance_logs = synthetic_logs

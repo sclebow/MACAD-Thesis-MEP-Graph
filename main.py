@@ -5,7 +5,7 @@
 import panel as pn
 import pandas as pd
 
-from helpers.panel.button_callbacks import update_current_date, run_simulation, generate_graph, generate_synthetic_maintenance_logs
+from helpers.panel.button_callbacks import update_current_date, run_simulation, generate_graph
 
 # Enable Panel debug mode
 # pn.config.debug = True
