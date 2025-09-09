@@ -1,2 +1,7 @@
-date, equipment_id, condition_level, notes
-2023-01-01, SP1.0.208.H, 0.8, Equipment is aging but functional.
+
+date,equipment_id,condition_level,notes
+2023-01-01,T-01,0.8,Transformer is aging but functional.
+2023-01-01,P-01,0.9,Panel recently inspected.
+2023-01-01,S-01,0.85,Switchboard shows minor wear.
+2023-01-01,C-01,0.95,Cable in good condition.
+2023-01-01,L-01,0.92,Lighting system recently replaced.
