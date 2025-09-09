@@ -80,12 +80,24 @@ def layout_maintenance(maintenance_container, graph_controller):
         sizing_mode="stretch_both"
     )
 
+    maintenance_budget_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False, show_index=False)
+    pn.state.cache["maintenance_budget_viewer"] = maintenance_budget_viewer
+
+    maintenance_budget_markdown_summary = pn.pane.Markdown()
+    pn.state.cache["maintenance_budget_markdown_summary"] = maintenance_budget_markdown_summary
+    maintenance_budget_container = pn.Column(
+        pn.pane.Markdown("### Used vs. Remaining Budget"),
+        maintenance_budget_markdown_summary,
+        maintenance_budget_viewer,
+        sizing_mode="stretch_both"
+    )
+
     maintenance_tabs = pn.Tabs(
         ("Maintenance Logs & Condition Levels", maintenance_and_condition_container),
         ("Simulation Schedule", maintenance_schedule_container),
         ("Maintenance Task List", maintenance_task_list_container),
         ("Replacement Task List", replacement_task_list_container),
-        # ("Budget", maintenance_budget_container),
+        ("Budget", maintenance_budget_container),
         sizing_mode="stretch_width"
     )
     maintenance_container.append(maintenance_tabs)

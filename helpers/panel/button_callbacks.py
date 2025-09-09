@@ -331,8 +331,31 @@ def run_simulation(event, graph_controller: GraphController):
     )
 
     # DEBUG: Set default tab to Replacement Tasks for debugging
-    results_panel.active = 2
+    results_panel.active = 0
+
+    # Update the budget viewer
+    maintenance_budget_viewer = pn.state.cache.get("maintenance_budget_viewer")
+    budget_df = graph_controller.get_budget_overview_df()
+    maintenance_budget_viewer.value = budget_df
+
+    # Update the budget markdown summary
+    maintenance_budget_markdown_summary = pn.state.cache.get("maintenance_budget_markdown_summary")
+    maintenance_budget_markdown_summary_str_list = []
     
+    total_money_budget_spent_to_date = budget_df[budget_df['Month'] <= str(graph_controller.current_date.to_period('M'))]['Used Money'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Money Budget Spent to Date**: ${total_money_budget_spent_to_date:,.2f}")
+
+    total_hours_budget_spent_to_date = budget_df[budget_df['Month'] <= str(graph_controller.current_date.to_period('M'))]['Used Hours'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Hours Budget Spent to Date**: {total_hours_budget_spent_to_date:,.2f}")
+
+    average_monthly_money_budget = budget_df['Used Money'].mean()
+    maintenance_budget_markdown_summary_str_list.append(f"**Average Monthly Money Used (Full Schedule)**: ${average_monthly_money_budget:,.2f}")
+
+    average_monthly_hours_budget = budget_df['Used Hours'].mean()
+    maintenance_budget_markdown_summary_str_list.append(f"**Average Monthly Hours Used (Full Schedule)**: {average_monthly_hours_budget:,.2f}")
+
+    maintenance_budget_markdown_summary.object = "\n\n".join(maintenance_budget_markdown_summary_str_list)
+
     maintenance_schedule_container.clear()
     maintenance_schedule_container.sizing_mode = "stretch_both"
     maintenance_schedule_container.append(pn.pane.Markdown("### Simulation Results"))

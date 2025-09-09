@@ -318,3 +318,33 @@ class GraphController:
             'maintenance_logs': self.maintenance_logs
         }
         return data_dict
+
+    def get_budget_overview_df(self):
+        """Get a DataFrame summarizing used vs. remaining budget"""
+        if not self.prioritized_schedule:
+            return pd.DataFrame(columns=['Month', 'Used Hours', 'Remaining Hours', 'Used Money', 'Remaining Money'])
+        
+        budget_data = []
+        for month, data in self.prioritized_schedule.items():
+            used_hours = 0
+            used_money = 0
+            for task in data.get('executed_tasks'):
+                used_hours += task.get('time_cost')
+                used_money += task.get('money_cost')
+            
+            for task in data.get('replacement_tasks_executed'):
+                used_hours += task.get('time_cost')
+                used_money += task.get('money_cost')
+
+            remaining_hours = (self.monthly_budget_time or 0) - used_hours
+            remaining_money = (self.monthly_budget_money or 0) - used_money
+            
+            budget_data.append({
+                'Month': month.strftime('%Y-%m'),
+                'Used Hours': used_hours,
+                'Remaining Hours': max(remaining_hours, 0),
+                'Used Money': used_money,
+                'Remaining Money': max(remaining_money, 0)
+            })
+        
+        return pd.DataFrame(budget_data)

@@ -96,7 +96,7 @@ main_tabs = pn.Tabs(
     stylesheets=[stylesheet]
 )
 
-run_simulation_button = pn.widgets.Button(name="Run Simulation", button_type="primary", icon="play", on_click=lambda event: run_simulation(event, graph_controller), align="center")
+# run_simulation_button = pn.widgets.Button(name="Run Simulation", button_type="primary", icon="play", on_click=lambda event: run_simulation(event, graph_controller), align="center")
 
 default_current_date = pd.Timestamp.now()
 graph_controller.current_date = default_current_date
@@ -114,7 +114,7 @@ pn.state.cache['app_status_container'] = app_status_container
 app = pn.Column(
     pn.Row(
         pn.pane.Markdown("## MEP Digital Twin\nBuilding Systems Management"),
-        run_simulation_button,
+        # run_simulation_button,
         current_date_input,
         app_status_container,
     ),
@@ -141,7 +141,7 @@ layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS)
 layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS)
 
 # DEBUG Set default tabs
-main_tabs.active = 3
+# main_tabs.active = 2
 
 print("Starting Application...")
 
