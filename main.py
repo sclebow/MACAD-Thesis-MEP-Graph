@@ -113,7 +113,12 @@ pn.state.cache['app_status_container'] = app_status_container
 # Create main application layout
 app = pn.Column(
     pn.Row(
-        pn.pane.Markdown("## MEP Digital Twin\nBuilding Systems Management"),
+        pn.Column(
+            pn.pane.PNG('assetpulse_logo.png', width=120, height=120, align='start'),
+            sizing_mode='fixed',
+            width=120
+        ),
+    pn.pane.Markdown("<span style='font-size:16px;font-weight:400;line-height:1.2;'>From Data to<br>Foresight</span>", sizing_mode='fixed', width=120, height=80),
         # run_simulation_button,
         current_date_input,
         app_status_container,
