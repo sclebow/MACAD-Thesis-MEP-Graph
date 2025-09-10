@@ -30,8 +30,9 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
     if not isinstance(goal, str) or not goal:
         raise ValueError("A valid goal must be specified.")
 
+    import scipy.optimize
+
     # Copy the graph_controller so that we don't modify the other pages' data
-    # This is a deep copy to ensure all nested structures are copied
     graph_controller = copy.deepcopy(graph_controller)
     print(f"Current graph: {graph_controller.current_graph[0]}")
 
@@ -58,26 +59,56 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
     else:
         raise ValueError(f"Unknown goal: {goal}")
 
+
     results = []
-    best_metric_value = None
+    iteration_log = []  # Store all function evaluations
 
-    input_value = money_budget if optimization_value == 'Money' else hours_budget
-    relationship = 'direct'  # Assume direct relationship as default, we will check the relationship as we iterate
+    # Define the budget variable to optimize
+    if optimization_value == 'Money':
+        budget_label = 'money_budget'
+        initial_budget = money_budget
+    else:
+        budget_label = 'hours_budget'
+        initial_budget = hours_budget
 
-    # Run the baseline simulation
-    print("Running baseline simulation...")
+    # Define the objective function for scipy.optimize
+    def objective(budget):
+        # Set the budgets in the graph controller
+        if optimization_value == 'Money':
+            graph_controller.monthly_budget_money = budget
+            graph_controller.monthly_budget_time = hours_budget
+        else:
+            graph_controller.monthly_budget_money = money_budget
+            graph_controller.monthly_budget_time = budget
+        graph_controller.months_to_schedule = num_months
+        graph_controller.run_rul_simulation(generate_synthetic_maintenance_logs=True)
+        metric_value = metric_function()
+        # Log every function evaluation
+        iteration_log.append({
+            "money_budget": graph_controller.monthly_budget_money,
+            "hours_budget": graph_controller.monthly_budget_time,
+            "num_months": num_months,
+            "goal": goal,
+            "optimization_value": optimization_value,
+            "iteration": len(iteration_log)+1,
+            "metric_value": metric_value,
+            "relationship": "direct",
+        })
+        # Live update the viewer with current progress
+        budget_goal_seek_viewer.clear()
+        # Show baseline + current log
+        partial_results = [results[0]] + iteration_log.copy()
+        fig = create_visualization(partial_results, len(partial_results))
+        budget_goal_seek_viewer.append(pn.pane.Plotly(fig, sizing_mode='stretch_both'))
+        # For maximization, return negative metric (since minimize_scalar minimizes)
+        return -metric_value if direction == 'maximize' else metric_value
+
+    # Run baseline simulation
     graph_controller.monthly_budget_money = money_budget
     graph_controller.monthly_budget_time = hours_budget
     graph_controller.months_to_schedule = num_months
     graph_controller.run_rul_simulation(generate_synthetic_maintenance_logs=True)
-    metric_value = metric_function()
-    # print(f"Baseline metric value: {baseline_metric_value}")
-
-    # # DEBUG: Hardcode a baseline metric value for testing
-    # baseline_metric_value = input_value * -2 # pretend the metric is directly proportional to the
-
-    best_metric_value = metric_value
-
+    baseline_metric_value = metric_function()
     results.append({
         "money_budget": money_budget,
         "hours_budget": hours_budget,
@@ -85,127 +116,62 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
         "goal": goal,
         "optimization_value": optimization_value,
         "iteration": "baseline",
-        "metric_value": metric_value,
-        "relationship": relationship,
+        "metric_value": baseline_metric_value,
+        "relationship": "direct",
     })
 
-    # Run the optimization
-    for iteration in range(number_of_iterations):
-        print()
-        print(f"Iteration {iteration + 1}/{number_of_iterations}")
+    # Define bounds for the budget variable based on the aggressiveness
+    bounds = (initial_budget * (1 - aggressiveness), initial_budget * (1 + aggressiveness))
+    # Run optimization using scipy.optimize.minimize_scalar
+    opt_result = scipy.optimize.minimize_scalar(
+        objective,
+        bounds=bounds,
+        method='bounded',
+        options={'xatol': 1e-2, 'maxiter': number_of_iterations},
+    )
 
-        # Store last iteration's input value and metric value for comparison
-        last_input_value = input_value
-        last_metric_value = metric_value 
-
-        # Adjust the budget based on the relationship and direction
-        if relationship == 'direct':
-            if direction == 'maximize':
-                input_value *= (1 + aggressiveness) # increase budget to increase metric
-                print(f"Increasing budget to increase metric")
-            else:  # minimize
-                input_value *= (1 - aggressiveness) # decrease budget to decrease metric
-                print(f"Decreasing budget to decrease metric")
-        else:  # inverse relationship
-            if direction == 'maximize':
-                input_value *= (1 - aggressiveness) # decrease budget to increase metric
-                print(f"Decreasing budget to increase metric (inverse relationship)")
-            else:  # minimize
-                input_value *= (1 + aggressiveness) # increase budget to decrease metric
-                print(f"Increasing budget to decrease metric (inverse relationship)")
-
-        # Ensure budgets are non-negative and update the appropriate budget
-        if optimization_value == 'Money':
-            money_budget = max(0, input_value)
-        else:
-            hours_budget = max(0, input_value)
-
-        # Set the budgets in the graph controller
-        graph_controller.monthly_budget_money = money_budget
+    # Run simulation at optimal budget and collect results
+    optimal_budget = opt_result.x
+    if optimization_value == 'Money':
+        graph_controller.monthly_budget_money = optimal_budget
         graph_controller.monthly_budget_time = hours_budget
-        graph_controller.months_to_schedule = num_months
-
-        # Run the simulation
-        graph_controller.run_rul_simulation(generate_synthetic_maintenance_logs=True)
-
-        # Evaluate the metric
-        metric_value = metric_function()
-        print(f"Metric value: {metric_value}")
-
-        # # DEBUG: Hardcode a direct relationship for testing
-        # metric_value = input_value * -2 # pretend the metric is directly proportional to the budget
-
-        # Update the best metric value and adjust budgets accordingly
-        if direction == 'maximize':
-            if metric_value > best_metric_value:
-                best_metric_value = metric_value # higher is better
-        else:  # minimize
-            if metric_value < best_metric_value:
-                best_metric_value = metric_value # lower is better
-
-        # Determine the relationship based on changes in input and metric
-        print(f"Last input value: {last_input_value}, Current input value: {input_value}, Increased: {input_value > last_input_value}")
-        print(f"Last metric value: {last_metric_value}, Current metric value: {metric_value}, Increased: {metric_value > last_metric_value}")
-
-        if relationship == 'direct':
-            # We expect both to move in the same direction
-            if (input_value > last_input_value and metric_value < last_metric_value) or (input_value < last_input_value and metric_value > last_metric_value):
-                relationship = 'inverse'
-                print("Detected inverse relationship")
-            else:
-                print("Relationship remains direct")
-        else:  # currently inverse
-            # We expect them to move in opposite directions
-            if (input_value > last_input_value and metric_value > last_metric_value) or (input_value < last_input_value and metric_value < last_metric_value):
-                relationship = 'direct'
-                print("Detected direct relationship")
-            else:
-                print("Relationship remains inverse")
-
-        print(f"Updated budget - Money: {money_budget}, Hours: {hours_budget}, Relationship: {relationship}")
-
-        simulation_log = {
-            "money_budget": money_budget,
-            "hours_budget": hours_budget,
-            "num_months": num_months,
-            "goal": goal,
-            "optimization_value": optimization_value,
-            "iteration": iteration + 1,
-            "metric_value": metric_value,
-            "relationship": relationship
-        }
-
-        results.append(simulation_log)
-
-        # Display results in the viewer
-        budget_goal_seek_viewer.clear()
-        # Create and display the visualization
-        fig = create_visualization(results, number_of_iterations)
-        budget_goal_seek_viewer.append(pn.pane.Plotly(fig, sizing_mode='stretch_both'))
-        
-        results_df = pd.DataFrame(results)
-        budget_goal_seek_results.value = results_df
-
-    if direction == 'maximize':
-        # Find the entry with the maximum metric value
-        best_entry = max(results, key=lambda x: x['metric_value'])
-
-        # Find the input value that produced the best metric value
-        best_input_value = best_entry['money_budget'] if optimization_value == 'Money' else best_entry['hours_budget']
     else:
-        # Find the entry with the minimum metric value
-        best_entry = min(results, key=lambda x: x['metric_value'])
-        # Find the input value that produced the best metric value
-        best_input_value = best_entry['money_budget'] if optimization_value == 'Money' else best_entry['hours_budget']
+        graph_controller.monthly_budget_money = money_budget
+        graph_controller.monthly_budget_time = optimal_budget
+    graph_controller.months_to_schedule = num_months
+    graph_controller.run_rul_simulation(generate_synthetic_maintenance_logs=True)
+    optimal_metric_value = metric_function()
+
+    results.append({
+        "money_budget": graph_controller.monthly_budget_money,
+        "hours_budget": graph_controller.monthly_budget_time,
+        "num_months": num_months,
+        "goal": goal,
+        "optimization_value": optimization_value,
+        "iteration": "optimal",
+        "metric_value": optimal_metric_value,
+        "relationship": "direct",
+    })
+
+    # Display results in the viewer
+    budget_goal_seek_viewer.clear()
+    # Visualize all iterations from scipy.optimize
+    all_results = [results[0]] + iteration_log + [results[1]]
+    fig = create_visualization(all_results, len(all_results))
+    budget_goal_seek_viewer.append(pn.pane.Plotly(fig, sizing_mode='stretch_both'))
+    results_df = pd.DataFrame(all_results)
+    budget_goal_seek_results.value = results_df
 
     results_markdown = f"""
     ## Budget Goal Seeker Results
 
-    Optimization complete. Best {goal} achieved: {best_entry['metric_value']:.2f} with a {optimization_value} budget of {best_input_value:.2f}.
+    **Optimization complete:** Best {goal} achieved: {optimal_metric_value:.2f} with a {optimization_value} budget of {optimal_budget:.2f}.
+
+    **Bounds used for optimization:** {bounds[0]:.2f} to {bounds[1]:.2f}
     """
 
     results_pane.object = results_markdown
-    return results
+    return all_results
 
 def create_visualization(results, number_of_iterations):
     """
@@ -291,5 +257,8 @@ def create_visualization(results, number_of_iterations):
 
     # Set the height 
     fig.update_layout(height=400)
+
+    # Set the legend to the bottom right
+    fig.update_layout(legend=dict(x=0.99, y=0.01, xanchor='right', yanchor='bottom'))
 
     return fig
