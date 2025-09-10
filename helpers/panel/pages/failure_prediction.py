@@ -254,6 +254,16 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         sizing_mode="stretch_width"
     )
 
+    contingency_input = pn.widgets.FloatInput(name='Contingency (%)', value=10.0, step=0.1)
+    split_strategy_slider = pn.widgets.FloatSlider(name='Repair vs Replace Preference (%)', start=0, end=100, value=50)
+    failure_cost_input = pn.widgets.IntInput(name='Downtime Cost ($/hr)', value=100)
+    risk_weight_input = pn.widgets.FloatSlider(name='Risk Weighting (Likelihood vs Consequence)', start=0, end=1, value=0.5)
+    outage_depth_input = pn.widgets.IntSlider(name='Outage Propagation Depth (hops)', start=1, end=5, value=2)
+    deferment_months_input = pn.widgets.IntSlider(name='Max Months of Deferment', start=0, end=24, value=6)
+    deferment_penalty_input = pn.widgets.FloatInput(name='Deferment Penalty Multiplier', value=0.1, step=0.01)
+    inflation_input = pn.widgets.FloatInput(name='Annual Inflation/Discount Rate (%)', value=3.0, step=0.1)
+    scenario_name_input = pn.widgets.TextInput(name='Scenario Name', placeholder='Enter scenario name...')
+
     # Only keep one set of scenario controls and one set of manual node overrides in the Scenario Planner accordion
     scenario_planner_accordion = pn.Accordion(
     (
@@ -261,6 +271,10 @@ def layout_failure_prediction(failure_prediction_container, graph_controller):
         pn.Column(
             # Only one set of scenario controls
             main_sim_controls_row,
+            pn.Row(contingency_input, split_strategy_slider),
+            pn.Row(failure_cost_input, risk_weight_input, outage_depth_input),
+            pn.Row(deferment_months_input, deferment_penalty_input),
+            pn.Row(inflation_input, scenario_name_input),
             # Only one set of manual node overrides
             override_ui,
             # Scenario list and comparison
@@ -566,16 +580,25 @@ def simulate_maintenance_refined(nodes, horizon_months=12, budget_per_month=1000
     Refined simulation: realistic RUL decay, risk calculation, budget constraint, prioritized actions.
     Returns monthly results and aggregates.
     """
+    # --- New implementation with all required business rules ---
+    from helpers.rul_helper import RULConfig
+    premium_factor = 1.3  # For reactive replacement
+    deferment_alpha = RULConfig.OVERDUE_IMPACT_MULTIPLIER
+    downtime_propagation = 1.2  # Example propagation multiplier
+
     monthly_results = {node_id: [] for node_id in nodes}
+    baseline_risk = {node_id: [] for node_id in nodes}
+    plan_risk = {node_id: [] for node_id in nodes}
     for month in range(1, horizon_months + 1):
-        # Prepare action candidates
         candidates = []
         for node_id, node in nodes.items():
-            # RUL decay (simple: -1 per month, replace with rul_helper for real)
             prev_rul = monthly_results[node_id][-1]['RUL'] if monthly_results[node_id] else node.get('expected_lifespan', 0)
+            prev_condition = monthly_results[node_id][-1]['condition_level'] if monthly_results[node_id] else node.get('condition_level', 1.0)
+            # Baseline risk (no intervention)
+            baseline_risk[node_id].append(node.get('risk_score_base', 0) + node.get('criticality', 1) * (1.0 - prev_condition))
+            # RUL decay
             rul = max(prev_rul - 1, 0)
-            # Risk calculation (simple: base + criticality * (1 - condition), replace with node_risk for real)
-            condition = monthly_results[node_id][-1]['condition_level'] if monthly_results[node_id] else node.get('condition_level', 1.0)
+            condition = prev_condition
             risk = node.get('risk_score_base', 0) + node.get('criticality', 1) * (1.0 - condition)
             candidates.append({
                 'node_id': node_id,
@@ -585,42 +608,47 @@ def simulate_maintenance_refined(nodes, horizon_months=12, budget_per_month=1000
                 'replacement_cost': node.get('replacement_cost', 0),
                 'repair_factor': node.get('repair_factor', 0.3),
                 'condition': condition,
+                'downtime_cost': node.get('downtime_cost', 100),
             })
-        # Prioritize by risk and criticality
         candidates.sort(key=lambda x: (x['risk'], x['criticality']), reverse=True)
         budget_left = budget_per_month
-        # Apply actions within budget
         for c in candidates:
             action = 'none'
             cost = 0
             rul = c['rul']
             condition = c['condition']
-            # Debug: print decision context
-            print(f"[DEBUG] Node {c['node_id']} Month {month}: RUL={rul}, Budget={budget_left}, RepairCost={c['repair_factor'] * c['replacement_cost']}, ReplaceCost={c['replacement_cost']}")
-            # If RUL < 3, consider repair or replace
-            if rul < 3:
+            # If RUL < 3, consider repair/replace/defer
+            if rul < 3 and rul > 0:
                 repair_cost = c['repair_factor'] * c['replacement_cost']
                 replace_cost = c['replacement_cost']
-                # Prefer repair if enough budget, else replace
                 if budget_left >= repair_cost and repair_cost > 0:
                     action = 'repair'
                     cost = repair_cost
                     rul = nodes[c['node_id']].get('expected_lifespan', 0)
                     condition = 1.0
-                    print(f"[DEBUG] Node {c['node_id']} action: REPAIR (cost={cost})")
                 elif budget_left >= replace_cost and replace_cost > 0:
                     action = 'replace'
                     cost = replace_cost
                     rul = nodes[c['node_id']].get('expected_lifespan', 0)
                     condition = 1.0
-                    print(f"[DEBUG] Node {c['node_id']} action: REPLACE (cost={cost})")
                 else:
                     action = 'defer'
                     cost = 0
-                    # Deferment penalty: condition drops
+                    # Deferment penalty: RUL *= (1 - alpha * overdue_factor)
+                    overdue_factor = 1  # Could be tracked per node
+                    rul = max(rul * (1 - deferment_alpha * overdue_factor), 0)
                     condition = max(condition - 0.1, 0)
-                    print(f"[DEBUG] Node {c['node_id']} action: DEFER (condition={condition})")
+            # If RUL <= 0, auto-book failure cost and reactive replacement
+            elif rul <= 0:
+                action = 'reactive_replace'
+                downtime_hours = 8  # Example value
+                failure_cost = downtime_hours * c['downtime_cost'] * downtime_propagation
+                cost = c['replacement_cost'] * premium_factor + failure_cost
+                rul = nodes[c['node_id']].get('expected_lifespan', 0)
+                condition = 1.0
             budget_left -= cost
+            # Plan risk after action
+            plan_risk[c['node_id']].append(c['risk'])
             monthly_results[c['node_id']].append({
                 'month': month,
                 'action': action,
@@ -635,7 +663,12 @@ def simulate_maintenance_refined(nodes, horizon_months=12, budget_per_month=1000
         'actions': sum(1 for node in monthly_results.values() for r in node if r['action'] != 'none'),
         'repairs': sum(1 for node in monthly_results.values() for r in node if r['action'] == 'repair'),
         'replacements': sum(1 for node in monthly_results.values() for r in node if r['action'] == 'replace'),
+        'reactive_replacements': sum(1 for node in monthly_results.values() for r in node if r['action'] == 'reactive_replace'),
         'deferrals': sum(1 for node in monthly_results.values() for r in node if r['action'] == 'defer'),
+        'risk_reduction': sum(
+            sum(baseline_risk[node_id][i] - plan_risk[node_id][i] for i in range(len(baseline_risk[node_id])))
+            for node_id in baseline_risk
+        ),
     }
     return monthly_results, aggregates
 
