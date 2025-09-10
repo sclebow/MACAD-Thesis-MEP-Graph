@@ -30,6 +30,7 @@ class GraphController:
         self.prioritized_schedule = None  # Store simulation results
         self.current_date = pd.Timestamp.now()
         self.maintenance_logs = None  # Store maintenance logs
+        self.seed = 42  # Default seed for reproducibility
 
     def run_rul_simulation(self, generate_synthetic_maintenance_logs):
         """Run a maintenance task simulation and store results in pn.state.cache"""
@@ -43,7 +44,8 @@ class GraphController:
             months_to_schedule=self.months_to_schedule,
             current_date=self.current_date,
             generate_synthetic_maintenance_logs=generate_synthetic_maintenance_logs,
-            maintenance_log_dict=self.maintenance_logs
+            maintenance_log_dict=self.maintenance_logs,
+            seed=self.seed
         )
 
         # Extract the maintenance logs from the schedule
@@ -358,3 +360,65 @@ class GraphController:
             })
         
         return pd.DataFrame(budget_data)
+    
+    def get_average_money_budget_used(self):
+        """Get average money budget used per month"""
+        
+        total_used = 0.0
+        months_counted = 0
+        for month, data in self.prioritized_schedule.items():
+            month_used = sum(task.get('money_cost', 0) for task in data.get('executed_tasks'))
+            month_used += sum(task.get('money_cost', 0) for task in data.get('replacement_tasks_executed'))
+            total_used += month_used
+            months_counted += 1
+        
+        return total_used / months_counted if months_counted > 0 else 0.0
+    
+    def get_average_hours_budget_used(self):
+        """Get average hours budget used per month"""
+        
+        total_used = 0.0
+        months_counted = 0
+        for month, data in self.prioritized_schedule.items():
+            month_used = sum(task.get('time_cost', 0) for task in data.get('executed_tasks'))
+            month_used += sum(task.get('time_cost', 0) for task in data.get('replacement_tasks_executed'))
+            total_used += month_used
+            months_counted += 1
+        
+        return total_used / months_counted if months_counted > 0 else 0.0
+    
+    def get_average_RUL_of_simulation(self):
+        """Get average RUL of all components in the prioritized schedule"""
+        
+        if not self.prioritized_schedule:
+            return None
+        
+        total_rul = 0.0
+        count = 0
+        for month, data in self.prioritized_schedule.items():
+            for node_id, attrs in data.get('graph').nodes(data=True):
+                if 'remaining_useful_life_days' not in attrs:
+                    continue
+                rul = attrs.get('remaining_useful_life_days')
+                total_rul += rul
+                count += 1
+        
+        return (total_rul / count) if count > 0 else None
+    
+    def get_average_condition_level_of_simulation(self):
+        """Get average condition level of all components in the prioritized schedule"""
+        
+        if not self.prioritized_schedule:
+            return None
+        
+        total_condition = 0.0
+        count = 0
+        for month, data in self.prioritized_schedule.items():
+            for node_id, attrs in data.get('graph').nodes(data=True):
+                if 'current_condition' not in attrs:
+                    continue
+                condition = attrs.get('current_condition')
+                total_condition += condition
+                count += 1
+        
+        return (total_condition / count) if count > 0 else None

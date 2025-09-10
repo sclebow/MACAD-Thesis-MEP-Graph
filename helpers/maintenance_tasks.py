@@ -237,11 +237,14 @@ def create_prioritized_calendar_schedule(
         generate_synthetic_maintenance_logs: bool = True,
         ignore_end_loads: bool = True, 
         ignore_utility_transformers: bool = True,
-        maintenance_log_dict: Dict[str, Any]=None
+        maintenance_log_dict: Dict[str, Any]=None,
+        seed: int = 42
                                         ) -> Dict[pd.Period, Dict[str, Any]]:
     """
     Create a calendar schedule for the tasks, grouping by month, as a dictionary.
     Includes all months between the earliest and latest task dates, even if no tasks exist in those months."""
+
+    random.seed(seed) # For reproducibility
 
     tasks_df = pd.DataFrame(tasks)
 
@@ -558,7 +561,8 @@ def process_maintenance_tasks(
         animate: bool = False, 
         current_date: pd.Timestamp = pd.Timestamp.now(), 
         generate_synthetic_maintenance_logs: bool = True,
-        maintenance_log_dict: Dict[str, Any]=None
+        maintenance_log_dict: Dict[str, Any]=None,
+        seed: int = 42
     ) -> Dict[str, List[Dict[str, Any]]]:
     """
     Process the maintenance tasks and prioritize them based on the graph and budgets.
@@ -582,7 +586,8 @@ def process_maintenance_tasks(
         monthly_budget_money=monthly_budget_money,
         current_date=current_date,
         generate_synthetic_maintenance_logs=generate_synthetic_maintenance_logs,
-        maintenance_log_dict=maintenance_log_dict
+        maintenance_log_dict=maintenance_log_dict,
+        seed=seed
     )
 
     return prioritized_schedule

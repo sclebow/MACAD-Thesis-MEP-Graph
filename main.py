@@ -20,6 +20,7 @@ from helpers.panel.pages.maintenance import layout_maintenance
 from helpers.panel.pages.analytics import layout_analytics
 from helpers.panel.pages.settings import layout_settings
 from helpers.panel.pages.graph_generator import layout_graph_generator
+from helpers.panel.pages.budget_goal_seeker import layout_budget_goal_seeker
 
 pn.extension('plotly')
 
@@ -74,6 +75,7 @@ maintenance_container = pn.Column()
 analytics_container = pn.Column()
 settings_container = pn.Column()
 graph_generator_container = pn.Column()
+budget_goal_seeker_container = pn.Column()
 
 # Create main tabs page
 # Create a stylesheet for the tabs
@@ -91,6 +93,7 @@ main_tabs = pn.Tabs(
     ("Analytics", analytics_container),
     ("Settings", settings_container),
     ("Graph Generator", graph_generator_container),
+    ("Budget Goal Seeker", budget_goal_seeker_container),
     dynamic=True,
     tabs_location="left",
     stylesheets=[stylesheet]
@@ -145,8 +148,11 @@ layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS)
 # Layout Graph Generator
 layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS)
 
+# Layout Budget Goal Seeker
+layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller)
+
 # DEBUG Set default tabs
-main_tabs.active = 2
+main_tabs.active = 6
 
 print("Starting Application...")
 
