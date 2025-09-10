@@ -44,7 +44,7 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
     if goal == 'Maximize RUL':
         metric_function = graph_controller.get_average_RUL_of_simulation
         direction = 'maximize'
-    elif goal == 'Maximize Condition':
+    elif goal == 'Maximize Condition Levels':
         metric_function = graph_controller.get_average_condition_level_of_simulation
         direction = 'maximize'
     elif goal == 'Minimize Average Budget':
@@ -60,10 +60,6 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
 
     results = []
     best_metric_value = None
-    if direction == 'maximize':
-        best_metric_value = float('-inf')
-    else:
-        best_metric_value = float('inf')
 
     input_value = money_budget if optimization_value == 'Money' else hours_budget
     relationship = 'direct'  # Assume direct relationship as default, we will check the relationship as we iterate
@@ -74,27 +70,13 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
     graph_controller.monthly_budget_time = hours_budget
     graph_controller.months_to_schedule = num_months
     graph_controller.run_rul_simulation(generate_synthetic_maintenance_logs=True)
-    baseline_metric_value = metric_function()
-    print(f"Baseline metric value: {baseline_metric_value}")
+    metric_value = metric_function()
+    # print(f"Baseline metric value: {baseline_metric_value}")
 
-    if direction == 'maximize':
-        if baseline_metric_value > best_metric_value:
-            best_metric_value = baseline_metric_value
-    else:
-        if baseline_metric_value < best_metric_value:
-            best_metric_value = baseline_metric_value
+    # # DEBUG: Hardcode a baseline metric value for testing
+    # baseline_metric_value = input_value * -2 # pretend the metric is directly proportional to the
 
-    # Adjust the budget based on the initial run
-    if direction == 'maximize':
-        if baseline_metric_value > best_metric_value:
-            relationship = 'direct'
-        else:
-            relationship = 'inverse'
-    else:
-        if baseline_metric_value < best_metric_value:
-            relationship = 'direct'
-        else:
-            relationship = 'inverse'
+    best_metric_value = metric_value
 
     results.append({
         "money_budget": money_budget,
@@ -103,7 +85,7 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
         "goal": goal,
         "optimization_value": optimization_value,
         "iteration": "baseline",
-        "metric_value": baseline_metric_value,
+        "metric_value": metric_value,
         "relationship": relationship,
     })
 
@@ -112,22 +94,31 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
         print()
         print(f"Iteration {iteration + 1}/{number_of_iterations}")
 
+        # Store last iteration's input value and metric value for comparison
+        last_input_value = input_value
+        last_metric_value = metric_value 
+
         # Adjust the budget based on the relationship and direction
-        adjustment = aggressiveness * input_value
         if relationship == 'direct':
             if direction == 'maximize':
-                if baseline_metric_value < best_metric_value:
-                    adjustment = -adjustment
+                input_value *= (1 + aggressiveness) # increase budget to increase metric
+                print(f"Increasing budget to increase metric")
             else:  # minimize
-                if baseline_metric_value > best_metric_value:
-                    adjustment = -adjustment
+                input_value *= (1 - aggressiveness) # decrease budget to decrease metric
+                print(f"Decreasing budget to decrease metric")
         else:  # inverse relationship
-            adjustment = -adjustment
+            if direction == 'maximize':
+                input_value *= (1 - aggressiveness) # decrease budget to increase metric
+                print(f"Decreasing budget to increase metric (inverse relationship)")
+            else:  # minimize
+                input_value *= (1 + aggressiveness) # increase budget to decrease metric
+                print(f"Increasing budget to decrease metric (inverse relationship)")
 
+        # Ensure budgets are non-negative and update the appropriate budget
         if optimization_value == 'Money':
-            money_budget = max(0, money_budget + adjustment)
+            money_budget = max(0, input_value)
         else:
-            hours_budget = max(0, hours_budget + adjustment)
+            hours_budget = max(0, input_value)
 
         # Set the budgets in the graph controller
         graph_controller.monthly_budget_money = money_budget
@@ -141,19 +132,35 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
         metric_value = metric_function()
         print(f"Metric value: {metric_value}")
 
+        # # DEBUG: Hardcode a direct relationship for testing
+        # metric_value = input_value * -2 # pretend the metric is directly proportional to the budget
+
         # Update the best metric value and adjust budgets accordingly
         if direction == 'maximize':
             if metric_value > best_metric_value:
-                best_metric_value = metric_value
-                relationship = 'direct'
-            else:
-                relationship = 'inverse'
+                best_metric_value = metric_value # higher is better
         else:  # minimize
             if metric_value < best_metric_value:
-                best_metric_value = metric_value
-                relationship = 'direct'
-            else:
+                best_metric_value = metric_value # lower is better
+
+        # Determine the relationship based on changes in input and metric
+        print(f"Last input value: {last_input_value}, Current input value: {input_value}, Increased: {input_value > last_input_value}")
+        print(f"Last metric value: {last_metric_value}, Current metric value: {metric_value}, Increased: {metric_value > last_metric_value}")
+
+        if relationship == 'direct':
+            # We expect both to move in the same direction
+            if (input_value > last_input_value and metric_value < last_metric_value) or (input_value < last_input_value and metric_value > last_metric_value):
                 relationship = 'inverse'
+                print("Detected inverse relationship")
+            else:
+                print("Relationship remains direct")
+        else:  # currently inverse
+            # We expect them to move in opposite directions
+            if (input_value > last_input_value and metric_value > last_metric_value) or (input_value < last_input_value and metric_value < last_metric_value):
+                relationship = 'direct'
+                print("Detected direct relationship")
+            else:
+                print("Relationship remains inverse")
 
         print(f"Updated budget - Money: {money_budget}, Hours: {hours_budget}, Relationship: {relationship}")
 
@@ -179,8 +186,25 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
         results_df = pd.DataFrame(results)
         budget_goal_seek_results.value = results_df
 
-    results_pane
+    if direction == 'maximize':
+        # Find the entry with the maximum metric value
+        best_entry = max(results, key=lambda x: x['metric_value'])
 
+        # Find the input value that produced the best metric value
+        best_input_value = best_entry['money_budget'] if optimization_value == 'Money' else best_entry['hours_budget']
+    else:
+        # Find the entry with the minimum metric value
+        best_entry = min(results, key=lambda x: x['metric_value'])
+        # Find the input value that produced the best metric value
+        best_input_value = best_entry['money_budget'] if optimization_value == 'Money' else best_entry['hours_budget']
+
+    results_markdown = f"""
+    ## Budget Goal Seeker Results
+
+    Optimization complete. Best {goal} achieved: {best_entry['metric_value']:.2f} with a {optimization_value} budget of {best_input_value:.2f}.
+    """
+
+    results_pane.object = results_markdown
     return results
 
 def create_visualization(results, number_of_iterations):

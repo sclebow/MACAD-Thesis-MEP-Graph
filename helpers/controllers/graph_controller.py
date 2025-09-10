@@ -415,6 +415,8 @@ class GraphController:
         count = 0
         for month, data in self.prioritized_schedule.items():
             for node_id, attrs in data.get('graph').nodes(data=True):
+                if 'current_condition' not in attrs:
+                    continue
                 condition = attrs.get('current_condition')
                 total_condition += condition
                 count += 1
