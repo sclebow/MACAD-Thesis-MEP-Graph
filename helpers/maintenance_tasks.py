@@ -301,7 +301,7 @@ def create_prioritized_calendar_schedule(
             'graph': None,
             'executed_tasks': [],
             'deferred_tasks': [],
-            'synthetic_maintenance_logs': [],
+            'maintenance_logs': [],
             'replacement_tasks_executed': [],
             'replacement_tasks_not_executed': []
         }
@@ -347,17 +347,17 @@ def create_prioritized_calendar_schedule(
                 for _ in range(num_logs_to_generate):
                     node_id, attrs = random.choice(nodes_list)
                     try:
-                        log_entry = generate_synthetic_maintenance_log_for_node(node_id, attrs, month, month_record['synthetic_maintenance_logs'])
+                        log_entry = generate_synthetic_maintenance_log_for_node(node_id, attrs, month, month_record['maintenance_logs'])
                         synthetic_logs.append(log_entry)
                         # Update the node's current_condition based on the observed condition level
                         graph.nodes[node_id]['current_condition'] = log_entry['observed_condition_level']
                         # print(f"Generated synthetic log for node {node_id}: {log_entry}")
                     except ValueError as e:
                         print(f"Skipping log generation for node {node_id}: {e}")
-            month_record['synthetic_maintenance_logs'] = synthetic_logs
+            month_record['maintenance_logs'] = synthetic_logs
         else:
             if maintenance_log_dict and month in maintenance_log_dict:
-                month_record['synthetic_maintenance_logs'] = maintenance_log_dict[month]
+                month_record['maintenance_logs'] = maintenance_log_dict[month]
 
         # Check for condition-triggered replacement tasks and execute them before other tasks
         for node_id, attrs in graph.nodes(data=True):

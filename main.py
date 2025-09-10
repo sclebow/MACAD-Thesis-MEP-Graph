@@ -141,7 +141,7 @@ layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS)
 layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS)
 
 # DEBUG Set default tabs
-# main_tabs.active = 2
+main_tabs.active = 2
 
 print("Starting Application...")
 
@@ -157,43 +157,42 @@ if __name__ == "__main__":
     # Never bind to known-unsafe ports (6000 is unsafe in many browsers).
     import os
     import sys
+    app.show()
+    # def _choose_safe_port(default_port: int = 5006) -> int:
+    #     """Choose a port that is in the SAFE_PORTS list and is allowed by the environment.
 
-    def _choose_safe_port(default_port: int = 5006) -> int:
-        """Choose a port that is not in the unsafe list and is allowed by the environment.
+    #     Priority: PANEL_PORT env var -> PORT env var -> default_port.
+    #     If the resolved port is not in SAFE_PORTS, it will be replaced by the closest safe port.
+    #     """
+    #     port = None
+    #     for env in ("PANEL_PORT", "PORT"):
+    #         val = os.getenv(env)
+    #         if val:
+    #             try:
+    #                 port = int(val)
+    #                 break
+    #             except ValueError:
+    #                 # ignore malformed env values
+    #                 pass
+    #     if port is None:
+    #         port = default_port
+    #     if port in unsafe:
+    #         print(f"Refusing to bind to unsafe port {port}; falling back to {default_port}")
+    #         port = default_port
+    #     return port
 
-        Priority: PANEL_PORT env var -> PORT env var -> default_port.
-        If the resolved port is unsafe (eg. 6000) it will be replaced by default_port.
-        """
-        unsafe = {6000}
-        port = None
-        for env in ("PANEL_PORT", "PORT"):
-            val = os.getenv(env)
-            if val:
-                try:
-                    port = int(val)
-                    break
-                except ValueError:
-                    # ignore malformed env values
-                    pass
-        if port is None:
-            port = default_port
-        if port in unsafe:
-            print(f"Refusing to bind to unsafe port {port}; falling back to {default_port}")
-            port = default_port
-        return port
-
-    port = _choose_safe_port(5006)
-    try:
-        app.show(port=port)
-    except OSError as e:
-        # If the chosen port is in use or fails to bind, try a nearby safe port and exit if that fails.
-        print(f"Failed to start Panel on port {port}: {e}")
-        fallback = 5006 if port != 5006 else 5056
-        if fallback == 6000:
-            fallback = 5006
-        print(f"Attempting fallback port {fallback}")
-        try:
-            app.show(port=fallback)
-        except Exception as e2:
-            print(f"Failed to start Panel on fallback port {fallback}: {e2}")
-            sys.exit(1)
+    # port = _choose_safe_port(5006)
+    # try:
+    #     app.show(port=port)
+    # except OSError as e:
+    #     # If the chosen port is in use or fails to bind, try a nearby safe port and exit if that fails.
+    #     print(f"Failed to start Panel on port {port}: {e}")
+    #     fallback = 5006 if port != 5006 else 5056
+    #     if fallback == 6000:
+    #         fallback = 5006
+    #     print(f"Attempting fallback port {fallback}")
+    #     try:
+    #         app.show(port=fallback)
+    #     except Exception as e2:
+    #         print(f"Failed to start Panel on fallback port {fallback}: {e2}")
+    #         sys.exit(1)

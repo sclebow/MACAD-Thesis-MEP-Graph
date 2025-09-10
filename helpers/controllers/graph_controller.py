@@ -45,6 +45,16 @@ class GraphController:
             generate_synthetic_maintenance_logs=generate_synthetic_maintenance_logs,
             maintenance_log_dict=self.maintenance_logs
         )
+
+        # Extract the maintenance logs from the schedule
+        all_logs = []
+
+        for month, data in self.prioritized_schedule.items():
+            month_logs = data.get('maintenance_logs')
+            all_logs.extend(month_logs)
+
+        print(f"Total maintenance logs collected: {len(all_logs)}")
+        self.maintenance_logs = all_logs
         
     def get_legend_settings(self):
         """Get legend configuration based on current preset"""

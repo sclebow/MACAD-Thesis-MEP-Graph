@@ -6,6 +6,7 @@ import base64
 import pandas as pd
 import pickle
 
+from helpers.controllers import graph_controller
 from helpers.controllers.graph_controller import GraphController
 from helpers.panel.analytics_viz import _create_enhanced_kpi_card
 from helpers.visualization import get_remaining_useful_life_fig, get_risk_distribution_fig, get_equipment_conditions_fig, get_maintenance_costs_fig
@@ -307,14 +308,14 @@ def run_simulation(event, graph_controller: GraphController):
     replacement_task_viewer = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, auto_edit=False, show_index=False)
     replacement_tasks = []
     for month, record in schedule.items():
-        print(f"Record keys for month {month}: {list(record.keys())}")
+        # print(f"Record keys for month {month}: {list(record.keys())}")
         for task in record['replacement_tasks_executed']:
-            print(f"Month {month} has executed replacement task: {task}")
+            # print(f"Month {month} has executed replacement task: {task}")
             task_copy = dict(task)
             task_copy['month'] = str(month)
             task_copy['status'] = 'executed'
             replacement_tasks.append(task_copy)
-        print(f"Month {month} has {len(record['replacement_tasks_not_executed'])} deferred replacement tasks.")
+        # print(f"Month {month} has {len(record['replacement_tasks_not_executed'])} deferred replacement tasks.")
         for task in record['replacement_tasks_not_executed']:
             task_copy = dict(task)
             task_copy['month'] = str(month)
@@ -360,6 +361,10 @@ def run_simulation(event, graph_controller: GraphController):
     maintenance_schedule_container.sizing_mode = "stretch_both"
     maintenance_schedule_container.append(pn.pane.Markdown("### Simulation Results"))
     maintenance_schedule_container.append(results_panel)
+
+    maintenance_log_viewer = pn.state.cache.get("maintenance_logs_viewer")
+    df_logs = graph_controller.get_maintenance_logs_df()
+    maintenance_log_viewer.value = df_logs
 
     # Update the failure timeline container
     update_app_status("Updating Failure Timeline...")
