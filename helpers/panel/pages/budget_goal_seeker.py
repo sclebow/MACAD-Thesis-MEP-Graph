@@ -7,11 +7,12 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
     budget_goal_seeker_container.append(pn.pane.Markdown("### Budget Goal Seeker"))
 
     # Create inputs for budget and goal
-    money_budget_input = pn.widgets.FloatInput(name='Budget ($)', value=graph_controller.monthly_budget_money, step=1000)
-    hours_budget_input = pn.widgets.FloatInput(name='Hours Budget', value=graph_controller.monthly_budget_time, step=10)
+    money_budget_input = pn.widgets.FloatInput(name='Starting Budget ($)', value=graph_controller.monthly_budget_money, step=1000)
+    hours_budget_input = pn.widgets.FloatInput(name='Starting Hours Budget', value=graph_controller.monthly_budget_time, step=10)
     num_months_input = pn.widgets.IntInput(name='Number of Months to Schedule', value=60, step=1) # Default to 5 years
     goal_input = pn.widgets.RadioButtonGroup(name='Goals', options=['Maximize RUL', 'Maximize Condition Levels', 'Minimize Average Budget'], value='Maximize RUL')
     optimization_value_input = pn.widgets.RadioButtonGroup(name='Optimization Value', options=['Money', 'Time'], value='Money')
+    number_of_iterations_input = pn.widgets.IntInput(name='Number of Iterations', value=10, step=1)
 
     # Arrange inputs in a form layout
     inputs_form = pn.Column(
@@ -20,13 +21,15 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
         num_months_input,
         goal_input,
         optimization_value_input,
-        sizing_mode='stretch_width',
-        # max_width=300,
+        number_of_iterations_input,
+        # sizing_mode='stretch_width',
+        max_width=200,
         # margin=(0, 0, 20, 0)
     )
 
     # Placeholder for results or status
     results_pane = pn.pane.Markdown("Adjust the budgets and goals, then run the optimization.", sizing_mode='stretch_width')
+    pn.state.cache["results_pane"] = results_pane
 
     # Button to trigger the budget goal seeking process
     run_button = pn.widgets.Button(name="Run Budget Goal Seeker", button_type="primary", icon="play")
@@ -37,19 +40,25 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
         run_button,
         results_pane,
         sizing_mode='stretch_width',
-        margin=10
+        # margin=10
     )
 
-    budget_goal_seek_viewer = pn.Column()
+    budget_goal_seek_viewer = pn.Column(sizing_mode='stretch_width')
     pn.state.cache["budget_goal_seek_viewer"] = budget_goal_seek_viewer
 
+    # budget_goal_seek_viewer.append(pn.pane.Markdown("### Budget Goal Seeker Results"))
+
+    budget_goal_seek_results = pn.widgets.DataFrame(sizing_mode="stretch_both", disabled=False, show_index=False, auto_edit=False)
+    pn.state.cache["budget_goal_seek_results"] = budget_goal_seek_results
+ 
     # Clear any existing content and add the new layout
     budget_goal_seeker_container.clear()
     budget_goal_seeker_container.append(
         pn.Row(
             content, 
             budget_goal_seek_viewer,
-            # sizing_mode='stretch_both',
+            budget_goal_seek_results,
+            sizing_mode='stretch_both',
         )
     )
     
@@ -60,6 +69,7 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
             num_months_input.value,
             goal_input.value,
             optimization_value_input.value,
-            graph_controller
+            graph_controller,
+            number_of_iterations_input.value,
         )
     )
