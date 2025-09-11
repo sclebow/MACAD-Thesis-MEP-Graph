@@ -20,7 +20,7 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
     min_hours_bound = max(0.0, (1 - percentage_bounds.value) * hours_budget_input.value)
     max_hours_bound = (1 + percentage_bounds.value) * hours_budget_input.value
     
-    bounds_markdown = pn.pane.Markdown()
+    bounds_markdown = pn.pane.Markdown(sizing_mode='stretch_width')
     # Update bounds when percentage or budgets change
     def update_bounds(event):
         nonlocal min_money_bound, max_money_bound, min_hours_bound, max_hours_bound
@@ -54,7 +54,7 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
         percentage_bounds,
         bounds_markdown,
         # sizing_mode='stretch_width',
-        max_width=200,
+        max_width=150,
         # margin=(0, 0, 20, 0)
     )
 

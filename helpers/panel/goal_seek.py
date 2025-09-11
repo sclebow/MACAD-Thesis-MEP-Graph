@@ -108,7 +108,7 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
             })
             budget_goal_seek_viewer.clear()
             partial_results = [results[0]] + iteration_log.copy()
-            fig = create_visualization(partial_results, number_of_iterations=number_of_iterations)
+            fig = create_visualization(partial_results, number_of_iterations=number_of_iterations, bounds=bounds)
             budget_goal_seek_viewer.append(pn.pane.Plotly(fig, sizing_mode='stretch_both'))
 
             # Update the results widget with current iteration data
@@ -122,7 +122,7 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
             initial_budgets,
             bounds=bounds,
             method='Nelder-Mead',
-            options={'maxiter': number_of_iterations}
+            options={'maxiter': number_of_iterations, 'maxfev': number_of_iterations}
         )
         optimal_money_budget, optimal_hours_budget = opt_result.x
         graph_controller.monthly_budget_money = optimal_money_budget
@@ -142,7 +142,7 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
         })
         budget_goal_seek_viewer.clear()
         all_results = [results[0]] + iteration_log + [results[1]]
-        fig = create_visualization(all_results, number_of_iterations=number_of_iterations)
+        fig = create_visualization(all_results, number_of_iterations=number_of_iterations, bounds=bounds)
         budget_goal_seek_viewer.append(pn.pane.Plotly(fig, sizing_mode='stretch_both'))
         results_df = pd.DataFrame(all_results)
         budget_goal_seek_results.value = results_df
@@ -188,7 +188,7 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
         })
         budget_goal_seek_viewer.clear()
         partial_results = [results[0]] + iteration_log.copy()
-        fig = create_visualization(partial_results, number_of_iterations=number_of_iterations)
+        fig = create_visualization(partial_results, number_of_iterations=number_of_iterations, bounds=bounds)
         budget_goal_seek_viewer.append(pn.pane.Plotly(fig, sizing_mode='stretch_both'))
         return -metric_value if direction == 'maximize' else metric_value
 
@@ -224,7 +224,7 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
 
     budget_goal_seek_viewer.clear()
     all_results = [results[0]] + iteration_log + [results[1]]
-    fig = create_visualization(all_results, number_of_iterations=number_of_iterations)
+    fig = create_visualization(all_results, number_of_iterations=number_of_iterations, bounds=bounds)
     budget_goal_seek_viewer.append(pn.pane.Plotly(fig, sizing_mode='stretch_both'))
     results_df = pd.DataFrame(all_results)
     budget_goal_seek_results.value = results_df
@@ -240,7 +240,7 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
     results_pane.object = results_markdown
     return all_results
 
-def create_visualization(results, number_of_iterations):
+def create_visualization(results, number_of_iterations, bounds=None):
     """
     Create a line graph visualization of the budget goal seeking results.
 
@@ -267,77 +267,147 @@ def create_visualization(results, number_of_iterations):
     else:
         metric_label = 'Metric'
 
-    fig = go.Figure()
+    from plotly.subplots import make_subplots
 
     if optimization_value == 'Both':
         money_budget_values = [res['money_budget'] for res in results]
         hours_budget_values = [res['hours_budget'] for res in results]
+        metric_values = [res['metric_value'] for res in results]
+
+        # Create a subplot with three y-axes using layout yaxis, yaxis2, yaxis3
+        fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=iterations,
             y=money_budget_values,
             mode='lines+markers',
             name='Money Budget ($)',
-            line=dict(color='blue')
+            line=dict(color='blue'),
+            yaxis='y1'
         ))
         fig.add_trace(go.Scatter(
             x=iterations,
             y=hours_budget_values,
             mode='lines+markers',
             name='Hours Budget',
-            line=dict(color='orange')
+            line=dict(color='orange'),
+            yaxis='y2'
         ))
-        yaxis_title = 'Budget Values'
+        fig.add_trace(go.Scatter(
+            x=iterations,
+            y=metric_values,
+            mode='lines+markers',
+            name=metric_label,
+            line=dict(color='green'),
+            yaxis='y3'
+        ))
+
+        # Set axis titles
+        yaxis_title = 'Money Budget ($)'
+        yaxis2_title = 'Hours Budget'
+        yaxis3_title = metric_label
+
+        # Set axis ranges if bounds are provided
+        yaxis_range = None
+        yaxis2_range = None
+        if bounds:
+            yaxis_range = [bounds[0][0] * 0.8, bounds[0][1] * 1.2]
+            yaxis2_range = [bounds[1][0] * 0.8, bounds[1][1] * 1.2]
+
+        fig.update_layout(
+            title=f"Budget Goal Seeker Results: {goal}",
+            xaxis=dict(title="Iteration"),
+            yaxis=dict(
+                title=yaxis_title,
+                side='left',
+                showgrid=False,
+                zeroline=False,
+                position=0.0,
+                range=yaxis_range
+            ),
+            yaxis2=dict(
+                title=yaxis2_title,
+                side='left',
+                overlaying='y',
+                showgrid=False,
+                zeroline=False,
+                position=0.15,
+                range=yaxis2_range
+            ),
+            yaxis3=dict(
+                title=yaxis3_title,
+                side='right',
+                overlaying='y',
+                showgrid=False,
+                zeroline=False,
+                position=1.0
+            ),
+            legend=dict(x=0.99, y=0.01, xanchor='right', yanchor='bottom'),
+            margin=dict(l=100, r=50, t=50, b=50),
+            # template='plotly_white',
+            height=400
+        )
+
     elif optimization_value == 'Money':
         budget_values = [res['money_budget'] for res in results]
+        metric_values = [res['metric_value'] for res in results]
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
         fig.add_trace(go.Scatter(
             x=iterations,
             y=budget_values,
             mode='lines+markers',
             name='Money Budget ($)',
             line=dict(color='blue')
-        ))
+        ), secondary_y=False)
+        fig.add_trace(go.Scatter(
+            x=iterations,
+            y=metric_values,
+            mode='lines+markers',
+            name=metric_label,
+            line=dict(color='green')
+        ), secondary_y=True)
         yaxis_title = 'Money Budget ($)'
+        yaxis2_title = metric_label
+
+        if bounds:
+            yaxis_range = [bounds[0] * 0.8, bounds[1] * 1.2]
+            fig.update_layout(yaxis=dict(range=yaxis_range))
     else:
         budget_values = [res['hours_budget'] for res in results]
+        metric_values = [res['metric_value'] for res in results]
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
         fig.add_trace(go.Scatter(
             x=iterations,
             y=budget_values,
             mode='lines+markers',
             name='Hours Budget',
             line=dict(color='orange')
-        ))
+        ), secondary_y=False)
+        fig.add_trace(go.Scatter(
+            x=iterations,
+            y=metric_values,
+            mode='lines+markers',
+            name=metric_label,
+            line=dict(color='green')
+        ), secondary_y=True)
         yaxis_title = 'Hours Budget'
+        yaxis2_title = metric_label
 
-    fig.add_trace(go.Scatter(
-        x=iterations,
-        y=metric_values,
-        mode='lines+markers',
-        name=metric_label,
-        line=dict(color='green'),
-        yaxis='y2'
-    ))
+        if bounds:
+            yaxis_range = [bounds[0] * 0.8, bounds[1] * 1.2]
+            fig.update_layout(yaxis=dict(range=yaxis_range))
 
+    # Layout for all cases
     fig.update_layout(
         title=f"Budget Goal Seeker Results: {goal}",
         xaxis_title="Iteration",
-        yaxis=dict(
-            title=yaxis_title,
-            side='left',
-            showgrid=False,
-            zeroline=False
-        ),
-        yaxis2=dict(
-            title=metric_label,
-            overlaying='y',
-            side='right',
-            showgrid=False,
-            zeroline=False
-        ),
-        legend=dict(x=0.01, y=0.99),
+        legend=dict(x=0.99, y=0.01, xanchor='right', yanchor='bottom'),
         margin=dict(l=50, r=50, t=50, b=50),
         template='plotly_white',
         height=400
     )
+    if optimization_value != 'Both':
+        fig.update_yaxes(title_text=yaxis_title, secondary_y=False)
+        fig.update_yaxes(title_text=yaxis2_title, secondary_y=True)
 
     # Set the x-axis step to 1 since the x values are discrete iterations
     fig.update_xaxes(dtick=1)
