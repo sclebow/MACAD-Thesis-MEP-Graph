@@ -11,9 +11,37 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
     hours_budget_input = pn.widgets.FloatInput(name='Starting Hours Budget', value=graph_controller.monthly_budget_time, step=10)
     num_months_input = pn.widgets.IntInput(name='Number of Months to Schedule', value=60, step=1) # Default to 5 years
     goal_input = pn.widgets.RadioButtonGroup(name='Goals', options=['Maximize RUL', 'Maximize Condition Levels', 'Minimize Average Budget'], value='Maximize Condition Levels')
-    optimization_value_input = pn.widgets.RadioButtonGroup(name='Optimization Value', options=['Money', 'Time'], value='Money')
+    optimization_value_input = pn.widgets.RadioButtonGroup(name='Optimization Value', options=['Money', 'Hours', 'Both'], value='Both')
     number_of_iterations_input = pn.widgets.IntInput(name='Number of Iterations', value=10, step=1)
-    aggressiveness_input = pn.widgets.FloatInput(name='Aggressiveness (0 to 1)', value=0.2, step=0.05, start=0.0, end=1.0)
+    percentage_bounds = pn.widgets.FloatInput(name='Percentage Bounds', value=0.5, step=0.05, start=0.0)
+
+    min_money_bound = max(0.0, (1 - percentage_bounds.value) * money_budget_input.value)
+    max_money_bound = (1 + percentage_bounds.value) * money_budget_input.value
+    min_hours_bound = max(0.0, (1 - percentage_bounds.value) * hours_budget_input.value)
+    max_hours_bound = (1 + percentage_bounds.value) * hours_budget_input.value
+    
+    bounds_markdown = pn.pane.Markdown()
+    # Update bounds when percentage or budgets change
+    def update_bounds(event):
+        nonlocal min_money_bound, max_money_bound, min_hours_bound, max_hours_bound
+        min_money_bound = max(0.0, (1 - percentage_bounds.value) * money_budget_input.value)
+        max_money_bound = (1 + percentage_bounds.value) * money_budget_input.value
+        min_hours_bound = max(0.0, (1 - percentage_bounds.value) * hours_budget_input.value)
+        max_hours_bound = (1 + percentage_bounds.value) * hours_budget_input.value
+        if optimization_value_input.value == 'Money':
+            bounds_markdown.object = f"**Money Bounds:** ${min_money_bound:,.2f} - ${max_money_bound:,.2f}"
+        elif optimization_value_input.value == 'Hours':
+            bounds_markdown.object = f"**Hours Bounds:** {min_hours_bound:,.2f} - {max_hours_bound:,.2f}"
+        else:
+            bounds_markdown.object = f"**Money Bounds:** ${min_money_bound:,.2f} - ${max_money_bound:,.2f}  \n**Hours Bounds:** {min_hours_bound:,.2f} - {max_hours_bound:,.2f}"
+
+    percentage_bounds.param.watch(update_bounds, 'value')
+    money_budget_input.param.watch(update_bounds, 'value')
+    hours_budget_input.param.watch(update_bounds, 'value')
+    optimization_value_input.param.watch(update_bounds, 'value')
+
+    # Initialize bounds display
+    update_bounds(None)
 
     # Arrange inputs in a form layout
     inputs_form = pn.Column(
@@ -23,7 +51,8 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
         goal_input,
         optimization_value_input,
         number_of_iterations_input,
-        aggressiveness_input,
+        percentage_bounds,
+        bounds_markdown,
         # sizing_mode='stretch_width',
         max_width=200,
         # margin=(0, 0, 20, 0)
@@ -73,6 +102,6 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
             optimization_value_input.value,
             graph_controller,
             number_of_iterations_input.value,
-            aggressiveness_input.value,
+            percentage_bounds.value
         )
     )
