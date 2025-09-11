@@ -90,6 +90,7 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
         ]
         print(f"Starting optimization with initial budgets: {initial_budgets} and bounds: {bounds}")
         def objective(budgets):
+            print()
             mb, hb = budgets
             graph_controller.monthly_budget_money = mb
             graph_controller.monthly_budget_time = hb
@@ -167,6 +168,7 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
         initial_budget = hours_budget
 
     def objective(budget):
+        print()
         if optimization_value == 'Money':
             graph_controller.monthly_budget_money = budget
             graph_controller.monthly_budget_time = hours_budget
@@ -312,6 +314,8 @@ def create_visualization(results, number_of_iterations, bounds=None):
         if bounds:
             yaxis_range = [bounds[0][0] * 0.8, bounds[0][1] * 1.2]
             yaxis2_range = [bounds[1][0] * 0.8, bounds[1][1] * 1.2]
+            metric_delta = max(metric_values) - min(metric_values)
+            yaxis3_range = [min(metric_values) - metric_delta * 0.2, max(metric_values) + metric_delta * 0.1]
 
         fig.update_layout(
             title=f"Budget Goal Seeker Results: {goal}",
@@ -321,8 +325,8 @@ def create_visualization(results, number_of_iterations, bounds=None):
                 side='left',
                 showgrid=False,
                 zeroline=False,
-                position=0.0,
-                range=yaxis_range
+                range=yaxis_range,
+                position=0.0
             ),
             yaxis2=dict(
                 title=yaxis2_title,
@@ -330,8 +334,8 @@ def create_visualization(results, number_of_iterations, bounds=None):
                 overlaying='y',
                 showgrid=False,
                 zeroline=False,
-                position=0.15,
-                range=yaxis2_range
+                range=yaxis2_range,
+                position=0.15
             ),
             yaxis3=dict(
                 title=yaxis3_title,
@@ -339,12 +343,8 @@ def create_visualization(results, number_of_iterations, bounds=None):
                 overlaying='y',
                 showgrid=False,
                 zeroline=False,
-                position=1.0
+                range=yaxis3_range,
             ),
-            legend=dict(x=0.99, y=0.01, xanchor='right', yanchor='bottom'),
-            margin=dict(l=100, r=50, t=50, b=50),
-            # template='plotly_white',
-            height=400
         )
 
     elif optimization_value == 'Money':
@@ -401,24 +401,13 @@ def create_visualization(results, number_of_iterations, bounds=None):
         title=f"Budget Goal Seeker Results: {goal}",
         xaxis_title="Iteration",
         legend=dict(x=0.99, y=0.01, xanchor='right', yanchor='bottom'),
-        margin=dict(l=50, r=50, t=50, b=50),
-        template='plotly_white',
-        height=400
+        hovermode='x unified',
     )
-    if optimization_value != 'Both':
-        fig.update_yaxes(title_text=yaxis_title, secondary_y=False)
-        fig.update_yaxes(title_text=yaxis2_title, secondary_y=True)
 
     # Set the x-axis step to 1 since the x values are discrete iterations
     fig.update_xaxes(dtick=1)
 
     # Set the x-axis range to fit all iterations
     fig.update_xaxes(range=[0.5, number_of_iterations + 0.5])
-
-    # Set the height 
-    fig.update_layout(height=400)
-
-    # Set the legend to the bottom right
-    fig.update_layout(legend=dict(x=0.99, y=0.01, xanchor='right', yanchor='bottom'))
 
     return fig
