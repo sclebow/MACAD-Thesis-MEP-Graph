@@ -40,6 +40,9 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
     budget_goal_seek_results = pn.state.cache.get("budget_goal_seek_results")
     results_pane = pn.state.cache.get("results_pane")
 
+    results_markdown = "Running optimization..."
+    results_pane.object = results_markdown
+
     # Get the correct metric function based on the goal and the optimization value
     if goal == 'Maximize RUL':
         metric_function = graph_controller.get_average_RUL_of_simulation
@@ -317,16 +320,23 @@ def create_visualization(results, number_of_iterations, bounds=None):
             metric_delta = max(metric_values) - min(metric_values)
             yaxis3_range = [min(metric_values) - metric_delta * 0.2, max(metric_values) + metric_delta * 0.1]
 
+        # Get the colors from the traces
+        yaxis_color = fig.data[0].line.color
+        yaxis2_color = fig.data[1].line.color
+        yaxis3_color = fig.data[2].line.color
+
         fig.update_layout(
             title=f"Budget Goal Seeker Results: {goal}",
-            xaxis=dict(title="Iteration"),
+            xaxis=dict(title="Iteration", domain=[0.15, 0.95]),
             yaxis=dict(
                 title=yaxis_title,
                 side='left',
                 showgrid=False,
                 zeroline=False,
                 range=yaxis_range,
-                position=0.0
+                position=0.0,
+                tickfont=dict(color=yaxis_color),
+                # titlefont=dict(color=yaxis_color),
             ),
             yaxis2=dict(
                 title=yaxis2_title,
@@ -335,7 +345,9 @@ def create_visualization(results, number_of_iterations, bounds=None):
                 showgrid=False,
                 zeroline=False,
                 range=yaxis2_range,
-                position=0.15
+                position=0.15,
+                tickfont=dict(color=yaxis2_color),
+                # titlefont=dict(color=yaxis2_color),
             ),
             yaxis3=dict(
                 title=yaxis3_title,
@@ -344,8 +356,11 @@ def create_visualization(results, number_of_iterations, bounds=None):
                 showgrid=False,
                 zeroline=False,
                 range=yaxis3_range,
+                tickfont=dict(color=yaxis3_color),
+                # titlefont=dict(color=yaxis3_color),
             ),
         )
+
 
     elif optimization_value == 'Money':
         budget_values = [res['money_budget'] for res in results]
