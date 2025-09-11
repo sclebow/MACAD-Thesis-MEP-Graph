@@ -161,9 +161,8 @@ def run_simulation_with_params(event, graph_controller: GraphController, money_b
     )
 
     def get_number_of_critical_equipment(graph):
-        if graph is None:
-            return 0
-        return sum(1 for node in graph.nodes(data=True) if node[1].get("risk_level", False))
+        critical_nodes = [n for n, attrs in graph.nodes(data=True) if attrs.get('risk_level') == 'CRITICAL']
+        return len(critical_nodes)
 
     number_of_current_critical_equipment = get_number_of_critical_equipment(current_date_graph)
     number_of_previous_critical_equipment = get_number_of_critical_equipment(previous_month_graph)
