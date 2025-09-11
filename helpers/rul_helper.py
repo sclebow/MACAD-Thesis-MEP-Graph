@@ -108,8 +108,7 @@ def calculate_remaining_useful_life(graph, current_date):
         RUL_with_condition = RUL_with_overdue * condition_factor
         RUL_adjusted = RUL_with_condition / aging_factor
 
-        # Ensure RUL is not negative
-        RUL_adjusted = max(RUL_adjusted, 0)
+    # Allow RUL to be negative for failure event detection
 
         # Store additional tracking info for analysis
         attrs['age_years'] = age_years
@@ -119,7 +118,12 @@ def calculate_remaining_useful_life(graph, current_date):
 
         # Calculate failure probability for risk assessment
         equipment_type = attrs.get('type')
-        base_failure_rate = RULConfig.BASE_FAILURE_RATES.get(equipment_type)
+        base_failure_rate = attrs.get('base_failure_rate', None)
+        if base_failure_rate is None:
+            base_failure_rate = RULConfig.BASE_FAILURE_RATES.get(equipment_type, 0.01)
+        aging_factor = attrs.get('aging_factor', 1.0)
+        if aging_factor is None:
+            aging_factor = 1.0
 
         annual_failure_probability = base_failure_rate * aging_factor * (2.0 - current_condition)
         annual_failure_probability = min(annual_failure_probability, 0.95)

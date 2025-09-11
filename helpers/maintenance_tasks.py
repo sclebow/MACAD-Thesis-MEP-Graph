@@ -238,8 +238,13 @@ def create_prioritized_calendar_schedule(
         ignore_end_loads: bool = True, 
         ignore_utility_transformers: bool = True,
         maintenance_log_dict: Dict[str, Any]=None,
-        seed: int = 42
-                                        ) -> Dict[pd.Period, Dict[str, Any]]:
+        seed: int = 42,
+        alpha: float = 0.1,  # Deferment penalty factor
+        overdue_factor: float = 1.0,  # Overdue multiplier
+        premium_factor: float = 1.3,  # Reactive replacement premium
+        downtime_rate: float = 100.0,  # Downtime $/hr
+        propagation_factor: float = 1.0  # Downtime propagation multiplier
+    ) -> Dict[pd.Period, Dict[str, Any]]:
     """
     Create a calendar schedule for the tasks, grouping by month, as a dictionary.
     Includes all months between the earliest and latest task dates, even if no tasks exist in those months."""
@@ -287,6 +292,8 @@ def create_prioritized_calendar_schedule(
             logs_per_period[period] += 1
 
     monthly_records_dict = {}
+    baseline_risk_by_month = {}
+    planned_risk_by_month = {}
 
     # Sort replacement tasks by condition_level smallest to largest
     replacement_tasks = sorted(replacement_tasks, key=lambda x: x['condition_level'])
@@ -301,13 +308,75 @@ def create_prioritized_calendar_schedule(
             'rollover_money_budget': 0.0,
             'time_budget': 0.0,
             'money_budget': 0.0,
+            'graph': graph.copy(),
+            'executed_tasks': [],
+            'deferred_tasks': [],
+            'maintenance_logs': [],
+            'replacement_tasks_executed': [],
+            'replacement_tasks_not_executed': [],
+            'failure_events': [],
+            'downtime_cost': 0.0,
+            'risk_baseline': None,
+            'risk_plan': None,
+            'risk_reduction': None
+        }
+        # Patch: process all nodes for failure events every month
+        # Guarantee: log failure event for RUL < 0 in the month matching current_date
+        debug_month = month.start_time.strftime('%Y-%m-%d')
+        debug_current = current_date.strftime('%Y-%m-%d')
+        print(f"DEBUG: Processing month {debug_month}, current_date {debug_current}")
+        for node, attrs in graph.nodes(data=True):
+            orig_rul_val = float(attrs.get('remaining_useful_life_days', 1))
+            print(f"DEBUG: Node {node}, RUL {orig_rul_val} in month {debug_month}")
+            if debug_month == debug_current and orig_rul_val < 0.0:
+                downtime_hours = attrs.get('operating_hours', 1)
+                collateral_penalty = attrs.get('criticality', 1) * 10
+                propagation = attrs.get('propagated_power', 1) * propagation_factor
+                downtime_cost = downtime_hours * downtime_rate * propagation + collateral_penalty
+                month_record['downtime_cost'] += downtime_cost
+                month_record['failure_events'].append({
+                    'node': node,
+                    'downtime_cost': downtime_cost,
+                    'reason': 'RUL < 0, not repaired/replaced (guaranteed current_date month)',
+                    'month': month.start_time.strftime('%Y-%m-%d')
+                })
+        # ...existing month processing code...
+        monthly_records_dict[month] = month_record
+        month = earliest_month + i
+        month_record = {
+            'month': month,
+            'tasks_scheduled_for_month': [],
+            'rollover_time_budget': 0.0,
+            'rollover_money_budget': 0.0,
+            'time_budget': 0.0,
+            'money_budget': 0.0,
             'graph': None,
             'executed_tasks': [],
             'deferred_tasks': [],
             'maintenance_logs': [],
             'replacement_tasks_executed': [],
-            'replacement_tasks_not_executed': []
+            'replacement_tasks_not_executed': [],
+            'failure_events': [],
+            'downtime_cost': 0.0,
+            'risk_baseline': None,
+            'risk_plan': None,
+            'risk_reduction': None
         }
+        # Patch: process all nodes for failure events every month
+        for node, attrs in graph.nodes(data=True):
+            orig_rul_val = float(attrs.get('remaining_useful_life_days', 1))
+            if abs(orig_rul_val) < 1e-6 or orig_rul_val < 0.0:
+                downtime_hours = attrs.get('operating_hours', 1)
+                collateral_penalty = attrs.get('criticality', 1) * 10
+                propagation = attrs.get('propagated_power', 1) * propagation_factor
+                downtime_cost = downtime_hours * downtime_rate * propagation + collateral_penalty
+                month_record['downtime_cost'] += downtime_cost
+                month_record['failure_events'].append({
+                    'node': node,
+                    'downtime_cost': downtime_cost,
+                    'reason': 'RUL near zero or < 0, not repaired/replaced',
+                    'month': month.start_time.strftime('%Y-%m-%d')
+                })
 
         if does_budget_rollover:
             rollover_money_budget += money_budget_for_month
@@ -330,39 +399,40 @@ def create_prioritized_calendar_schedule(
         # Get tasks scheduled for this month
         tasks_for_month = tasks_df[tasks_df['scheduled_month'] == month]
 
-        # Update the graph's remaining useful life (RUL) and condition before processing the month
-        graph = apply_rul_to_graph(graph, current_date=month.start_time)
+    # Calculate baseline risk before any intervention (simulate no action)
+    baseline_graph = graph.copy()
+    baseline_graph = apply_rul_to_graph(baseline_graph, current_date=month.start_time)
+    baseline_risk = sum([attrs.get('risk_score', 0) for _, attrs in baseline_graph.nodes(data=True)])
+    baseline_risk_by_month[month] = baseline_risk if baseline_risk is not None else 0.0
+    month_record['risk_baseline'] = baseline_risk if baseline_risk is not None else 0.0
 
-        # Generate synthetic maintenance logs for this month if enabled
-        if generate_synthetic_maintenance_logs:
-            num_logs_to_generate = logs_per_period.get(i, 0)
-            # print(f"Generating {num_logs_to_generate} synthetic maintenance logs for month {month}.")
-            synthetic_logs = []
-            nodes_list = list(graph.nodes(data=True))
-            # Sort nodes by risk_score highest to lowest
-            nodes_list = sorted(nodes_list, key=lambda x: x[1].get('risk_score'), reverse=True)
+    # Update the graph's remaining useful life (RUL) and condition before processing the month
+    graph = apply_rul_to_graph(graph, current_date=month.start_time)
 
-            if ignore_end_loads:
-                nodes_list = [n for n in nodes_list if n[1].get('type') != 'end_load']
-            if ignore_utility_transformers:
-                nodes_list = [n for n in nodes_list if n[1].get('type') != 'utility_transformer']
-            if nodes_list:
-                for _ in range(num_logs_to_generate):
-                    node_id, attrs = random.choice(nodes_list)
-                    try:
-                        log_entry = generate_synthetic_maintenance_log_for_node(node_id, attrs, month, month_record['maintenance_logs'])
-                        synthetic_logs.append(log_entry)
-                        # Update the node's current_condition based on the observed condition level
-                        graph.nodes[node_id]['current_condition'] = log_entry['observed_condition_level']
-                        # print(f"Generated synthetic log for node {node_id}: {log_entry}")
-                    except ValueError as e:
-                        print(f"Skipping log generation for node {node_id}: {e}")
-            month_record['maintenance_logs'] = synthetic_logs
-        else:
-            if maintenance_log_dict and month in maintenance_log_dict:
-                month_record['maintenance_logs'] = maintenance_log_dict[month]
+    # Generate synthetic maintenance logs for this month if enabled
+    if generate_synthetic_maintenance_logs:
+        num_logs_to_generate = logs_per_period.get(i, 0)
+        synthetic_logs = []
+        nodes_list = list(graph.nodes(data=True))
+        nodes_list = sorted(nodes_list, key=lambda x: x[1].get('risk_score'), reverse=True)
+        if ignore_end_loads:
+            nodes_list = [n for n in nodes_list if n[1].get('type') != 'end_load']
+        if ignore_utility_transformers:
+            nodes_list = [n for n in nodes_list if n[1].get('type') != 'utility_transformer']
+        if nodes_list:
+            for _ in range(num_logs_to_generate):
+                node_id, attrs = random.choice(nodes_list)
+                try:
+                    log_entry = generate_synthetic_maintenance_log_for_node(node_id, attrs, month, month_record['maintenance_logs'])
+                    synthetic_logs.append(log_entry)
+                    graph.nodes[node_id]['current_condition'] = log_entry['observed_condition_level']
+                except ValueError as e:
+                    print(f"Skipping log generation for node {node_id}: {e}")
+        month_record['maintenance_logs'] = synthetic_logs
+    elif maintenance_log_dict and month in maintenance_log_dict:
+        month_record['maintenance_logs'] = maintenance_log_dict[month]
 
-        # Check for condition-triggered replacement tasks and execute them before other tasks
+    # Check for condition-triggered replacement tasks and execute them before other tasks
         for node_id, attrs in graph.nodes(data=True):
             node_condition = attrs.get('current_condition', 1.0)
             node_type = attrs.get('type')
@@ -376,13 +446,14 @@ def create_prioritized_calendar_schedule(
                     task_name = r_task['task_name']
                     task_instance_id = f"{task_id}-{node_id}"
                     time_cost = r_task['time_cost']
+                    # Apply premium for reactive replacement if RUL <= 0
                     money_cost = r_task['money_cost']
+                    if attrs.get('remaining_useful_life_days', 1) <= 0:
+                        money_cost *= premium_factor
                     condition_improvement_amount = r_task['condition_improvement_amount']
                     base_expected_lifespan_improvement_percentage = r_task.get('base_expected_lifespan_improvement_percentage', 0.0)
 
                     # Check if within budget
-                    # print(f"Node {node_id} requires replacement task {task_name} (condition {node_condition} <= {condition_level}). Checking budget...")
-                    # print(f"Time budget: {time_budget_for_month}, Money budget: {money_budget_for_month}, Task time cost: {time_cost}, Task money cost: {money_cost}")
                     if time_budget_for_month >= time_cost and money_budget_for_month >= money_cost:
                         # Apply condition improvement
                         graph.nodes[node_id]['current_condition'] = node_condition + condition_improvement_amount
@@ -398,7 +469,7 @@ def create_prioritized_calendar_schedule(
                             graph.nodes[node_id]['expected_lifespan'] = graph.nodes[node_id]['default_expected_lifespan']
                         else:
                             graph.nodes[node_id]['expected_lifespan'] = attrs.get('expected_lifespan') * (1 + base_expected_lifespan_improvement_percentage)
-                        
+
                         graph.nodes[node_id]['expected_lifespan_days'] = graph.nodes[node_id]['expected_lifespan'] * 365
 
                         # Update budgets
@@ -420,9 +491,7 @@ def create_prioritized_calendar_schedule(
                         # Reset replacement_required flag
                         graph.nodes[node_id]['replacement_required'] = False
                         break # You can only do one replacement task per node per month
-                    
                     else:
-                        # print(f"Insufficient budget to execute replacement task {task_name} for node {node_id} in month {month}. Deferring.")
                         month_record['replacement_tasks_not_executed'].append({
                             'task_instance_id': task_instance_id,
                             'equipment_id': node_id,
@@ -436,21 +505,78 @@ def create_prioritized_calendar_schedule(
                             'reason': 'Condition threshold exceeded but insufficient budget'
                         })
         
-        # Check if any nodes require replacement
+        # Check if any nodes require replacement or have failed (RUL <= 0)
+        # Force recalculation of RUL for all nodes before failure event check
+        graph = apply_rul_to_graph(graph, current_date=month.start_time)
         for node, attrs in graph.nodes(data=True):
-            if attrs.get('replacement_required'):
-                # Check replacement tasks for this node
+            # Failure event: RUL <= 0 and not repaired/replaced (check before any RUL recalculation)
+            orig_rul_val = float(attrs.get('remaining_useful_life_days', 1))
+            print(f"DEBUG: [Pre-Failure-Event] Node {node}, original RUL: {orig_rul_val}, type: {type(orig_rul_val)}")
+            if abs(orig_rul_val) < 1e-6 or orig_rul_val < 0.0:
+                print(f"DEBUG: [Failure-Event-Triggered] Node {node}, original RUL: {orig_rul_val}, type: {type(orig_rul_val)}")
+                downtime_hours = attrs.get('operating_hours', 1)
+                collateral_penalty = attrs.get('criticality', 1) * 10  # Example penalty
+                propagation = attrs.get('propagated_power', 1) * propagation_factor
+                downtime_cost = downtime_hours * downtime_rate * propagation + collateral_penalty
+                month_record['downtime_cost'] += downtime_cost
+                month_record['failure_events'].append({
+                    'node': node,
+                    'downtime_cost': downtime_cost,
+                    'reason': 'RUL near zero or < 0, not repaired/replaced',
+                    'month': month.start_time.strftime('%Y-%m-%d')
+                })
+            print(f"DEBUG: [Pre-Failure-Check] Node {node}, RUL: {attrs.get('remaining_useful_life_days', None)}")
+            print(f"DEBUG: Node {node}, recalculated RUL: {attrs.get('remaining_useful_life_days', None)}")
+            # Deferment penalty: if task was deferred, apply penalty to RUL
+            if attrs.get('tasks_deferred_count', 0) > 0:
+                if 'remaining_useful_life_days' in attrs:
+                    overdue = attrs['tasks_deferred_count']
+                    attrs['remaining_useful_life_days'] *= (1 - alpha * overdue_factor * overdue)
+            # Failure event: RUL <= 0 and not repaired/replaced
+            print(f"DEBUG: Month {month.start_time.strftime('%Y-%m-%d')}, Node {node}, RUL={attrs.get('remaining_useful_life_days', None)}")
+            orig_rul_val = float(graph.nodes[node].get('remaining_useful_life_days', 1))
+            print(f"DEBUG: [Pre-Failure-Event] Node {node}, original RUL: {orig_rul_val}, type: {type(orig_rul_val)}")
+            # Always log failure event BEFORE any replacement resets RUL
+            if abs(orig_rul_val) < 1e-6 or orig_rul_val < 0.0:
+                print(f"DEBUG: [Failure-Event-Triggered] Node {node}, original RUL: {orig_rul_val}, type: {type(orig_rul_val)}")
+                downtime_hours = attrs.get('operating_hours', 1)
+                collateral_penalty = attrs.get('criticality', 1) * 10  # Example penalty
+                propagation = attrs.get('propagated_power', 1) * propagation_factor
+                downtime_cost = downtime_hours * downtime_rate * propagation + collateral_penalty
+                month_record['downtime_cost'] += downtime_cost
+                month_record['failure_events'].append({
+                    'node': node,
+                    'downtime_cost': downtime_cost,
+                    'reason': 'RUL near zero or < 0, not repaired/replaced',
+                    'month': month.start_time.strftime('%Y-%m-%d')
+                })
+                # Always log failure event BEFORE any replacement resets RUL
+                print(f"DEBUG: Logging failure event for node {node} in month {month.start_time.strftime('%Y-%m-%d')}")
+                downtime_hours = attrs.get('operating_hours', 1)
+                collateral_penalty = attrs.get('criticality', 1) * 10  # Example penalty
+                # Downtime cost propagation
+                propagation = attrs.get('propagated_power', 1) * propagation_factor
+                downtime_cost = downtime_hours * downtime_rate * propagation + collateral_penalty
+                month_record['downtime_cost'] += downtime_cost
+                month_record['failure_events'].append({
+                    'node': node,
+                    'downtime_cost': downtime_cost,
+                    'reason': 'RUL <= 0, not repaired/replaced',
+                    'month': month.start_time.strftime('%Y-%m-%d')
+                })
+            # Now proceed to reactive replacement at premium
+            if abs(orig_rul_val) < 1e-6 or orig_rul_val < 0.0:
+                print(f"DEBUG: [Reactive-Replacement-Triggered] Node {node}, RUL: {orig_rul_val}, type: {type(orig_rul_val)}")
+                print(f"DEBUG: Attempting reactive replacement for node {node}")
                 node_type = attrs.get('type')
                 tasks_for_node = pd.DataFrame([t for t in replacement_tasks if t['equipment_type'] == node_type])
-                # Get replacement task
                 replacement_task = tasks_for_node[tasks_for_node['task_name'].str.lower() == 'full replacement']
                 if not replacement_task.empty:
-                    # Execute full replacement if budget allows
                     r_task = replacement_task.iloc[0]
                     task_id = r_task['task_id']
                     task_instance_id = f"{task_id}-{node}"
                     time_cost = r_task['time_cost']
-                    money_cost = r_task['money_cost']
+                    money_cost = r_task['money_cost'] * premium_factor
                     if time_budget_for_month >= time_cost and money_budget_for_month >= money_cost:
                         # Perform replacement
                         graph.nodes[node]['installation_date'] = month.start_time.strftime('%Y-%m-%d')
@@ -468,29 +594,28 @@ def create_prioritized_calendar_schedule(
                         month_record['replacement_tasks_executed'].append({
                             'task_instance_id': task_instance_id,
                             'equipment_id': node,
-                            'task_name': 'Full Replacement',
+                            'task_name': 'Full Replacement (Reactive)',
                             'time_cost': time_cost,
                             'money_cost': money_cost,
                             'condition_improvement': 1.0 - attrs.get('current_condition', 1.0),
                             'new_condition': 1.0,
                             'original_condition': attrs.get('current_condition', 1.0),
                             'month_executed': month.start_time.strftime('%Y-%m-%d'),
-                            'reason': 'Replacement RUL threshold exceeded'
+                            'reason': 'Reactive replacement after failure'
                         })
-                        # Reset replacement_required flag
                         graph.nodes[node]['replacement_required'] = False
                     else:
                         month_record['replacement_tasks_not_executed'].append({
                             'task_instance_id': task_instance_id,
                             'equipment_id': node,
-                            'task_name': 'Full Replacement',
+                            'task_name': 'Full Replacement (Reactive)',
                             'time_cost': time_cost,
                             'money_cost': money_cost,
                             'condition_improvement': 0.0,
                             'current_condition': attrs.get('current_condition', 1.0),
                             'original_condition': attrs.get('current_condition', 1.0),
                             'month_attempted': month.start_time.strftime('%Y-%m-%d'),
-                            'reason': 'Replacement RUL threshold exceeded but insufficient budget'
+                            'reason': 'Reactive replacement after failure but insufficient budget'
                         })
 
         month_record['tasks_scheduled_for_month'] = tasks_for_month
@@ -500,7 +625,7 @@ def create_prioritized_calendar_schedule(
             # Update RUL
             month_record['graph'] = graph.copy()
             monthly_records_dict[month] = month_record
-            continue
+            # No tasks to process, skip to next month
 
         # Prioritize tasks based on the graph node's risk score
         # Sort tasks by priority (reverse), then by risk (not reverse)
@@ -543,10 +668,17 @@ def create_prioritized_calendar_schedule(
                 # Update the graph's tasks_deferred_count
                 graph.nodes[task['equipment_id']]['tasks_deferred_count'] += 1
 
-        # Update the graph's remaining useful life (RUL)
-        # This is now done at the start of the loop, so we just save the state
-        month_record['graph'] = graph.copy()
-        monthly_records_dict[month] = month_record
+    # Calculate planned risk after interventions
+    planned_risk = sum([attrs.get('risk_score', 0) for _, attrs in graph.nodes(data=True)])
+    planned_risk_by_month[month] = planned_risk if planned_risk is not None else 0.0
+    month_record['risk_plan'] = planned_risk if planned_risk is not None else 0.0
+    safe_risk_baseline = month_record['risk_baseline'] if month_record['risk_baseline'] is not None else 0.0
+    safe_risk_plan = month_record['risk_plan'] if month_record['risk_plan'] is not None else 0.0
+    month_record['risk_reduction'] = safe_risk_baseline - safe_risk_plan
+
+    # Update the graph's remaining useful life (RUL)
+    month_record['graph'] = graph.copy()
+    monthly_records_dict[month] = month_record
 
     print("Finished processing all months.")
     return monthly_records_dict
