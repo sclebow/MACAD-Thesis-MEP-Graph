@@ -15,89 +15,95 @@ def layout_side_by_side_comparison(side_by_side_comparison_container, graph_cont
             name="Number of Months to Schedule", 
             value=default_num_months, 
             step=1, 
+            width=200,
         )
     generate_synthetic_maintenance_logs_input = pn.widgets.Checkbox(
         name="Generate Synthetic Maintenance Logs",
         value=True,
+        
     )
-
-    simulation_1_container = pn.Column()
-    simulation_2_container = pn.Column()
-
-    build_simulation_container(
-        simulation_container=simulation_1_container, 
-        simulation_number=1,
-        default_money_budget=default_money_budget,
-        default_time_budget=default_time_budget,
-        num_months=num_months_input.value,
+    number_of_simulations_input = pn.widgets.IntInput(
+        name="Number of Simulations (1-5)",
+        value=3,
+        step=1,
+        start=1,
+        end=5,
+        width=200,
     )
-    build_simulation_container(
-        simulation_container=simulation_2_container, 
-        simulation_number=2,
-        default_money_budget=default_money_budget,
-        default_time_budget=default_time_budget,
-        num_months=num_months_input.value,
-    )
-
-    side_by_side_comparison_container.append(
-        pn.Row(
-            pn.Column(
-                pn.pane.Markdown("#### Comparison Settings"),
-                num_months_input,
-                generate_synthetic_maintenance_logs_input,
-            ),
-            simulation_1_container,
-            simulation_2_container,
-            # sizing_mode="stretch_width",
-        )
-    )
-
     run_rul_simulations_button = pn.widgets.Button(
         name="Run RUL Simulations", 
         button_type="primary", 
         icon="play", 
     )
+    inputs_container = pn.Row(
+        pn.Column(
+            pn.pane.Markdown("#### Comparison Settings"),
+            num_months_input,
+            generate_synthetic_maintenance_logs_input,
+            number_of_simulations_input,
+            run_rul_simulations_button
+        )
+    )
+    side_by_side_comparison_container.append(inputs_container)
+
+    simulation_dicts = []
+    simulation_inputs_row = pn.Row(sizing_mode="stretch_width")
+    inputs_container.append(simulation_inputs_row)
+    
+    row_container = pn.Row()
+    side_by_side_comparison_container.append(row_container)
+
+    def build_simulation_inputs(number_of_simulations):
+        simulation_inputs_row.clear()
+        simulation_dicts.clear()
+        for simulation_number in range(1, number_of_simulations + 1):
+            simulation_input_container = pn.Column()
+
+            simulation_dicts.append({
+                "input_container": simulation_input_container,
+                "money_budget": default_money_budget + (simulation_number - 1) * 100.0 * 20,  # Offset the default budget for each simulation
+                "time_budget": default_time_budget + (simulation_number - 1) * 1 * 20,        # Offset the default
+                "results_container": pn.Column(),
+            })
+            build_simulation_container(
+                simulation_container=simulation_input_container, 
+                simulation_number=simulation_number,
+                default_money_budget=default_money_budget + (simulation_number - 1) * 100.0 * 20,
+                default_time_budget=default_time_budget + (simulation_number - 1) * 1 * 20,
+                num_months=num_months_input.value,
+            )
+            simulation_inputs_row.append(simulation_input_container)
+
+    number_of_simulations_input.param.watch(lambda event: build_simulation_inputs(event.new), 'value')
+    build_simulation_inputs(number_of_simulations_input.value)
+
     def on_run_simulations(event):
         print("\nRunning Side by Side RUL Simulations...")
-        simulation_1_graph_controller = copy.deepcopy(graph_controller)
-        simulation_2_graph_controller = copy.deepcopy(graph_controller)
+        row_container.clear()
 
-        simulation_1_results_container = pn.Column()
-        simulation_2_results_container = pn.Column()
+        for sim in simulation_dicts:
+            graph_controller_copy = copy.deepcopy(graph_controller)
 
-        for index, (sim_container, results_container, graph_ctrl) in enumerate([
-            (simulation_1_container, simulation_1_results_container, simulation_1_graph_controller),
-            (simulation_2_container, simulation_2_results_container, simulation_2_graph_controller),
-        ]):
-            index += 1  # To make it 1-based index
-            money_budget = sim_container[1].value
-            time_budget = sim_container[2].value
-            num_months = num_months_input.value
-            generate_synthetic_maintenance_logs = generate_synthetic_maintenance_logs_input.value
+            # Set the budgets for this simulation
+            graph_controller_copy.monthly_budget_money = sim["money_budget"]
+            graph_controller_copy.monthly_budget_time = sim["time_budget"]
+            sim["graph_controller"] = graph_controller_copy
 
-            results_container.clear()
-            results_container.append(pn.pane.Markdown(f"#### Simulation {index} Results"))
-
+            sim["results_container"].clear()
+            sim["input_container"].append(sim["results_container"])
+            # row_container.append(sim["results_container"])
             run_simulation_with_params(
-                event, 
-                graph_controller=graph_ctrl, 
-                money_budget=money_budget, 
-                time_budget=time_budget, 
-                num_months=num_months,
-                generate_synthetic_maintenance_logs=generate_synthetic_maintenance_logs,
-                results_container=results_container,
+                graph_controller=sim["graph_controller"],
+                money_budget=sim["money_budget"],
+                time_budget=sim["time_budget"],
+                num_months=num_months_input.value,
+                generate_synthetic_maintenance_logs=generate_synthetic_maintenance_logs_input.value,
+                results_container=sim["results_container"],
             )
-        side_by_side_comparison_container.append(
-            pn.Row(
-                simulation_1_results_container,
-                simulation_2_results_container,
-                # sizing_mode="stretch_width",
-            )
-        )
+
 
     run_rul_simulations_button.on_click(on_run_simulations)
-    side_by_side_comparison_container.append(run_rul_simulations_button)
-
+    
     return side_by_side_comparison_container
 
 def build_simulation_container(simulation_container, simulation_number: int, default_money_budget: float, default_time_budget: int, num_months: int):
@@ -105,17 +111,25 @@ def build_simulation_container(simulation_container, simulation_number: int, def
 
     money_step = 100.0
     time_step = 1
-
-    default_money_budget += (simulation_number - 1) * money_step * 20 # Offset the default budget for each simulation
-    default_time_budget += (simulation_number - 1) * time_step * 20 # Offset the default
+    width = 300
 
     # Add the budget input widgets
-    money_budget_input = pn.widgets.FloatInput(name="Money Budget ($)", value=default_money_budget, step=money_step, align="center")
-    time_budget_input = pn.widgets.IntInput(name="Time Budget (hours)", value=default_time_budget, step=time_step, align="center")
+    money_budget_input = pn.widgets.FloatInput(
+        name="Money Budget ($)", 
+        value=default_money_budget, 
+        step=money_step, 
+        width=width
+    )
+    time_budget_input = pn.widgets.IntInput(
+        name="Time Budget (hours)", 
+        value=default_time_budget, 
+        step=time_step, 
+        width=width
+    )
     simulation_container.append(money_budget_input)
     simulation_container.append(time_budget_input)
 
-def run_simulation_with_params(event, graph_controller: GraphController, money_budget: float, time_budget: int, num_months: int, generate_synthetic_maintenance_logs: bool, results_container: pn.Column):
+def run_simulation_with_params(graph_controller: GraphController, money_budget: float, time_budget: int, num_months: int, generate_synthetic_maintenance_logs: bool, results_container: pn.Column):
     print("\nRunning RUL Simulation with Parameters...")
     # Update the number of months to schedule
     graph_controller.months_to_schedule = num_months
