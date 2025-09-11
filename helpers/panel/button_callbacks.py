@@ -282,14 +282,8 @@ def run_simulation(event, graph_controller: GraphController):
             all_tasks.append(task_copy)
     
     tasks_df = pd.DataFrame(all_tasks)
-        # Sort by month and priority for better readability
-    if 'month' in tasks_df.columns and 'priority' in tasks_df.columns:
-        tasks_df = tasks_df.sort_values(['month', 'priority'])
-    elif 'priority' in tasks_df.columns:
-        tasks_df = tasks_df.sort_values(['priority'])
-    elif 'month' in tasks_df.columns:
-        tasks_df = tasks_df.sort_values(['month'])
-        # else: leave unsorted if neither column exists
+    # Sort by month and priority for better readability
+    tasks_df = tasks_df.sort_values(['month', 'priority'])
     
     # Create summary statistics
     update_app_status("Updating Summary Statistics and Visualizations...")
