@@ -3,6 +3,7 @@ import pandas as pd
 from helpers.controllers.graph_controller import GraphController
 import copy
 from helpers.panel.analytics_viz import _create_enhanced_kpi_card
+from helpers.visualization import get_risk_distribution_fig, get_equipment_conditions_fig
 
 def layout_side_by_side_comparison(side_by_side_comparison_container, graph_controller: GraphController):
     side_by_side_comparison_container.append(pn.pane.Markdown("### Side-by-Side Comparison"))
@@ -234,3 +235,21 @@ def run_simulation_with_params(graph_controller: GraphController, money_budget: 
             unit='%'
         )
     )
+
+    # Add the risk level distribution pie chart
+    risk_level_pie_chart = get_risk_distribution_fig(current_date_graph)
+    results_container.append(risk_level_pie_chart)
+
+    # Add the average remaining useful life graph
+    graphs = []
+    periods = list(graph_controller.prioritized_schedule.keys())
+    for period in periods:
+        graph = graph_controller.prioritized_schedule[period].get('graph')
+        graphs.append(graph)
+    
+    average_rul_line_chart = get_equipment_conditions_fig(
+        graphs=graphs,
+        periods=periods,
+        current_date=graph_controller.current_date,
+    )
+    results_container.append(average_rul_line_chart)
