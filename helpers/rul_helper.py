@@ -55,6 +55,24 @@ class RULConfig:
     ENABLE_DEBUG_OUTPUT = False            # Detailed calculation output
     TYPES_TO_IGNORE = {'utility_transformer': True, 
                        'end_load': True}  # Types to ignore in RUL calculations
+    
+HELP_TEXT_DICT = {
+    'TASK_DEFERMENT_FACTOR': "Impact of each deferred maintenance task on RUL reduction. Higher values increase the penalty for deferred tasks.",
+    'OVERDUE_IMPACT_MULTIPLIER': "Multiplier for how much overdue maintenance affects RUL. Higher values make overdue tasks more detrimental.",
+    'AGING_ACCELERATION_FACTOR': "Rate at which aging increases failure probability. Higher values mean equipment ages faster.",
+    'MAX_AGING_MULTIPLIER': "Maximum cap on aging impact. Prevents runaway aging effects.",
+    'DEFAULT_LIFESPANS': "Default expected lifespans (in years) for different equipment types.",
+    'BASE_FAILURE_RATES': "Base annual failure probabilities for different equipment types.",
+    'DEFAULT_INITIAL_CONDITION': "Initial condition rating for new equipment (1.0 = perfect).",
+    'MIN_RUL_RATIO': "Minimum ratio of expected lifespan that RUL can be reduced to prevent unrealistic low values.",
+    'CRITICAL_RUL_THRESHOLD_YEARS': "RUL threshold (in years) below which equipment is considered CRITICAL risk.",
+    'HIGH_RUL_THRESHOLD_YEARS': "RUL threshold (in years) below which equipment is considered HIGH risk.",
+    'MEDIUM_RUL_THRESHOLD_YEARS': "RUL threshold (in years) below which equipment is considered MEDIUM risk.",
+    'REPLACEMENT_THRESHOLD_YEARS': "Risk level at which equipment is flagged for replacement. Set to None to disable.",
+    'ENABLE_RUL_WARNINGS': "Enable or disable warnings for critically low RUL during calculations.",
+    'ENABLE_DEBUG_OUTPUT': "Enable or disable detailed debug output during RUL calculations.",
+    'TYPES_TO_IGNORE': "Equipment types to exclude from RUL calculations."
+}
 
 def calculate_remaining_useful_life(graph, current_date):
     """

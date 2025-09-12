@@ -2,6 +2,7 @@ import panel as pn
 from helpers.panel.button_callbacks import save_settings, import_data, export_data, clear_all_data, run_simulation, update_hours_budget, update_money_budget, update_weeks_to_schedule
 from helpers.rul_helper import adjust_rul_parameters, get_current_parameters
 from helpers.controllers.graph_controller import GraphController
+from helpers.rul_helper import HELP_TEXT_DICT
 
 def layout_settings(settings_container, graph_controller: GraphController, DEFAULT_SIMULATION_PARAMS):
     pn.state.cache["settings_container"] = settings_container
@@ -39,8 +40,11 @@ def layout_settings(settings_container, graph_controller: GraphController, DEFAU
     maintenance_budget_container = pn.Column(
         pn.pane.Markdown("### Maintenance Budget"),
         budget_hours_input,
+        pn.pane.Markdown("*Set the monthly hour budget for maintenance tasks. This limits how many maintenance activities can be performed each month.*"),
         budget_money_input,
-        num_weeks_to_schedule_input
+        pn.pane.Markdown("*Set the monthly dollar budget for maintenance tasks. This limits the total cost of maintenance activities each month.*"),
+        num_weeks_to_schedule_input,
+        pn.pane.Markdown("*Set how many weeks past the current date the maintenance scheduler should plan tasks. The simulation will always simulate between the building's construction date and the current date.*"),
     )
 
     right_column.append(maintenance_budget_container)
@@ -95,12 +99,19 @@ def layout_settings(settings_container, graph_controller: GraphController, DEFAU
         else:
             input_widget.value = value
 
-        row = pn.Row(
-            pn.pane.Markdown(f"**{param.replace('_', ' ').title()}:**", width=200),
-            input_widget,
+        column = pn.Column(
+            pn.Row(
+                pn.pane.Markdown(f"**{param.replace('_', ' ').title()}:**", width=200),
+                input_widget,
+            )
         )
 
-        return row
+        help_text = HELP_TEXT_DICT.get(param)
+        if help_text:
+            help_pane = pn.pane.Markdown(f"*{param.replace('_', ' ').title()}: {help_text}*")
+            column = pn.Column(help_pane, column)
+
+        return column
 
     for param, value in current_params.items():
         input_widget = create_input_widget(param, value)
