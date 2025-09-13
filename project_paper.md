@@ -1,3 +1,9 @@
+---
+title: AssetPulse - Project Paper
+author: Scott C. Lebow, PE and Krisztian Hajdu
+date: 15 September 2025
+---
+
 # AssetPulse - Project Paper
 
 ## Abstract
