@@ -492,6 +492,7 @@ An example chart is shown below:
 
 ## Future Work
 Future enhancements to AssetPulse could include:
+
 1. Using real-world asset history and maintenance data to determine accurate simulation parameters, refine simulation logic, and validate synthetic data generation.
 2. Incorporating more complex asset interactions and dependencies in the graph model to better simulate real-world scenarios.
 3. Incorporate remodeling and expansion scenarios to simulate changes in building systems over time.
