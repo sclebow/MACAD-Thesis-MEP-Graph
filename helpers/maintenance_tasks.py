@@ -576,6 +576,10 @@ def process_maintenance_tasks(
     # replacement_tasks = load_replacement_tasks(replacement_tasks_path)
     tasks = generate_maintenance_tasks_from_graph(graph, tasks)
 
+    # DEBUG: Save tasks to CSV
+    tasks_df = pd.DataFrame(tasks)
+    tasks_df.to_csv("detailed_maintenance_tasks_debug.csv", index=True)
+
     # Prioritize the tasks in the calendar schedule
     prioritized_schedule = create_prioritized_calendar_schedule(
         tasks, 

@@ -25,7 +25,7 @@ from helpers.panel.pages.side_by_side_comparison import layout_side_by_side_comp
 
 pn.extension('plotly')
 
-TEST_DATA_INDEX = 1
+TEST_DATA_INDEX = 0
 
 TEST_DATA = [
     {
