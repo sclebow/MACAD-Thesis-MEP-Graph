@@ -16,6 +16,13 @@ AssetPulse aims to address these challenges by providing a simulation environmen
 4. Compare the effectiveness of various budget allocation strategies in asset management through simulation experiments.
 5. Optimize budget allocation strategies based on different metrics such as maximizing asset longevity, maximizing equipment condition, and minimizing monthly costs.
 
+### Interface
+We designed an intuitive user interface that allows users to easily set up simulation scenarios, define asset parameters, allocate budgets, and visualize results. The interface includes features such as file upload/download, interactive graphs, and customizable reports to enhance user experience and facilitate decision-making.
+
+We see the interface as both a research tool and a practical application for asset managers, enabling them to explore various strategies and their outcomes in a user-friendly manner.  While the interface is not a finished product, it provides a solid foundation for future development and refinement based on user feedback and evolving needs in asset management.  And despite its current limitations, it effectively demonstrates the core functionalities and potential of the AssetPulse system.
+
+The interface is built using the Panel library from Holoviz, which provides a flexible and powerful framework for creating interactive web applications in Python.  It can be easily extended and customized to meet specific user requirements and integrate additional features as needed.  It also supports deployment as a standalone web application or integration into existing asset management platforms, as a future area of improvement.
+
 ## Research Questions
 1. How can graph-based methods support the tracking of changes and lifecycle management of building systems?
 2. How can synthetic data generation be utilized to create realistic asset management scenarios for testing and validation?
