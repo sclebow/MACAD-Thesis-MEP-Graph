@@ -29,6 +29,14 @@ We see the interface as both a research tool and a practical application for ass
 
 The interface is built using the Panel library from Holoviz, which provides a flexible and powerful framework for creating interactive web applications in Python.  It can be easily extended and customized to meet specific user requirements and integrate additional features as needed.  It also supports deployment as a standalone web application or integration into existing asset management platforms, as a future area of improvement.
 
+## Related Work
+
+### Literature Review
+A review of existing literature reveals various approaches to asset management, including statistical models, machine learning techniques, and optimization algorithms. However, many of these approaches focus on specific aspects of asset management rather than providing a comprehensive simulation environment that integrates lifecycle modeling, maintenance scheduling, and budget allocation.
+
+### Existing Tools and Frameworks
+Several existing tools and frameworks address various aspects of asset management, including maintenance scheduling, risk assessment, and budget optimization. However, many of these tools lack the comprehensive integration of graph-based modeling, synthetic data generation, and interactive visualization that AssetPulse offers.
+
 ## Research Questions
 1. How can graph-based methods support the tracking of changes and lifecycle management of building systems?
 2. How can synthetic data generation be utilized to create realistic asset management scenarios for testing and validation?
@@ -488,7 +496,45 @@ The chart is sorted by the node risk score, with higher-risk nodes displayed at 
 An example chart is shown below:
 ![Node Failure Timeline Chart](images/node_failure_timeline_chart.png)
 
-### 
+### KPI Cards
+The KPI cards provide quick access to key performance indicators related to the asset management simulation. These cards display important metrics such as average system health, quantity of critical equipment, average RUL, and system reliability.  An example set of KPI cards is shown below:
+
+![KPI Cards](images/kpi_cards.png)
+
+### Remaining Useful Life (RUL) Distribution Chart
+The RUL distribution chart visualizes the distribution of Remaining Useful Life (RUL) across all equipment nodes in the system. This chart helps users understand the overall health and longevity of their assets, enabling informed maintenance and replacement planning.
+
+An example chart is shown below:
+![RUL Distribution Chart](images/rul_distribution_chart.png)
+
+You can see in the example chart that some equipment has a high RUL and is in good condition, while other equipment has a low RUL and may require immediate attention.  This should be expected because the simulation will prioritize maintenance tasks based on each node's risk score and budget constraints, leading to some equipment being fwell-maintained while others may be deferred.
+
+### Risk Level Distribution Chart
+The risk level distribution chart visualizes the distribution of risk scores across all equipment nodes in the system. This chart helps users identify the proportion of high-risk components, supporting prioritization of maintenance and replacement efforts.
+
+An example chart is shown below:
+![Risk Level Distribution Chart](images/risk_level_distribution_chart.png)
+
+In the example chart, we can see that most equipment is classified as LOW risk, with the rest classified as MEDIUM, HIGH, and CRITICAL risk.  
+
+### Average Remaining Useful Life by Equipment Type Over Time Chart
+The average remaining useful life (RUL) by equipment type over time chart visualizes trends in asset longevity across different categories of equipment. This chart helps users identify which equipment types may require earlier replacement or more frequent maintenance, supporting targeted asset management strategies.
+
+An example chart is shown below:
+![Average RUL by Equipment Type Over Time Chart](images/average_rul_by_equipment_type_over_time_chart.png)
+
+This chart is a key indicator of how well maintenance strategies are preserving the lifespan of different equipment types.  The average RUL for
+
+### Total Maintenance Cost Over Time Chart
+The total maintenance cost over time chart visualizes the cumulative maintenance expenses incurred throughout the simulation period. This chart helps users monitor budget utilization, identify cost trends, and evaluate the financial impact of maintenance strategies.
+
+An example chart is shown below:
+![Total Maintenance Cost Over Time Chart](images/total_maintenance_cost_over_time_chart.png)
+
+## Budget Optimizer
+
+
+## Budget Comparison Tool
 
 ## Future Work
 Future enhancements to AssetPulse could include:
