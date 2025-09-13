@@ -56,7 +56,7 @@ To quickly generate realistic building data for testing and validation, we devel
 - Random Seed
   - An optional integer seed for random number generation to ensure reproducibility of the synthetic data.
 
-### Simulation Logic
+### Building Electrical System Generation Logic
 The synthetic data generator uses the provided parameters to create a building electrical system graph. The process involves:
 
 1. Define Building Characteristics 
@@ -92,7 +92,30 @@ The synthetic data generator uses the provided parameters to create a building e
 11. Reporting and Output
     -  Print a summary report of the generated building, including total load, equipment counts, end load breakdown, and per-floor/riser details. Save the graph in GraphML format for further analysis or visualization.
 
-## RUL Simulation Parameters
+An example of a simple building generated using these parameters is provided in Appendix A.  Another example of a more complex building is provided in Appendix B.
+
+For all subsequent sections, the complex building from Appendix B will be used as the reference example.  This allows us to illustrate the various features and outputs of the AssetPulse simulation tool in a more comprehensive manner.
+
+### Other System Graphs
+The synthetic data generator can be adapted to create other types of system graphs beyond building electrical systems. For example, with modification it could generate water distribution networks, HVAC systems, or transportation infrastructure graphs by modifying the node types, connections, and attributes according to the specific domain requirements. This flexibility allows AssetPulse to be applied to a wide range of asset management scenarios across different industries.
+
+The key paramters used in the remaining useful life (RUL) simulation are described in the next section.  To apply the RUL simulation to a different type of system graph, the user would need to define appropriate equipment types, lifespans, failure rates, and maintenance tasks relevant to that domain, however the core simulation logic would remain the same.
+
+For example, in a water distribution network, equipment types might include pumps, valves, and pipes, each with their own lifespans and failure modes. Maintenance tasks could involve inspections, cleaning, and replacements specific to water systems. By adjusting these parameters and templates, the RUL simulation can be effectively applied to various asset management contexts.
+
+The required node attributes for the RUL simulation are:
+type
+- Type of equipment (e.g., "transformer", "panel", "switchboard", "end load")
+installation_date
+- Date when the equipment was installed (format: "YYYY-MM-DD")
+expected_lifespan
+- Expected lifespan of the equipment in years (optional; if not provided, defaults will be used based on type)
+replacement_cost
+- Cost to replace the equipment, allows for varying costs based on unique instances of a equipment type.  For example, a larger transformer may cost more to replace than a smaller one of the same type.
+- Condition
+  - Current condition of the equipment, on a scale from 0.0 (failed) to 1.0 (new). If not provided, defaults to 1.0.
+
+## Remaining Useful Life (RUL) Simulation
 Once the synthetic building data is generated, users can simulate the Remaining Useful Life (RUL) of equipment based on various parameters. These parameters allow users to customize how maintenance deferrals, aging, and equipment types affect RUL calculations.
 
 ### User-Defined Parameters
@@ -197,8 +220,8 @@ If multiple pieces of equipment are flagged for replacement in the same month, t
 
 Once the user sets the RUL simulation parameters, the simulation engine uses these values to calculate the Remaining Useful Life (RUL) for each piece of equipment in the building graph over each month of the simulation period. The process involves:
 
-1. **Task Generation:**
-  - Maintenance tasks are generated from the building graph and generic/replacement task templates, with each task linked to a specific equipment node and scheduled based on installation date and recommended frequency.
+1. Task Generation
+   - Maintenance tasks are generated from the building graph and generic/replacement task templates, with each task linked to a specific equipment node and scheduled based on installation date and recommended frequency.
 
 2. Initialize RUL Parameters
    - The simulation engine loads user-defined RUL parameters, including equipment lifespans, failure rates, aging factors, maintenance impact factors, and risk thresholds.
@@ -274,6 +297,8 @@ The simulation engine outputs each month's RUL and risk assessment results in a 
   - List of equipment replacement tasks completed during the month, with details on replaced components and associated costs.
 - replacement_tasks_not_executed
   - List of planned replacement tasks that were not executed, including reasons.
+
+## Simulation Analysis and Visualization
 
 ## Future Work
 Future enhancements to AssetPulse could include:
