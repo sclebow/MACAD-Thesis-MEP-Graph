@@ -74,7 +74,9 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
         # margin=10
     )
 
-    budget_goal_seek_viewer = pn.Column(sizing_mode='stretch_width')
+    budget_goal_seek_viewer = pn.Column(
+            # sizing_mode='stretch_both'
+        )
     pn.state.cache["budget_goal_seek_viewer"] = budget_goal_seek_viewer
 
     # budget_goal_seek_viewer.append(pn.pane.Markdown("### Budget Goal Seeker Results"))
