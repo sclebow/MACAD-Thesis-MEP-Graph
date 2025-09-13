@@ -75,7 +75,7 @@ The synthetic data generator uses the provided parameters to create a building e
     -  Allocate the total electrical load across all floors, introducing random variation (±10") to simulate realistic load distribution. Assign end loads (lighting, receptacles, HVAC, etc.) to each floor, ensuring the sum matches the total load.
 
 6. Assign End Loads to Risers
-    -  For each end load, determine its location and assign it to the nearest riser. Each end load is given a type, power rating, and voltage level based on building system.
+    -  For each end load, determine its location and assign it to the nearest riser. Each end load is given a type, power rating, and voltage level based on the building system.
 
 7. Determine Riser Attributes on Each Floor
     -  For each riser on each floor, summarize the total power per end load type and voltage. This helps in sizing distribution equipment and understanding load distribution.
@@ -96,29 +96,56 @@ An example of a simple building generated using these parameters is provided in 
 
 For all subsequent sections, the complex building from Appendix B will be used as the reference example.  This allows us to illustrate the various features and outputs of the AssetPulse simulation tool in a more comprehensive manner.
 
+Because the synthetic data generator generates a complete building electrical system graph with detailed attributes, it can be used to test and validate the RUL simulation and maintenance scheduling features of AssetPulse.  The generated graph includes all necessary node types, connections, and attributes required for the RUL simulation engine to function effectively.
+
+The generated electrical system logic first distributes loads through an approximation of a building, then sizes and places distribution equipment based on the load requirements and building layout and assigns the loads to the appropriate distribution equipment.  Finally, it connects all nodes in a logical hierarchy from utility transformer to end load.
+
+This allows us to determine the electrical load (amperage and power) at each node, which is later used for assessing the risk score for each piece of equipment.  When calculating the remaining useful life (RUL) during the simulation, the risk score is used to prioritize maintenance tasks and influence failure probabilities.
+
+This allows us to determine which equipment should be maintained in situations where budget constraints prevent all maintenance from being performed.  Equipment with higher risk scores, such as main panels and switchboards, will be prioritized for maintenance tasks, while lower-risk equipment may have tasks deferred.
+
+Should the lower risk equipment fail due to deferred maintenance, the resulting failure event should affect less of the overall system performance, as the higher risk equipment will have been maintained and is less likely to fail.
+
 ### Other System Graphs
 The synthetic data generator can be adapted to create other types of system graphs beyond building electrical systems. For example, with modification it could generate water distribution networks, HVAC systems, or transportation infrastructure graphs by modifying the node types, connections, and attributes according to the specific domain requirements. This flexibility allows AssetPulse to be applied to a wide range of asset management scenarios across different industries.
 
-The key paramters used in the remaining useful life (RUL) simulation are described in the next section.  To apply the RUL simulation to a different type of system graph, the user would need to define appropriate equipment types, lifespans, failure rates, and maintenance tasks relevant to that domain, however the core simulation logic would remain the same.
+The key parameters used in the remaining useful life (RUL) simulation are described in the next section.  To apply the RUL simulation to a different type of system graph, the user would need to define appropriate equipment types, lifespans, failure rates, and maintenance tasks relevant to that domain, however the core simulation logic would remain the same.
 
 For example, in a water distribution network, equipment types might include pumps, valves, and pipes, each with their own lifespans and failure modes. Maintenance tasks could involve inspections, cleaning, and replacements specific to water systems. By adjusting these parameters and templates, the RUL simulation can be effectively applied to various asset management contexts.
 
+One would also need to ensure that the graph nodes include load information to determine risk scores, or alternatively develop a different method for assessing risk based on the specific attributes of the equipment in that domain.
+
 The required node attributes for the RUL simulation are:
-type
-- Type of equipment (e.g., "transformer", "panel", "switchboard", "end load")
-installation_date
-- Date when the equipment was installed (format: "YYYY-MM-DD")
-expected_lifespan
-- Expected lifespan of the equipment in years (optional; if not provided, defaults will be used based on type)
-replacement_cost
-- Cost to replace the equipment, allows for varying costs based on unique instances of a equipment type.  For example, a larger transformer may cost more to replace than a smaller one of the same type.
-- Condition
+- type
+  - Type of equipment (e.g., "transformer", "panel", "switchboard", "end load")
+- installation_date
+  - Date when the equipment was installed (format: "YYYY-MM-DD")
+- expected_lifespan
+  - Expected lifespan of the equipment in years (optional; if not provided, defaults will be used based on type)
+- replacement_cost
+  - Cost to replace the equipment, allows for varying costs based on unique instances of an equipment type.  For example, a larger transformer may cost more to replace than a smaller one of the same type.
+- current_condition
   - Current condition of the equipment, on a scale from 0.0 (failed) to 1.0 (new). If not provided, defaults to 1.0.
+
+## Risk Assessment
+Before calculating RUL, the simulation engine assesses the risk level of failure for each piece of equipment based on its graph attributes.  This assessment uses the load seen at each node and the quantity of total downstream equipment nodes in the graph to determine a risk score.  Equipment with higher loads and more downstream dependencies will have higher risk scores, indicating that their failure would have a more significant impact on the overall system performance.
+
+We use the following formula to calculate the risk score for each piece of equipment:
+
+```
+propagated_power = graph.nodes[node].get('propagated_power', 0) or 0
+norm_power = propagated_power / total_load if total_load else 0
+descendants_count = filtered_descendants_count(graph, node)
+norm_descendants = descendants_count / max_descendants
+risk = (norm_power + norm_descendants) / 2
+```
+
+The filtered_descendants_count function counts the number of downstream equipment nodes, excluding end loads, to focus on critical distribution components. The risk score is then normalized between 0 and 1, with higher values indicating greater risk.
 
 ## Remaining Useful Life (RUL) Simulation
 Once the synthetic building data is generated, users can simulate the Remaining Useful Life (RUL) of equipment based on various parameters. These parameters allow users to customize how maintenance deferrals, aging, and equipment types affect RUL calculations.
 
-### User-Defined Parameters
+### User-Defined Simulation Parameters
 - TASK_DEFERMENT_FACTOR
   - Impact of each deferred maintenance task on RUL reduction. Higher values increase the penalty for deferred tasks.
 - OVERDUE_IMPACT_MULTIPLIER
@@ -216,6 +243,29 @@ If multiple pieces of equipment are flagged for replacement in the same month, t
 - condition_level
 - condition_im
 
+#### Budget Parameters
+The simulation engine allows users to define monthly budgets for maintenance tasks, including time and money constraints. These budgets influence which tasks can be executed each month, with higher-priority tasks being scheduled first. Users can also enable budget rollover, allowing unused budget from one month to carry over to the next.
+
+We see these as the key parameters for getting useful simulation results.  In the real world, budgets may vary month to month, and our simulation engine and analysis tools can allow operators to explore the impact of different budget scenarios on asset management outcomes.  
+
+The budget parameters are:
+- Monthly Budget (Hours)
+  - Set the monthly hour budget for maintenance tasks. This limits how many maintenance activities can be performed each month.
+- Monthly Budget (Dollars)
+  - Set the monthly dollar budget for maintenance tasks. This limits the total cost of maintenance activities each month.
+- Enable Budget Rollover (Boolean)
+  - Allow unused budget from one month to carry over to the next, providing flexibility in scheduling.  To best simulate real-world scenarios, we recommend lowering the monthly time and money budgets if this option is enabled, to prevent unrealistic accumulation of budget over time.  We recommend not enabling this option if the goal is to simulate a strict monthly budget scenario, as indefinite budget accumulation is not realistic.
+- Weeks to Schedule Ahead
+  - Set how many weeks past the current date the maintenance scheduler should plan tasks. The simulation will always simulate between the system's construction date and the current date.
+
+#### Input Reflections
+
+In reality these maintenance and replacement tasks would be determined by the specific equipment and manufacturer recommendations.  For the purposes of this simulation, we use generic replacement tasks that apply to broad equipment categories.  Users can customize the replacement task templates to better reflect their specific asset management practices.
+
+Increased simulation accuracy may even require more granular equipment types in the graph to ensure that the correct replacement tasks are applied.  For example, if a user wants to differentiate between different sizes or models of transformers, they may need to create separate equipment types in the graph (e.g., "transformer_small", "transformer_large") and define corresponding replacement tasks for each type.  This allows for more precise control over maintenance and replacement strategies based on the specific characteristics of the equipment.  
+
+We see this as an area for future improvement, where future researchers can explore more detailed equipment classifications and their impact on asset management strategies, based on real-world data and practices.
+
 ### Simulation Logic
 
 Once the user sets the RUL simulation parameters, the simulation engine uses these values to calculate the Remaining Useful Life (RUL) for each piece of equipment in the building graph over each month of the simulation period. The process involves:
@@ -299,6 +349,133 @@ The simulation engine outputs each month's RUL and risk assessment results in a 
   - List of planned replacement tasks that were not executed, including reasons.
 
 ## Simulation Analysis and Visualization
+
+### System Health Overview
+The system health overview provides a very high-level summary of the overall condition and risk levels of all equipment.  An example output is shown below:
+<br>
+&nbsp; **Average Condition:** 97%
+&nbsp; **Total Number of Nodes:** 40
+&nbsp; **Risk Levels: LOW:** 31 | **MEDIUM:** 8 | **HIGH:** 1
+
+### Critical Component Overview
+The critical component overview highlights the most at-risk equipment in the system, allowing users to quickly identify components that may require immediate attention.  An example output is shown below:
+
+**Critical Components:** 16
+1. MP0.0
+1. TR0.0.208.L
+1. TR0.0.208.R
+1. TR0.0.208.H
+1. MP1.0
+1. TR1.0.208.L
+1. TR1.0.208.R
+1. TR1.0.208.H
+1. MP2.0
+1. TR2.0.208.L
+1. TR2.0.208.R
+1. TR2.0.208.H
+1. MP3.0
+1. TR3.0.208.L
+1. TR3.0.208.R
+1. TR3.0.208.H
+
+### Next 12 Months Overview
+The next 12 months overview provides a summary of scheduled maintenance tasks, executed tasks, deferred tasks, and budget utilization for the upcoming year.  An example output is shown below:
+
+**2025-10:**
+- **Expected Executed Tasks:** 7
+- **Most Critical Expected Task:** P-03-MP2.0
+- **Deferred Tasks:** 136
+- **Most Critical Deferred Task:** S-05-MP0.0
+
+**2025-11:**
+- **Expected Executed Tasks:** 5
+- **Most Critical Expected Task:** P-02-SP0.0.480.R
+- **Deferred Tasks:** 135
+- **Most Critical Deferred Task:** S-05-MP0.0
+
+**2025-12:**
+- **Expected Executed Tasks:** 6
+- **Most Critical Expected Task:** P-03-SP3.0.480.R
+- **Deferred Tasks:** 134
+- **Most Critical Deferred Task:** S-05-MP0.0
+
+**2026-01:**
+- **Expected Executed Tasks:** 3
+- **Most Critical Expected Task:** S-03-MP0.0
+- **Deferred Tasks:** 138
+- **Most Critical Deferred Task:** S-05-MP0.0
+
+**2026-02:**
+- **Expected Executed Tasks:** 9
+- **Most Critical Expected Task:** S-04-MP0.0
+- **Deferred Tasks:** 140
+- **Most Critical Deferred Task:** S-05-MP0.0
+
+**2026-03:**
+- **Expected Executed Tasks:** 8
+- **Most Critical Expected Task:** P-03-MP3.0
+- **Deferred Tasks:** 135
+- **Most Critical Deferred Task:** S-05-MP0.0
+
+**2026-04:**
+- **Expected Executed Tasks:** 7
+- **Most Critical Expected Task:** P-02-MP1.0
+- **Deferred Tasks:** 131
+- **Most Critical Deferred Task:** S-05-MP0.0
+
+**2026-05:**
+- **Expected Executed Tasks:** 8
+- **Most Critical Expected Task:** P-02-MP2.0
+- **Deferred Tasks:** 125
+- **Most Critical Deferred Task:** S-05-MP0.0
+
+**2026-06:**
+- **Expected Executed Tasks:** 6
+- **Most Critical Expected Task:** P-03-SP3.0.480.R
+- **Deferred Tasks:** 123
+- **Most Critical Deferred Task:** S-05-MP0.0
+
+**2026-07:**
+- **Expected Executed Tasks:** 2
+- **Most Critical Expected Task:** S-03-MP0.0
+- **Deferred Tasks:** 124
+- **Most Critical Deferred Task:** S-05-MP0.0
+
+**2026-08:**
+- **Expected Executed Tasks:** 11
+- **Most Critical Expected Task:** P-02-SP1.0.480.H
+- **Deferred Tasks:** 125
+- **Most Critical Deferred Task:** S-05-MP0.0
+
+**2026-09:**
+- **Expected Executed Tasks:** 8
+- **Most Critical Expected Task:** P-03-MP3.0
+- **Deferred Tasks:** 124
+- **Most Critical Deferred Task:** S-05-MP0.0
+
+### Cost Forecast Overview
+The cost forecast provides an estimate of the financial resources required to support the planned maintenance activities over the next 12 months. It accounts for expected executed tasks, deferred tasks, and associated time and money costs, enabling informed budgeting and resource allocation decisions.  An example output is shown below:
+
+**Total Expected Money Cost for Next 12 Months:** $1770.0
+**Total Expected Time Cost for Next 12 Months:** 36.0 hours
+
+### Task Status Each Month Chart
+The task status each month chart visualizes the number of executed, and deferred maintenance tasks over the simulation period as a stacked bar chart. This chart helps users understand trends in maintenance activities and identify periods of high deferral or execution rates.
+
+Preset time windows are available for quick selection, including 3 months, 6 months, 12 months, and the full simulation period. Users can also customize the time window by adjusting the timeline slider to focus on specific periods of interest.  The default view shows the previous 6 months and the next 12 months.
+
+An example chart is shown below:
+![Task Status Each Month Chart](images/task_status_each_month_chart.png)
+
+### Node Failure Timeline Chart
+The node failure timeline chart visualizes the expected failure events of equipment nodes over the simulation period. This chart helps users identify when and which components are likely to fail, supporting proactive maintenance planning and risk mitigation.
+
+The chart is sorted by the node risk score, with higher-risk nodes displayed at the top. Each node is represented by circular markers indicating the expected failure dates. The size of each marker corresponds to the risk level of the node, with larger markers indicating higher risk.
+
+An example chart is shown below:
+![Node Failure Timeline Chart](images/node_failure_timeline_chart.png)
+
+### 
 
 ## Future Work
 Future enhancements to AssetPulse could include:

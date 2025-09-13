@@ -736,7 +736,7 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp
 
     fig.update_layout(showlegend=True)
 
-    fig.update_layout(title='Node Failure Timeline', xaxis_title='Failure Date', yaxis_title='Remaining Useful Life (RUL)')
+    fig.update_layout(title='Node Failure Timeline', xaxis_title='Failure Date', yaxis_title='Equipment ID')
 
     # Add invisible trace to force secondary x-axis to appear
     fig.add_trace(go.Scatter(
