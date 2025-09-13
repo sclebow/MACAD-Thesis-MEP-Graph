@@ -1,0 +1,21 @@
+task_instance_id,equipment_id,equipment_type,task_type,priority,time_cost,money_cost,notes,description,task_id,recommended_frequency_months,equipment_installation_date,risk_score,is_replacement
+P-01-MP0.0,MP0.0,panel,visual inspection,2,0.5,30.0,Check for missing or loose covers.,"Visually inspect panel for signs of overheating, corrosion, or damage.",P-01,4,2000-01-01,0.8,False
+P-02-MP0.0,MP0.0,panel,test grounding,1,0.5,20.0,Verify all ground lugs are tight.,Test panel grounding and bonding connections.,P-02,12,2000-01-01,0.8,False
+P-03-MP0.0,MP0.0,panel,test gfci,1,0.25,10.0,Document any failed devices.,Test all GFCI breakers and receptacles for proper operation.,P-03,6,2000-01-01,0.8,False
+P-04-MP0.0,MP0.0,panel,inspect breakers,2,0.5,15.0,Replace any defective breakers.,Inspect all breakers for signs of wear or damage.,P-04,9,2000-01-01,0.8,False
+P-05-MP0.0,MP0.0,panel,replacement,1,6.0,2000.0,Label all circuits after replacement.,Replace panel at end of service life or if failed.,P-05,100,2000-01-01,0.8,False
+P-01-SP0.0.208.L,SP0.0.208.L,panel,visual inspection,2,0.5,30.0,Check for missing or loose covers.,"Visually inspect panel for signs of overheating, corrosion, or damage.",P-01,4,2000-01-01,0.034749999999999996,False
+P-02-SP0.0.208.L,SP0.0.208.L,panel,test grounding,1,0.5,20.0,Verify all ground lugs are tight.,Test panel grounding and bonding connections.,P-02,12,2000-01-01,0.034749999999999996,False
+P-03-SP0.0.208.L,SP0.0.208.L,panel,test gfci,1,0.25,10.0,Document any failed devices.,Test all GFCI breakers and receptacles for proper operation.,P-03,6,2000-01-01,0.034749999999999996,False
+P-04-SP0.0.208.L,SP0.0.208.L,panel,inspect breakers,2,0.5,15.0,Replace any defective breakers.,Inspect all breakers for signs of wear or damage.,P-04,9,2000-01-01,0.034749999999999996,False
+P-05-SP0.0.208.L,SP0.0.208.L,panel,replacement,1,6.0,2000.0,Label all circuits after replacement.,Replace panel at end of service life or if failed.,P-05,100,2000-01-01,0.034749999999999996,False
+P-01-SP0.0.208.R,SP0.0.208.R,panel,visual inspection,2,0.5,30.0,Check for missing or loose covers.,"Visually inspect panel for signs of overheating, corrosion, or damage.",P-01,4,2000-01-01,0.09614999999999999,False
+P-02-SP0.0.208.R,SP0.0.208.R,panel,test grounding,1,0.5,20.0,Verify all ground lugs are tight.,Test panel grounding and bonding connections.,P-02,12,2000-01-01,0.09614999999999999,False
+P-03-SP0.0.208.R,SP0.0.208.R,panel,test gfci,1,0.25,10.0,Document any failed devices.,Test all GFCI breakers and receptacles for proper operation.,P-03,6,2000-01-01,0.09614999999999999,False
+P-04-SP0.0.208.R,SP0.0.208.R,panel,inspect breakers,2,0.5,15.0,Replace any defective breakers.,Inspect all breakers for signs of wear or damage.,P-04,9,2000-01-01,0.09614999999999999,False
+P-05-SP0.0.208.R,SP0.0.208.R,panel,replacement,1,6.0,2000.0,Label all circuits after replacement.,Replace panel at end of service life or if failed.,P-05,100,2000-01-01,0.09614999999999999,False
+P-01-SP0.0.208.H,SP0.0.208.H,panel,visual inspection,2,0.5,30.0,Check for missing or loose covers.,"Visually inspect panel for signs of overheating, corrosion, or damage.",P-01,4,2000-01-01,0.0691,False
+P-02-SP0.0.208.H,SP0.0.208.H,panel,test grounding,1,0.5,20.0,Verify all ground lugs are tight.,Test panel grounding and bonding connections.,P-02,12,2000-01-01,0.0691,False
+P-03-SP0.0.208.H,SP0.0.208.H,panel,test gfci,1,0.25,10.0,Document any failed devices.,Test all GFCI breakers and receptacles for proper operation.,P-03,6,2000-01-01,0.0691,False
+P-04-SP0.0.208.H,SP0.0.208.H,panel,inspect breakers,2,0.5,15.0,Replace any defective breakers.,Inspect all breakers for signs of wear or damage.,P-04,9,2000-01-01,0.0691,False
+P-05-SP0.0.208.H,SP0.0.208.H,panel,replacement,1,6.0,2000.0,Label all circuits after replacement.,Replace panel at end of service life or if failed.,P-05,100,2000-01-01,0.0691,False
