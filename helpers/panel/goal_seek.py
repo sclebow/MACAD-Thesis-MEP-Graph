@@ -113,7 +113,10 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
             budget_goal_seek_viewer.clear()
             partial_results = [results[0]] + iteration_log.copy()
             fig = create_visualization(partial_results, number_of_iterations=number_of_iterations, bounds=bounds)
-            budget_goal_seek_viewer.append(pn.pane.Plotly(fig, sizing_mode='stretch_both'))
+            budget_goal_seek_viewer.append(pn.pane.Plotly(
+                fig, 
+                # sizing_mode='scale_both'
+                ))
 
             # Update the results widget with current iteration data
             results_df = pd.DataFrame([results[0]] + iteration_log)
@@ -147,7 +150,7 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
         budget_goal_seek_viewer.clear()
         all_results = [results[0]] + iteration_log + [results[1]]
         fig = create_visualization(all_results, number_of_iterations=number_of_iterations, bounds=bounds)
-        budget_goal_seek_viewer.append(pn.pane.Plotly(fig, sizing_mode='stretch_both'))
+        budget_goal_seek_viewer.append(pn.pane.Plotly(fig))
         results_df = pd.DataFrame(all_results)
         budget_goal_seek_results.value = results_df
         results_markdown = f"""
@@ -424,5 +427,8 @@ def create_visualization(results, number_of_iterations, bounds=None):
 
     # Set the x-axis range to fit all iterations
     fig.update_xaxes(range=[0.5, number_of_iterations + 0.5])
+
+    # Set height 
+    fig.update_layout(height=500)
 
     return fig
