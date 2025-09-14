@@ -34,6 +34,22 @@ The interface is built using the Panel library from Holoviz, which provides a fl
 ### Literature Review
 A review of existing literature reveals various approaches to asset management, including statistical models, machine learning techniques, and optimization algorithms. However, many of these approaches focus on specific aspects of asset management rather than providing a comprehensive simulation environment that integrates lifecycle modeling, maintenance scheduling, and budget allocation.
 
+E. Cotilla-Sanchez, P. D. H. Hines, C. Barrows and S. Blumsack, "Comparing the Topological and Electrical Structure of the North American Electric Power Infrastructure," in IEEE Systems Journal, vol. 6, no. 4, pp. 616-626, Dec. 2012, doi: 10.1109/JSYST.2012.2183033. I. Lendak, A. Erdeljan, D. Čapko and S. Vukmirović, "Algorithms in electric power system one-line diagram creation," 2010 IEEE International Conference on Systems, Man and Cybernetics, Istanbul, Turkey, 2010, pp. 2867-2873, doi: 10.1109/ICSMC.2010.5641927.
+
+I. Lendák, M. Póth, D. Čapko, S. Vukmirović and A. Erdeljan, "Electric power system one-line diagram generation with genetic algorithm," IEEE 8th International Symposium on Intelligent Systems and Informatics, Subotica, Serbia, 2010, pp. 487-491, doi: 10.1109/SISY.2010.5647311.
+
+P. Cuffe and A. Keane, "Visualizing the Electrical Structure of Power Systems," in IEEE Systems Journal, vol. 11, no. 3, pp. 1810-1821, Sept. 2017, doi: 10.1109/JSYST.2015.2427994. 
+
+W. Liao, B. Bak-Jensen, J. R. Pillai, Y. Wang and Y. Wang, "A Review of Graph Neural Networks and Their Applications in Power Systems," in Journal of Modern Power Systems and Clean Energy, vol. 10, no. 2, pp. 345-360, March 2022, doi: 10.35833/MPCE.2021.000058. 
+
+Y. Li, C. Xue, F. Zargari and Y. R. Li, "From Graph Theory to Graph Neural Networks (GNNs): The Opportunities of GNNs in Power Electronics," in IEEE Access, vol. 11, pp. 145067-145084, 2023, doi: 10.1109/ACCESS.2023.3345795.
+
+Weiwei Miao et al 2020 J. Phys.: Conf. Ser. 1684 012105 DOI 10.1088/1742-6596/1684/1/012105
+
+Liu, R., Fu, R., Xu, K., Shi, X., & Ren, X. (2023). A Review of Knowledge Graph-Based Reasoning Technology in the Operation of Power Systems. Applied Sciences, 13(7), 4357. https://doi.org/10.3390/app13074357 
+
+Pauwels, P., Costin, A., & Rasmussen, M. H. (2022). Knowledge Graphs and Linked Data for the Built Environment. In Industry 4.0 for the Built Environment (pp. 157-183). Springer. https://doi.org/10.1007/978-3-030-82430-3_7
+
 ### Existing Tools and Frameworks
 Several existing tools and frameworks address various aspects of asset management, including maintenance scheduling, risk assessment, and budget optimization. However, many of these tools lack the comprehensive integration of graph-based modeling, synthetic data generation, and interactive visualization that AssetPulse offers.
 
