@@ -153,6 +153,29 @@ def run_simulation_with_params(graph_controller: GraphController, money_budget: 
     graph_controller.run_rul_simulation(generate_synthetic_maintenance_logs=generate_synthetic_maintenance_logs)
     current_date_graph = graph_controller.get_current_date_graph()
 
+    results_container.append(pn.pane.Markdown("### Budget Summary:"))
+
+    budget_df = graph_controller.get_budget_overview_df()
+
+    # Update the budget markdown summary
+    maintenance_budget_markdown_summary_str_list = []
+    
+    total_money_budget_spent_to_date = budget_df[budget_df['Month'] <= str(graph_controller.current_date.to_period('M'))]['Used Money'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Money Budget Spent to Date**: ${total_money_budget_spent_to_date:,.2f}")
+
+    total_hours_budget_spent_to_date = budget_df[budget_df['Month'] <= str(graph_controller.current_date.to_period('M'))]['Used Hours'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Hours Budget Spent to Date**: {total_hours_budget_spent_to_date:,.2f}")
+
+    average_monthly_money_budget = budget_df['Used Money'].mean()
+    maintenance_budget_markdown_summary_str_list.append(f"**Average Monthly Money Used (Full Schedule)**: ${average_monthly_money_budget:,.2f}")
+
+    average_monthly_hours_budget = budget_df['Used Hours'].mean()
+    maintenance_budget_markdown_summary_str_list.append(f"**Average Monthly Hours Used (Full Schedule)**: {average_monthly_hours_budget:,.2f}")
+
+    maintenance_budget_markdown_summary = pn.pane.Markdown("\n\n".join(maintenance_budget_markdown_summary_str_list))
+
+    results_container.append(maintenance_budget_markdown_summary)
+
     results_container.append(pn.pane.Markdown("### Full Simulation Graph Visualizations:"))
     # Add the risk level distribution pie chart
     risk_level_pie_chart = get_risk_distribution_fig(current_date_graph)
