@@ -182,7 +182,7 @@ layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller)
 layout_side_by_side_comparison(side_by_side_comparison_container, graph_controller)
 
 # DEBUG Set default tabs
-main_tabs.active = 4
+main_tabs.active = 6
 
 print("Starting Application...")
 
