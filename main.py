@@ -26,7 +26,7 @@ from helpers.panel.pages.budget_input import layout_budget_input
 
 pn.extension('plotly')
 
-TEST_DATA_INDEX = "Simple Building"
+TEST_DATA_INDEX = "Complex Building"
 
 TEST_DATA = {
     "Complex Building": {
@@ -58,8 +58,8 @@ TEST_DATA = {
             "seed": 42
         },
         "DEFAULT_SIMULATION_PARAMS": {
-            "budget_hours": 40,
-            "budget_money": 10000,
+            "budget_hours": 10,
+            "budget_money": 1000,
             "weeks_to_schedule": 360
         }
     },
@@ -182,7 +182,7 @@ layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller)
 layout_side_by_side_comparison(side_by_side_comparison_container, graph_controller)
 
 # DEBUG Set default tabs
-main_tabs.active = 6
+# main_tabs.active = 6
 
 print("Starting Application...")
 

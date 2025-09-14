@@ -683,8 +683,10 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp
     for t in types:
         node_colors.append(type_color_dict.get(t))
 
+    node_dates = [node['date'] for node in node_dict.values()]
+
     fig.add_trace(go.Scatter(
-        x=[node['date'] for node in node_dict.values()],
+        x=node_dates,
         y=list(node_dict.keys()),
         mode='markers',
         marker=dict(size=marker_sizes, color=node_colors),
@@ -734,6 +736,9 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp
 
     # Show xlabels at the top and bottom
     fig.update_layout(
+        xaxis=dict(
+            range=[min(node_dates) - datetime.timedelta(days=15), max(node_dates) + datetime.timedelta(days=15)] if node_dates else [current_date, current_date + datetime.timedelta(days=1)],
+        ),
         xaxis2=dict(
             title='Failure Date',
             overlaying='x', 

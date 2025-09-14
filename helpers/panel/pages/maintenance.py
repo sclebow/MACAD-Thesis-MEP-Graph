@@ -102,4 +102,4 @@ def layout_maintenance(maintenance_container, graph_controller):
     )
     maintenance_container.append(maintenance_tabs)
 
-    maintenance_tabs.active = 1 # DEBUG: Set default tab for debugging
+    # maintenance_tabs.active = 1 # DEBUG: Set default tab for debugging
