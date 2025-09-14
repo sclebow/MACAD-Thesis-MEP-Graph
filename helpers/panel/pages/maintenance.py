@@ -93,11 +93,11 @@ def layout_maintenance(maintenance_container, graph_controller):
     )
 
     maintenance_tabs = pn.Tabs(
-        ("Maintenance Logs & Condition Levels", maintenance_and_condition_container),
-        ("Simulation Schedule", maintenance_schedule_container),
         ("Maintenance Task List", maintenance_task_list_container),
         ("Replacement Task List", replacement_task_list_container),
-        ("Budget", maintenance_budget_container),
+        ("Budget Summary", maintenance_budget_container),
+        ("Maintenance Logs & Condition Levels", maintenance_and_condition_container),
+        ("Simulation Schedule", maintenance_schedule_container),
         sizing_mode="stretch_width"
     )
     maintenance_container.append(maintenance_tabs)

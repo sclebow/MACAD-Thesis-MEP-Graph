@@ -371,9 +371,26 @@ The simulation engine outputs each month's RUL and risk assessment results in a 
 
 ## Simulation Analysis and Visualization
 
+### Budget Summary
+After all scenarios are simulated, the tool generates a summary table displaying the money and time budgets for each scenario, allowing users to quickly compare the different budget allocations.  The following data is shown in the summary table:
+- **Total Money Budget Spent to Date:** This is the cumulative amount of money spent on maintenance tasks across all months simulated up to the current date.
+- **Total Hours Budget Spent to Date:** This is the cumulative number of hours spent on maintenance tasks across all months simulated up to the current date.
+- **Total Money Budget (Full Schedule):** This is the cumulative amount of money spent on maintenance tasks across all months simulated in the full schedule.
+- **Total Hours Budget (Full Schedule):** This is the cumulative number of hours spent on maintenance tasks across all months simulated in the full schedule.
+- **Average Monthly Money Used (Full Schedule):** This is the average amount of money spent per month on maintenance tasks across the full schedule.
+- **Average Monthly Hours Used (Full Schedule):** This is the average number of hours spent per month on maintenance tasks across the full schedule.
+
+An example output is shown below:
+
+&nbsp; **Total Money Budget Spent to Date:** \$474,845.00
+&nbsp; **Total Hours Budget Spent to Date:** 4,373.75  
+&nbsp; **Total Money Budget (Full Schedule):** \$1,047,420.00  
+&nbsp; **Total Hours Budget (Full Schedule):** 9,508.75  
+&nbsp; **Average Monthly Money Used (Full Schedule):** \$1,558.66  
+&nbsp; **Average Monthly Hours Used (Full Schedule):** 14.15
+
 ### System Health Overview
 The system health overview provides a very high-level summary of the overall condition and risk levels of all equipment.  An example output is shown below:
-<br>
 &nbsp; **Average Condition:** 97%
 &nbsp; **Total Number of Nodes:** 40
 &nbsp; **Risk Levels: LOW:** 31 | **MEDIUM:** 8 | **HIGH:** 1
@@ -568,8 +585,47 @@ The final graph is shown below:
 
 You can see in this example that the relationship between budget and average RUL is not linear, and there are diminishing returns as budgets increase.  This highlights the importance of finding an optimal budget that balances cost with asset health outcomes.
 
-
 ## Budget Comparison Tool
+The Budget Comparison Tool enables users to run multiple maintenance budget scenarios in parallel and compare their outcomes side-by-side using a consistent building graph and simulation logic. This interactive module is designed to help users understand how different budget allocations affect key performance indicators (KPIs) such as average Remaining Useful Life (RUL), average condition, total maintenance cost, and task execution rates.
+
+### Workflow and Logic
+
+1. **User Inputs:**
+   - Users specify the number of scenarios to compare (between 2 and 5), the number of months to schedule, and whether to generate synthetic maintenance logs for each simulation.
+   - For each scenario, users can adjust the money and time budgets using input widgets. Default budgets are offset for each scenario to facilitate comparison.
+
+2. **Simulation Execution:**
+   - For each scenario, the tool creates a copy of the building graph and simulation controller, sets the specified budgets, and runs the RUL simulation for the chosen period.
+   - The simulation engine updates the graph with the new budget values and executes the maintenance scheduling, risk assessment, and RUL calculations for each month.
+
+1. **Budget Summary**
+    - For each scenario, the tool generates a budget summary table that is identical to the one described in the Simulation Analysis and Visualization section. This table includes:
+      - **Total Money Budget Spent to Date**
+      - **Total Hours Budget Spent to Date**
+      - **Total Money Budget (Full Schedule)**
+      - **Total Hours Budget (Full Schedule)**
+      - **Average Monthly Money Used (Full Schedule)**
+      - **Average Monthly Hours Used (Full Schedule)**
+
+3. **Visualization and Output:**
+   - For each scenario, the following charts and visualizations are generated:
+     - **Task Status Each Month:** Stacked bar chart showing executed and deferred tasks over time.
+     - **Risk Level Distribution Pie Chart:** Shows the proportion of equipment at each risk level (LOW, MEDIUM, HIGH, CRITICAL).
+     - **Average RUL by Equipment Type Over Time:** Line chart tracking average RUL for each equipment type across the simulation period.
+     - **Total Maintenance Cost Over Time:** Line chart showing cumulative maintenance costs for each scenario.
+4. **KPI Calculation:**
+   - After each simulation, the tool calculates and displays key metrics:
+     - **Average System Health:** The mean condition of all equipment nodes after the simulation period.
+     - **Critical Equipment Count:** The number of equipment nodes classified as 'CRITICAL' risk level.
+     - **Average RUL (Months):** The mean remaining useful life of all equipment, converted to months.
+     - **System Reliability:** The percentage of non-critical equipment nodes, representing overall system reliability.
+
+### Analysis and Insights
+Results, KPI cards, and charts are displayed side-by-side for direct comparison between different budget scenarios.
+
+By comparing scenarios with different budget allocations, users can identify trade-offs between cost, system health, reliability, and risk. The tool supports rapid iteration, allowing users to adjust budgets and immediately see the impact on KPIs and visualizations.
+
+For example, users might find that a moderate increase in budget leads to significant improvements in average RUL and system reliability, while further increases yield diminishing returns. Alternatively, users may discover that the current date shows positive metrics, but the overall costs in the past months were very high, indicating an unsustainable maintenance strategy.
 
 ## Future Work
 Future enhancements to AssetPulse could include:

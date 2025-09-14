@@ -166,6 +166,12 @@ def run_simulation_with_params(graph_controller: GraphController, money_budget: 
     total_hours_budget_spent_to_date = budget_df[budget_df['Month'] <= str(graph_controller.current_date.to_period('M'))]['Used Hours'].sum()
     maintenance_budget_markdown_summary_str_list.append(f"**Total Hours Budget Spent to Date**: {total_hours_budget_spent_to_date:,.2f}")
 
+    total_money_budget_full_schedule = budget_df['Used Money'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Money Budget (Full Schedule)**: ${total_money_budget_full_schedule:,.2f}")
+
+    total_hours_budget_full_schedule = budget_df['Used Hours'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Hours Budget (Full Schedule)**: {total_hours_budget_full_schedule:,.2f}")
+
     average_monthly_money_budget = budget_df['Used Money'].mean()
     maintenance_budget_markdown_summary_str_list.append(f"**Average Monthly Money Used (Full Schedule)**: ${average_monthly_money_budget:,.2f}")
 
@@ -177,6 +183,11 @@ def run_simulation_with_params(graph_controller: GraphController, money_budget: 
     results_container.append(maintenance_budget_markdown_summary)
 
     results_container.append(pn.pane.Markdown("### Full Simulation Graph Visualizations:"))
+
+    # Add the task status bar chart
+    fig = graph_controller.get_bar_chart_figure()
+    results_container.append(fig)
+
     # Add the risk level distribution pie chart
     risk_level_pie_chart = get_risk_distribution_fig(current_date_graph)
     results_container.append(risk_level_pie_chart)

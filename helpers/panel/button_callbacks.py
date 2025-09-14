@@ -356,6 +356,12 @@ def run_simulation(event, graph_controller: GraphController):
     total_hours_budget_spent_to_date = budget_df[budget_df['Month'] <= str(graph_controller.current_date.to_period('M'))]['Used Hours'].sum()
     maintenance_budget_markdown_summary_str_list.append(f"**Total Hours Budget Spent to Date**: {total_hours_budget_spent_to_date:,.2f}")
 
+    total_money_budget_full_schedule = budget_df['Used Money'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Money Budget (Full Schedule)**: ${total_money_budget_full_schedule:,.2f}")
+
+    total_hours_budget_full_schedule = budget_df['Used Hours'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Hours Budget (Full Schedule)**: {total_hours_budget_full_schedule:,.2f}")
+
     average_monthly_money_budget = budget_df['Used Money'].mean()
     maintenance_budget_markdown_summary_str_list.append(f"**Average Monthly Money Used (Full Schedule)**: ${average_monthly_money_budget:,.2f}")
 
