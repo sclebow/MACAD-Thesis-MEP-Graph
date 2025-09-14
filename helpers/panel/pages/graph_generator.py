@@ -122,7 +122,7 @@ def layout_graph_generator(graph_generator_container, graph_controller, TEST_DAT
         generate_button
     )
 
-    generated_graph_viewer = pn.pane.Plotly(sizing_mode="stretch_both")
+    generated_graph_viewer = pn.pane.Plotly(sizing_mode="stretch_width")
     pn.state.cache["generated_graph_viewer"] = generated_graph_viewer
 
     generated_graph_viewer_3d = pn.pane.Plotly(sizing_mode="stretch_width", height=300)
@@ -132,10 +132,9 @@ def layout_graph_generator(graph_generator_container, graph_controller, TEST_DAT
         pn.Row(
             inputs_column,
             pn.Column(
-                pn.pane.Markdown("### Generated Graph Visualization"),
                 generated_graph_viewer,
                 generated_graph_viewer_3d,
-                sizing_mode="stretch_both"
+                # sizing_mode="stretch_both"
             ),
         )
     )

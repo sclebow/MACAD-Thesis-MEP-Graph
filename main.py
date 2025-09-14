@@ -22,10 +22,11 @@ from helpers.panel.pages.settings import layout_settings
 from helpers.panel.pages.graph_generator import layout_graph_generator
 from helpers.panel.pages.budget_goal_seeker import layout_budget_goal_seeker
 from helpers.panel.pages.side_by_side_comparison import layout_side_by_side_comparison
+from helpers.panel.pages.budget_input import layout_budget_input
 
 pn.extension('plotly')
 
-TEST_DATA_INDEX = "Complex Building"
+TEST_DATA_INDEX = "Simple Building"
 
 TEST_DATA = {
     "Complex Building": {
@@ -57,7 +58,7 @@ TEST_DATA = {
             "seed": 42
         },
         "DEFAULT_SIMULATION_PARAMS": {
-            "budget_hours": 1,
+            "budget_hours": 40,
             "budget_money": 10000,
             "weeks_to_schedule": 360
         }
@@ -133,6 +134,8 @@ app_status_container = pn.Row(
 )
 pn.state.cache['app_status_container'] = app_status_container
 
+budget_input = pn.Row(align="center")
+
 # Create main application layout
 app = pn.Column(
     pn.Row(
@@ -144,11 +147,15 @@ app = pn.Column(
     pn.pane.Markdown("<span style='font-size:16px;font-weight:400;line-height:1.2;'>From Data to<br>Foresight</span>", sizing_mode='fixed', width=120, height=80),
         # run_simulation_button,
         current_date_input,
+        budget_input,
         app_status_container,
     ),
     main_tabs,
 )
 pn.state.cache["app"] = app
+
+# Layout the budget input row
+layout_budget_input(budget_input, graph_controller, DEFAULT_SIMULATION_PARAMS)
 
 # Layout the System View
 layout_system_view(system_view_container, graph_controller)
@@ -175,7 +182,7 @@ layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller)
 layout_side_by_side_comparison(side_by_side_comparison_container, graph_controller)
 
 # DEBUG Set default tabs
-main_tabs.active = 5
+main_tabs.active = 4
 
 print("Starting Application...")
 

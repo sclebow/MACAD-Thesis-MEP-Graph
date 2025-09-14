@@ -37,6 +37,69 @@ def layout_settings(settings_container, graph_controller: GraphController, DEFAU
     num_weeks_to_schedule_input.param.watch(lambda event: update_weeks_to_schedule(event, graph_controller), "value")
     graph_controller.update_weeks_to_schedule(DEFAULT_SIMULATION_PARAMS["weeks_to_schedule"])
 
+    pn.state.cache["settings_money_budget_input"] = budget_money_input
+    pn.state.cache["settings_hours_budget_input"] = budget_hours_input
+    pn.state.cache["settings_num_months_input"] = num_weeks_to_schedule_input
+    header_money_budget_input = pn.state.cache["header_money_budget_input"]
+    header_hours_budget_input = pn.state.cache["header_hours_budget_input"]
+    header_num_months_input = pn.state.cache["header_num_months_input"]
+
+    # Bidirectional sync for hours budget input
+    _syncing_hours = {"active": False}
+    def sync_hours_from_settings(event):
+        if not _syncing_hours["active"]:
+            _syncing_hours["active"] = True
+            header_hours_budget_input.value = event.new
+            graph_controller.update_hours_budget(event.new)
+            _syncing_hours["active"] = False
+    def sync_hours_from_header(event):
+        if not _syncing_hours["active"]:
+            _syncing_hours["active"] = True
+            budget_hours_input.value = event.new
+            graph_controller.update_hours_budget(event.new)
+            _syncing_hours["active"] = False
+    budget_hours_input.param.watch(sync_hours_from_settings, "value")
+    header_hours_budget_input.param.watch(sync_hours_from_header, "value")
+
+    # Bidirectional sync for money budget input
+    _syncing_money = {"active": False}
+
+    def sync_money_from_settings(event):
+        if not _syncing_money["active"]:
+            _syncing_money["active"] = True
+            header_money_budget_input.value = event.new
+            graph_controller.update_money_budget(event.new)
+            _syncing_money["active"] = False
+
+    def sync_money_from_header(event):
+        if not _syncing_money["active"]:
+            _syncing_money["active"] = True
+            budget_money_input.value = event.new
+            graph_controller.update_money_budget(event.new)
+            _syncing_money["active"] = False
+
+    budget_money_input.param.watch(sync_money_from_settings, "value")
+    header_money_budget_input.param.watch(sync_money_from_header, "value")
+
+    # Bidirectional sync for num months input
+    _syncing_months = {"active": False}
+    def sync_months_from_settings(event):
+        if not _syncing_months["active"]:
+            _syncing_months["active"] = True
+            header_num_months_input.value = event.new
+            graph_controller.update_weeks_to_schedule(event.new)
+            _syncing_months["active"] = False
+
+    def sync_months_from_header(event):
+        if not _syncing_months["active"]:
+            _syncing_months["active"] = True
+            num_weeks_to_schedule_input.value = event.new
+            graph_controller.update_weeks_to_schedule(event.new)
+            _syncing_months["active"] = False
+
+    num_weeks_to_schedule_input.param.watch(sync_months_from_settings, "value")
+    header_num_months_input.param.watch(sync_months_from_header, "value")
+    
     maintenance_budget_container = pn.Column(
         pn.pane.Markdown("### Maintenance Budget"),
         budget_hours_input,
