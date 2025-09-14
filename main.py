@@ -25,10 +25,10 @@ from helpers.panel.pages.side_by_side_comparison import layout_side_by_side_comp
 
 pn.extension('plotly')
 
-TEST_DATA_INDEX = 0
+TEST_DATA_INDEX = "Complex Building"
 
-TEST_DATA = [
-    {
+TEST_DATA = {
+    "Complex Building": {
         "DEFAULT_BUILDING_PARAMS": {
             "construction_year": pd.Timestamp.now().year - 25,
             "total_load": 1000,  # in kW
@@ -45,7 +45,7 @@ TEST_DATA = [
             "weeks_to_schedule": 360
         }
     },
-    {
+    "Simple Building": {
         "DEFAULT_BUILDING_PARAMS": {
             "construction_year": pd.Timestamp.now().year - 25,
             "total_load": 200,  # in kW
@@ -62,7 +62,24 @@ TEST_DATA = [
             "weeks_to_schedule": 360
         }
     },
-]
+    "Very Large, Multiple Riser Building": {
+        "DEFAULT_BUILDING_PARAMS": {
+            "construction_year": pd.Timestamp.now().year - 25,
+            "total_load": 1000,  # in kW
+            "building_length": 50.0,  # in meters
+            "building_width": 50.0,   # in meters
+            "num_floors": 12,
+            "floor_height": 3.5,      # in meters
+            "cluster_strength": 0.95, # between 0 and 1
+            "seed": 42
+        },
+        "DEFAULT_SIMULATION_PARAMS": {
+            "budget_hours": 40,
+            "budget_money": 10000,
+            "weeks_to_schedule": 360
+        }
+    },
+}
 
 DEFAULT_BUILDING_PARAMS = TEST_DATA[TEST_DATA_INDEX]["DEFAULT_BUILDING_PARAMS"]
 DEFAULT_SIMULATION_PARAMS = TEST_DATA[TEST_DATA_INDEX]["DEFAULT_SIMULATION_PARAMS"]
@@ -149,7 +166,7 @@ layout_analytics(analytics_container, graph_controller)
 layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS)
 
 # Layout Graph Generator
-layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS)
+layout_graph_generator(graph_generator_container, graph_controller, TEST_DATA, TEST_DATA_INDEX)
 
 # Layout Budget Goal Seeker
 layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller)
@@ -158,7 +175,7 @@ layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller)
 layout_side_by_side_comparison(side_by_side_comparison_container, graph_controller)
 
 # DEBUG Set default tabs
-main_tabs.active = 7
+main_tabs.active = 5
 
 print("Starting Application...")
 

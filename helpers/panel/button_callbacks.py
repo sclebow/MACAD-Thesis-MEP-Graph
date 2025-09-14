@@ -254,6 +254,13 @@ def update_app_status(message: str):
 def run_simulation(event, graph_controller: GraphController):
     print("\nRunning simulation...")
 
+    update_app_status("Updating System View...")
+    generated_graph_viewer = pn.state.cache["generated_graph_viewer"]
+    generated_graph_viewer.object = graph_controller.get_visualization_data()
+
+    generated_graph_viewer_3d = pn.state.cache["generated_graph_viewer_3d"]
+    generated_graph_viewer_3d.object = graph_controller.get_visualization_data(viz_type='3d')
+
     update_app_status("Running RUL Simulation... Please wait.")
     graph_controller.run_rul_simulation(generate_synthetic_maintenance_logs=pn.state.cache["generate_synthetic_maintenance_logs"])
 
