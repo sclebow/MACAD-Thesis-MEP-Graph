@@ -673,8 +673,8 @@ By comparing scenarios with different budget allocations, users can identify tra
 
 For example, users might find that a moderate increase in budget leads to significant improvements in average RUL and system reliability, while further increases yield diminishing returns. Alternatively, users may discover that the current date shows positive metrics, but the overall costs in the past months were very high, indicating an unsustainable maintenance strategy.
 
-
-## Future enhancements to AssetPulse could include:
+## Future Work
+### Future enhancements to AssetPulse could include:
 
 1. Using real-world asset history and maintenance data to determine accurate simulation parameters, refine simulation logic, and validate synthetic data generation.
     
