@@ -14,6 +14,9 @@ AssetPulse is an advanced asset management simulation tool and synthetic data ge
 Effective management of physical assets is critical for operational efficiency and cost control across industries. However, many organizations face challenges in modeling asset lifecycles, predicting maintenance needs, and allocating resources optimally due to a lack of data-driven decision-assistance tools.
 
 AssetPulse aims to address these challenges by providing a simulation environment that allows users to model asset behaviors, evaluate different budget strategies, and make informed decisions based on simulated outcomes.
+ 
+### Emphasis on Budget Constraints and CAPEX vs. Operational Readiness
+In asset management, budget constraints often force organizations to choose between capital expenditure (CAPEX) investments and ongoing operational readiness-related refurbishment works. AssetPulse places special emphasis on simulating scenarios where CAPEX development is favored, allowing users to explore the long-term return on investment (ROI) of strategic asset upgrades and replacements versus frequent, short-term refurbishments. By modeling these trade-offs, AssetPulse helps users understand how prioritizing CAPEX can lead to greater asset longevity, reduced lifecycle costs, and improved financial outcomes, even under strict budget limitations. The tool supports data-driven decision-making by quantifying the impact of different budget allocation strategies, highlighting the potential for CAPEX investments to deliver superior ROI compared to reactive operational expenditures.
 
 ### Objectives
 1. Develop a graph-based simulation tool that models asset management scenarios, including asset lifecycles, maintenance schedules, and budget allocations.
@@ -36,6 +39,36 @@ A review of existing literature reveals various approaches to asset management, 
 
 ### Existing Tools and Frameworks
 Several existing tools and frameworks address various aspects of asset management, including maintenance scheduling, risk assessment, and budget optimization. However, many of these tools lack the comprehensive integration of graph-based modeling, synthetic data generation, and interactive visualization that AssetPulse offers.
+
+1. IBM Maximo
+
+- Enterprise Asset Management (EAM) platform.
+- Supports asset lifecycle, preventive/reactive maintenance, risk management, and budget planning.
+- Includes some predictive analytics and scheduling, but not graph-based simulation.
+
+2. SAP Intelligent Asset Management
+
+- Asset network, predictive maintenance, and risk management.
+- Integrates with business rules and scenario planning.
+- Focuses on enterprise integration, not custom graph/network simulation.
+
+3. Uptake, Fiix, and other CMMS platforms
+
+- Computerized Maintenance Management Systems (CMMS) with asset tracking, maintenance scheduling, and analytics.
+- Some offer risk scoring and scenario analysis, but typically not network/graph-based modeling.
+
+4. Bentley AssetWise
+
+- Infrastructure asset management with network modeling.
+- Supports lifecycle, risk, and maintenance planning for large infrastructure.
+- More focused on civil/utility networks than building systems.
+
+Key differentiators of AssetPulse:
+
+- Explicit graph/network modeling of building systems.
+- Automated business rule enforcement for budget, risk, and maintenance.
+- Scenario simulation, analysis and interactive visualization.
+- Customizable for complex infrastructure, not just standard asset lists.
 
 ## Research Questions
 1. How can graph-based methods support the tracking of changes and lifecycle management of building systems?
