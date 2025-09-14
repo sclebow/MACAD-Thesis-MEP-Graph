@@ -975,7 +975,7 @@ def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Times
         x=all_periods,
         y=total_money_costs,
         mode='lines+markers',
-        name='Total Maintenance Costs',
+        name='Total Combined Costs',
         fill='tozeroy',
         line=dict(shape='spline')
     ))
@@ -1048,9 +1048,12 @@ def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Times
                         method="relayout",
                         args=[{"xaxis.range": default_range}],
                     )
-                ],
+                ], 
             )
         ]
     )
+
+    # Add vertical hover mode
+    fig.update_layout(hovermode='x unified')
 
     return fig

@@ -3,7 +3,7 @@ import pandas as pd
 from helpers.controllers.graph_controller import GraphController
 import copy
 from helpers.panel.analytics_viz import _create_enhanced_kpi_card
-from helpers.visualization import get_risk_distribution_fig, get_equipment_conditions_fig
+from helpers.visualization import get_risk_distribution_fig, get_equipment_conditions_fig, get_maintenance_costs_fig
 
 def layout_side_by_side_comparison(side_by_side_comparison_container, graph_controller: GraphController):
     side_by_side_comparison_container.append(pn.pane.Markdown("### Side-by-Side Comparison"))
@@ -64,7 +64,9 @@ def layout_side_by_side_comparison(side_by_side_comparison_container, graph_cont
                 "input_container": simulation_input_container,
                 "money_budget": default_money_budget + (simulation_number - 1) * 100.0 * 20,  # Offset the default budget for each simulation
                 "time_budget": default_time_budget + (simulation_number - 1) * 1 * 20,        # Offset the default
-                "results_container": pn.Column(),
+                "results_container": pn.Column(
+                    width=500,
+                ),
             })
             build_simulation_container(
                 simulation_container=simulation_input_container, 
@@ -253,3 +255,10 @@ def run_simulation_with_params(graph_controller: GraphController, money_budget: 
         current_date=graph_controller.current_date,
     )
     results_container.append(average_rul_line_chart)
+
+    # Add the monthly budget and time information
+    fig = get_maintenance_costs_fig(
+        prioritized_schedule=graph_controller.prioritized_schedule,
+        current_date=graph_controller.current_date,
+    )
+    results_container.append(fig)

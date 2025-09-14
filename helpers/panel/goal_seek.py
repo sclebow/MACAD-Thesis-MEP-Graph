@@ -321,7 +321,7 @@ def create_visualization(results, number_of_iterations, bounds=None):
             yaxis_range = [bounds[0][0] * 0.8, bounds[0][1] * 1.2]
             yaxis2_range = [bounds[1][0] * 0.8, bounds[1][1] * 1.2]
             metric_delta = max(metric_values) - min(metric_values)
-            yaxis3_range = [min(metric_values) - metric_delta * 0.2, max(metric_values) + metric_delta * 0.1]
+            yaxis3_range = [min(metric_values) - metric_delta * 0.5, max(metric_values) + metric_delta * 0.1]
 
         # Get the colors from the traces
         yaxis_color = fig.data[0].line.color
@@ -413,6 +413,8 @@ def create_visualization(results, number_of_iterations, bounds=None):
         if bounds:
             yaxis_range = [bounds[0] * 0.8, bounds[1] * 1.2]
             fig.update_layout(yaxis=dict(range=yaxis_range))
+
+    # Set the yaxis3
 
     # Layout for all cases
     fig.update_layout(
