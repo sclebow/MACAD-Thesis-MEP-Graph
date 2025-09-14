@@ -11,7 +11,7 @@ AssetPulse is an advanced asset management simulation tool and synthetic data ge
 
 ## Introduction
 ### Problem
-Effective management of physical assets is critical for operational efficiency and cost control across industries. However, many organizations face challenges in modeling asset lifecycles, predicting maintenance needs, and allocating resources optimally due to a lack of data-driven decision-assistance tools.
+Effective management of physical assets is critical for operational efficiency and cost control across industries. However, many organizations face challenges in modeling asset lifecycles, predicting maintenance needs, and allocating resources optimally due to a lack of data-driven decision-assistance tools. The financial impact of operational readiness related refurbishment works and frequency of maintenance activities is difficult to forecast or measure, while on an empirical basis they are potent cost savers on the long run. Meanwhile, the ROI of infrastructure development related CAPEX works is relatively straightforward to forecast and justify, hence they are overly favored during budget allocations.
 
 AssetPulse aims to address these challenges by providing a simulation environment that allows users to model asset behaviors, evaluate different budget strategies, and make informed decisions based on simulated outcomes.
 
@@ -37,6 +37,36 @@ A review of existing literature reveals various approaches to asset management, 
 ### Existing Tools and Frameworks
 Several existing tools and frameworks address various aspects of asset management, including maintenance scheduling, risk assessment, and budget optimization. However, many of these tools lack the comprehensive integration of graph-based modeling, synthetic data generation, and interactive visualization that AssetPulse offers.
 
+1. IBM Maximo
+
+- Enterprise Asset Management (EAM) platform.
+- Supports asset lifecycle, preventive/reactive maintenance, risk management, and budget planning.
+- Includes some predictive analytics and scheduling, but not graph-based simulation.
+
+2. SAP Intelligent Asset Management
+
+- Asset network, predictive maintenance, and risk management.
+- Integrates with business rules and scenario planning.
+- Focuses on enterprise integration, not custom graph/network simulation.
+
+3. Uptake, Fiix, and other CMMS platforms
+
+- Computerized Maintenance Management Systems (CMMS) with asset tracking, maintenance scheduling, and analytics.
+- Some offer risk scoring and scenario analysis, but typically not network/graph-based modeling.
+
+4. Bentley AssetWise
+
+- Infrastructure asset management with network modeling.
+- Supports lifecycle, risk, and maintenance planning for large infrastructure.
+- More focused on civil/utility networks than building systems.
+
+Key differentiators of AssetPulse:
+
+- Explicit graph/network modeling of building systems.
+- Automated business rule enforcement for budget, risk, and maintenance.
+- Scenario simulation, analysis and interactive visualization.
+- Customizable for complex infrastructure, not just standard asset lists.
+
 ## Research Questions
 1. How can graph-based methods support the tracking of changes and lifecycle management of building systems?
 2. How can synthetic data generation be utilized to create realistic asset management scenarios for testing and validation?
@@ -57,7 +87,7 @@ Several existing tools and frameworks address various aspects of asset managemen
     -  Conduct experiments to validate the simulation accuracy and evaluate the impact of different budget allocation strategies using the synthetic data.
 
 ## Synthetic Data Generation
-To quickly generate realistic building data for testing and validation, we developed a synthetic data generator. This tool creates building electrical system graphs based on the following user-defined parameters:
+We were unable to acquire appropriate real-life dataframes and decided to build the application using synthetic data. To quickly generate realistic building data for testing and validation, we developed a synthetic data generator. This tool creates building electrical system graphs based on the following user-defined parameters:
 
 ### User-Defined Parameters
 - Construction Year
@@ -147,21 +177,6 @@ The required node attributes for the RUL simulation are:
   - Cost to replace the equipment, allows for varying costs based on unique instances of an equipment type.  For example, a larger transformer may cost more to replace than a smaller one of the same type.
 - current_condition
   - Current condition of the equipment, on a scale from 0.0 (failed) to 1.0 (new). If not provided, defaults to 1.0.
-
-## Risk Assessment
-Before calculating RUL, the simulation engine assesses the risk level of failure for each piece of equipment based on its graph attributes.  This assessment uses the load seen at each node and the quantity of total downstream equipment nodes in the graph to determine a risk score.  Equipment with higher loads and more downstream dependencies will have higher risk scores, indicating that their failure would have a more significant impact on the overall system performance.
-
-We use the following formula to calculate the risk score for each piece of equipment:
-
-```
-propagated_power = graph.nodes[node].get('propagated_power', 0) or 0
-norm_power = propagated_power / total_load if total_load else 0
-descendants_count = filtered_descendants_count(graph, node)
-norm_descendants = descendants_count / max_descendants
-risk = (norm_power + norm_descendants) / 2
-```
-
-The filtered_descendants_count function counts the number of downstream equipment nodes, excluding end loads, to focus on critical distribution components. The risk score is then normalized between 0 and 1, with higher values indicating greater risk.
 
 ## Remaining Useful Life (RUL) Simulation
 Once the synthetic building data is generated, users can simulate the Remaining Useful Life (RUL) of equipment based on various parameters. These parameters allow users to customize how maintenance deferrals, aging, and equipment types affect RUL calculations.
@@ -368,6 +383,21 @@ The simulation engine outputs each month's RUL and risk assessment results in a 
   - List of equipment replacement tasks completed during the month, with details on replaced components and associated costs.
 - replacement_tasks_not_executed
   - List of planned replacement tasks that were not executed, including reasons.
+
+## Risk Assessment
+Before calculating RUL, the simulation engine assesses the risk level of failure for each piece of equipment based on its graph attributes.  This assessment uses the load seen at each node and the quantity of total downstream equipment nodes in the graph to determine a risk score.  Equipment with higher loads and more downstream dependencies will have higher risk scores, indicating that their failure would have a more significant impact on the overall system performance.
+
+We use the following formula to calculate the risk score for each piece of equipment:
+
+```
+propagated_power = graph.nodes[node].get('propagated_power', 0) or 0
+norm_power = propagated_power / total_load if total_load else 0
+descendants_count = filtered_descendants_count(graph, node)
+norm_descendants = descendants_count / max_descendants
+risk = (norm_power + norm_descendants) / 2
+```
+
+The filtered_descendants_count function counts the number of downstream equipment nodes, excluding end loads, to focus on critical distribution components. The risk score is then normalized between 0 and 1, with higher values indicating greater risk.
 
 ## Simulation Analysis and Visualization
 
