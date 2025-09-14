@@ -476,6 +476,9 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
                     ))
     fig.update_layout(title='3D Graph Colored by Type')
 
+    # Default to no node labels
+    fig.update_traces(text=[None]*len(edge_trace.x), selector=dict(mode='markers+text'))
+
     # --- Visualization Buttons ---
     fig.update_layout(
         updatemenus=[
