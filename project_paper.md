@@ -34,6 +34,22 @@ The interface is built using the Panel library from Holoviz, which provides a fl
 ### Literature Review
 A review of existing literature reveals various approaches to asset management, including statistical models, machine learning techniques, and optimization algorithms. However, many of these approaches focus on specific aspects of asset management rather than providing a comprehensive simulation environment that integrates lifecycle modeling, maintenance scheduling, and budget allocation.
 
+E. Cotilla-Sanchez, P. D. H. Hines, C. Barrows and S. Blumsack, "Comparing the Topological and Electrical Structure of the North American Electric Power Infrastructure," in IEEE Systems Journal, vol. 6, no. 4, pp. 616-626, Dec. 2012, doi: 10.1109/JSYST.2012.2183033. I. Lendak, A. Erdeljan, D. Čapko and S. Vukmirović, "Algorithms in electric power system one-line diagram creation," 2010 IEEE International Conference on Systems, Man and Cybernetics, Istanbul, Turkey, 2010, pp. 2867-2873, doi: 10.1109/ICSMC.2010.5641927.
+
+I. Lendák, M. Póth, D. Čapko, S. Vukmirović and A. Erdeljan, "Electric power system one-line diagram generation with genetic algorithm," IEEE 8th International Symposium on Intelligent Systems and Informatics, Subotica, Serbia, 2010, pp. 487-491, doi: 10.1109/SISY.2010.5647311.
+
+P. Cuffe and A. Keane, "Visualizing the Electrical Structure of Power Systems," in IEEE Systems Journal, vol. 11, no. 3, pp. 1810-1821, Sept. 2017, doi: 10.1109/JSYST.2015.2427994. 
+
+W. Liao, B. Bak-Jensen, J. R. Pillai, Y. Wang and Y. Wang, "A Review of Graph Neural Networks and Their Applications in Power Systems," in Journal of Modern Power Systems and Clean Energy, vol. 10, no. 2, pp. 345-360, March 2022, doi: 10.35833/MPCE.2021.000058. 
+
+Y. Li, C. Xue, F. Zargari and Y. R. Li, "From Graph Theory to Graph Neural Networks (GNNs): The Opportunities of GNNs in Power Electronics," in IEEE Access, vol. 11, pp. 145067-145084, 2023, doi: 10.1109/ACCESS.2023.3345795.
+
+Weiwei Miao et al 2020 J. Phys.: Conf. Ser. 1684 012105 DOI 10.1088/1742-6596/1684/1/012105
+
+Liu, R., Fu, R., Xu, K., Shi, X., & Ren, X. (2023). A Review of Knowledge Graph-Based Reasoning Technology in the Operation of Power Systems. Applied Sciences, 13(7), 4357. https://doi.org/10.3390/app13074357 
+
+Pauwels, P., Costin, A., & Rasmussen, M. H. (2022). Knowledge Graphs and Linked Data for the Built Environment. In Industry 4.0 for the Built Environment (pp. 157-183). Springer. https://doi.org/10.1007/978-3-030-82430-3_7
+
 ### Existing Tools and Frameworks
 Several existing tools and frameworks address various aspects of asset management, including maintenance scheduling, risk assessment, and budget optimization. However, many of these tools lack the comprehensive integration of graph-based modeling, synthetic data generation, and interactive visualization that AssetPulse offers.
 
@@ -658,16 +674,112 @@ By comparing scenarios with different budget allocations, users can identify tra
 For example, users might find that a moderate increase in budget leads to significant improvements in average RUL and system reliability, while further increases yield diminishing returns. Alternatively, users may discover that the current date shows positive metrics, but the overall costs in the past months were very high, indicating an unsustainable maintenance strategy.
 
 ## Future Work
-Future enhancements to AssetPulse could include:
+### Future enhancements to AssetPulse could include:
 
 1. Using real-world asset history and maintenance data to determine accurate simulation parameters, refine simulation logic, and validate synthetic data generation.
-2. Incorporating more complex asset interactions and dependencies in the graph model to better simulate real-world scenarios.
-3. Incorporate remodeling and expansion scenarios to simulate changes in building systems over time.
-4. Integrate machine learning techniques to predict failures and optimize maintenance schedules based on historical data.
-5. Expand the user interface to include more advanced visualization and reporting features, enabling deeper insights into asset management strategies.
-6. Expand the user interface to include more advanced system graph interaction and editing capabilities, allowing users to modify the building graph directly within the application.
-7. Incorporate real-time data integration from building management systems (BMS) or Internet of Things (IoT) sensors to inform RUL calculations and maintenance scheduling.
-8. Develop a collaborative platform where multiple users can work on the same asset management scenarios, sharing insights and strategies.
+    
+    Purpose: Improve the accuracy and reliability of simulation results.
+
+    Enhancements:
+    - Build connectors to import CMMS (Computerized Maintenance Management System) and BMS (Building Management System) data.
+    - Validate synthetic data generation models by comparing their predictions against historical failure/maintenance records.
+    - Use historical data to fine-tune degradation curves, failure probabilities, and RUL adjustment factors.
+    - Implement statistical dashboards comparing simulated vs. actual maintenance outcomes.
+
+2. Expand beyond the electrical discipline to all disciplines and tailor functionality to their specifics
+
+    Purpose: Create a comprehensive, multi-domain digital twin for holistic asset management.
+
+    Enhancements:
+    - Extend beyond electrical to include mechanical, plumbingm structural, architectural, fire safety, IT, transportation, and sustainability systems.
+    - Model cross-discipline dependencies (e.g., structural changes affecting MEP layouts or fire safety zones).
+    - Simulate cascading impacts across disciplines for risk forecasting and lifecycle planning.
+    - Provide unified visualization and reporting to compare multi-system trade-offs in a single interface.
+    - Enable integrated decision-making workflows where maintenance, upgrades, or retrofits can be evaluated for their effects across all building systems.
+
+3. Integrate IFC/BIM input workflow for automated graph generation and add a 3D viewer for interactive model review and FM queries.
+
+    Purpose: Streamline graph generation and improve spatial context.
+
+    Enhancements:
+    - Parse IFC or Revit files to automatically create system graphs, including risers, transformers, and loads.
+    - Integrate open-source BIM libraries (e.g., IfcOpenShell) for data extraction.
+    - Add a 3D WebGL-based viewer (e.g., using Fragments) for interactive model exploration.
+    - Enable FM queries (e.g., “Show all switchboards on Floor 3” or “Highlight transformers older than 10 years”).
+    - Provide side-by-side 2D graph and 3D model linking—selecting a node in one highlights it in the other.
+
+4. Incorporating more complex asset interactions and dependencies in the graph model to better simulate real-world scenarios.
+    
+    Purpose: More realistic simulations and risk propagation.
+
+    Enhancements:
+    - Support cascading failures (e.g., transformer failure causing downstream loads to degrade faster).
+    - Add dependency weights for probabilistic risk transfer between nodes.
+    - Model shared resources (e.g., backup generators supplying multiple risers) and redundancy logic.
+    - Allow asset condition to affect energy efficiency or operating cost in simulations.
+
+5. Incorporate remodeling and expansion scenarios to simulate changes in building systems over time.
+
+    Purpose: Plan for future modifications and system growth.
+
+    Enhancements:
+    - Add a scenario editor to “clone” a baseline graph and apply remodeling actions 
+    - Simulate impacts on risk, maintenance cost, and asset lifespan after system expansions.
+    - Incorporate construction timelines and downtime effects on maintenance strategies.
+    - Visualize before-and-after states in both 2D and 3D views.
+
+6. Integrate machine learning techniques to predict failures and optimize maintenance schedules based on historical data.
+
+    Purpose: Move beyond static rules toward data-driven forecasting.
+
+    Enhancements:
+    - Use supervised learning on historical maintenance and failure records to predict time-to-failure for components.
+    - Train models to optimize maintenance schedules for minimal cost and risk.
+    - Use clustering to identify patterns in similar assets across portfolios.
+    - Implement anomaly detection for sensor streams (flagging early warning signs of failure).
+    - Provide explainable AI features to communicate why a prediction was made.
+
+7. Expand the user interface to include more advanced visualization and reporting features, enabling deeper insights into asset management strategies.
+
+    Purpose: Enhance decision-making with rich, interactive insights.
+
+    Enhancements:
+    - Add multi-year cost and risk trend charts with drill-down to individual systems.
+    - Develop risk heatmaps and Sankey diagrams showing resource flows and dependencies.
+    - Provide PDF/Excel export of simulation results with customizable templates.
+
+8. Expand the user interface to include more advanced system graph interaction and editing capabilities, allowing users to modify the building graph directly within the application.
+
+    Purpose: Improve usability for facility managers and engineers.
+
+    Enhancements:
+    - Allow drag-and-drop graph editing within the browser (e.g., adding/deleting equipment, re-routing connections).
+    - Support undo/redo history for safe experimentation.
+    - Enable versioning of system graphs (track changes over time).
+    - Add context-sensitive menus on nodes for editing properties or linking documents/specs.
+    - Auto-align and auto-layout options to maintain clean graph visuals after edits.
+
+9. Incorporate real-time data integration from building management systems (BMS) or Internet of Things (IoT) sensors to inform RUL calculations and maintenance scheduling.
+
+    Purpose: Enable predictive maintenance and live system monitoring.
+
+    Enhancements:
+    - Connect to IoT platforms for streaming sensor data.
+    - Dynamically update RUL calculations as new readings arrive (e.g., temperature spikes reducing lifespan).
+    - Display live health indicators and risk levels on the graph.
+    - Trigger alerts or simulations automatically when conditions exceed thresholds.
+    - Provide an API to ingest external predictive signals.
+
+10. Develop a collaborative platform where multiple users can work on the same asset management scenarios, sharing insights and strategies.
+
+    Purpose: Support multi-user workflows for portfolio-level asset management.
+
+    Enhancements:
+    - Implement user accounts with role-based permissions (e.g., admin, engineer, analyst).
+    - Add shared scenario editing and commenting tools.
+    - Enable real-time co-editing of graphs with WebSocket synchronization.
+    - Maintain a changelog and version history for accountability.
+    - Provide secure cloud storage for simulation results and configuration files.
 
 ## Appendix A: Example Test Data: Simple Building
 The following parameters were used to generate a simple building for testing and validation of the AssetPulse simulation tool:
