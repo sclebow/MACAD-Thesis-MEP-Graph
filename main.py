@@ -22,13 +22,14 @@ from helpers.panel.pages.settings import layout_settings
 from helpers.panel.pages.graph_generator import layout_graph_generator
 from helpers.panel.pages.budget_goal_seeker import layout_budget_goal_seeker
 from helpers.panel.pages.side_by_side_comparison import layout_side_by_side_comparison
+from helpers.panel.pages.budget_input import layout_budget_input
 
 pn.extension('plotly')
 
-TEST_DATA_INDEX = 0
+TEST_DATA_INDEX = "Complex Building"
 
-TEST_DATA = [
-    {
+TEST_DATA = {
+    "Complex Building": {
         "DEFAULT_BUILDING_PARAMS": {
             "construction_year": pd.Timestamp.now().year - 25,
             "total_load": 1000,  # in kW
@@ -45,7 +46,7 @@ TEST_DATA = [
             "weeks_to_schedule": 360
         }
     },
-    {
+    "Simple Building": {
         "DEFAULT_BUILDING_PARAMS": {
             "construction_year": pd.Timestamp.now().year - 25,
             "total_load": 200,  # in kW
@@ -57,12 +58,29 @@ TEST_DATA = [
             "seed": 42
         },
         "DEFAULT_SIMULATION_PARAMS": {
-            "budget_hours": 1,
+            "budget_hours": 10,
+            "budget_money": 1000,
+            "weeks_to_schedule": 360
+        }
+    },
+    "Very Large, Multiple Riser Building": {
+        "DEFAULT_BUILDING_PARAMS": {
+            "construction_year": pd.Timestamp.now().year - 25,
+            "total_load": 1000,  # in kW
+            "building_length": 50.0,  # in meters
+            "building_width": 50.0,   # in meters
+            "num_floors": 12,
+            "floor_height": 3.5,      # in meters
+            "cluster_strength": 0.95, # between 0 and 1
+            "seed": 42
+        },
+        "DEFAULT_SIMULATION_PARAMS": {
+            "budget_hours": 40,
             "budget_money": 10000,
             "weeks_to_schedule": 360
         }
     },
-]
+}
 
 DEFAULT_BUILDING_PARAMS = TEST_DATA[TEST_DATA_INDEX]["DEFAULT_BUILDING_PARAMS"]
 DEFAULT_SIMULATION_PARAMS = TEST_DATA[TEST_DATA_INDEX]["DEFAULT_SIMULATION_PARAMS"]
@@ -96,7 +114,7 @@ main_tabs = pn.Tabs(
     ("Settings", settings_container),
     ("Graph Generator", graph_generator_container),
     ("Budget Goal Seeker", budget_goal_seeker_container),
-    ("Side-by-Side Comparison", side_by_side_comparison_container),
+    ("Budget Comparison", side_by_side_comparison_container),
     dynamic=True,
     tabs_location="left",
     stylesheets=[stylesheet]
@@ -115,6 +133,8 @@ app_status_container = pn.Row(
     align="center",
 )
 pn.state.cache['app_status_container'] = app_status_container
+
+budget_input = pn.Row(align="center")
 
 # Create main application layout
 app = pn.Column(
@@ -148,10 +168,18 @@ app = pn.Column(
             ),
             # run_simulation_button,
         ),
+    pn.pane.Markdown("<span style='font-size:16px;font-weight:400;line-height:1.2;'>From Data to<br>Foresight</span>", sizing_mode='fixed', width=120, height=80),
+        # run_simulation_button,
+        current_date_input,
+        budget_input,
+        app_status_container,
     ),
     main_tabs,
 )
 pn.state.cache["app"] = app
+
+# Layout the budget input row
+layout_budget_input(budget_input, graph_controller, DEFAULT_SIMULATION_PARAMS)
 
 # Layout the System View
 layout_system_view(system_view_container, graph_controller)
@@ -169,7 +197,7 @@ layout_analytics(analytics_container, graph_controller)
 layout_settings(settings_container, graph_controller, DEFAULT_SIMULATION_PARAMS)
 
 # Layout Graph Generator
-layout_graph_generator(graph_generator_container, graph_controller, DEFAULT_BUILDING_PARAMS)
+layout_graph_generator(graph_generator_container, graph_controller, TEST_DATA, TEST_DATA_INDEX)
 
 # Layout Budget Goal Seeker
 layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller)
@@ -178,7 +206,7 @@ layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller)
 layout_side_by_side_comparison(side_by_side_comparison_container, graph_controller)
 
 # DEBUG Set default tabs
-main_tabs.active = 7
+# main_tabs.active = 6
 
 print("Starting Application...")
 

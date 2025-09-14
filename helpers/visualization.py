@@ -305,11 +305,10 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
     Visualizes a NetworkX graph in 3D using Plotly.
     Uses the x, y, z coordinates of nodes for 3D positioning.
     """
-    pos = nx.spring_layout(graph, dim=3)
 
-    # Get node types for color mapping
+    # --- Node and Edge Preparation ---
     node_types = [graph.nodes[n].get('type', 'Unknown') for n in graph.nodes]
-    unique_types = list(sorted(set(node_types)))
+    unique_types = sorted(set(node_types))
     plotly_palette = [
         '#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3',
         '#FF6692', '#B6E880', '#FF97FF', '#FECB52', '#1f77b4', '#ff7f0e',
@@ -317,22 +316,13 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
         '#bcbd22', '#17becf'
     ]
     type_color_map = {t: plotly_palette[i % len(plotly_palette)] for i, t in enumerate(unique_types)}
-    node_colors = [type_color_map[t] for t in node_types]
 
-    node_x = []
-    node_y = []
-    node_z = []
-    names = []
-    node_text = []
-    node_type_list = []
-    for idx, (node, attrs) in enumerate(graph.nodes(data=True)):
-        x = attrs.get('x', 0)
-        y = attrs.get('y', 0)
-        z = attrs.get('z', 0)
+    node_x, node_y, node_z, names, node_text, node_type_list = [], [], [], [], [], []
+    for node, attrs in graph.nodes(data=True):
+        x, y, z = attrs.get('x', 0), attrs.get('y', 0), attrs.get('z', 0)
         node_x.append(x)
         node_y.append(y)
         node_z.append(z)
-        # Use full name or short name based on toggle
         display_name = attrs.get('full_name', node) if use_full_names else node
         names.append(display_name)
         node_type = attrs.get('type', 'Unknown')
@@ -340,48 +330,29 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
         hover = f"{display_name}<br>Type: {node_type}<br>" + "<br>".join([f"{k}: {v}" for k, v in attrs.items() if k not in ['type', 'full_name']])
         node_text.append(hover)
 
-    # Set axis ranges to ensure equal scale
+    # Axis range for equal scaling
     all_coords = node_x + node_y + node_z
     if all_coords:
-        min_coord = min(all_coords)
-        max_coord = max(all_coords)
-        # Add a small margin
+        min_coord, max_coord = min(all_coords), max(all_coords)
         margin = 0.05 * (max_coord - min_coord) if max_coord > min_coord else 1
         axis_range = [min_coord - margin, max_coord + margin]
     else:
         axis_range = [-1, 1]
 
-    edge_x = []
-    edge_y = []
-    edge_z = []
-    edge_marker_x = []
-    edge_marker_y = []
-    edge_marker_z = []
-    edge_marker_text = []
+    # Edge traces
+    edge_x, edge_y, edge_z = [], [], []
+    edge_marker_x, edge_marker_y, edge_marker_z, edge_marker_text = [], [], [], []
     for edge in graph.edges():
-        x0 = graph.nodes[edge[0]].get('x', 0)
-        y0 = graph.nodes[edge[0]].get('y', 0)
-        z0 = graph.nodes[edge[0]].get('z', 0)
-        x1 = graph.nodes[edge[1]].get('x', 0)
-        y1 = graph.nodes[edge[1]].get('y', 0)
-        z1 = graph.nodes[edge[1]].get('z', 0)
-        # First segment: (x0, y0, z0) -> (x1, y1, z0)
-        edge_x += [x0, x1, None]
-        edge_y += [y0, y1, None]
-        edge_z += [z0, z0, None]
-        # Second segment: (x1, y1, z0) -> (x1, y1, z1)
-        edge_x += [x1, x1, None]
-        edge_y += [y1, y1, None]
-        edge_z += [z0, z1, None]
-        # Add invisible marker at the bend and at the midpoint of the vertical segment for better hover
-        bend_x = x1
-        bend_y = y1
-        bend_z = z0
+        x0, y0, z0 = graph.nodes[edge[0]].get('x', 0), graph.nodes[edge[0]].get('y', 0), graph.nodes[edge[0]].get('z', 0)
+        x1, y1, z1 = graph.nodes[edge[1]].get('x', 0), graph.nodes[edge[1]].get('y', 0), graph.nodes[edge[1]].get('z', 0)
+        edge_x += [x0, x1, None, x1, x1, None]
+        edge_y += [y0, y1, None, y1, y1, None]
+        edge_z += [z0, z0, None, z0, z1, None]
+        bend_x, bend_y, bend_z = x1, y1, z0
         mid_z = (z0 + z1) / 2
         edge_marker_x.extend([(x0 + x1) / 2, bend_x, bend_x])
         edge_marker_y.extend([(y0 + y1) / 2, bend_y, bend_y])
         edge_marker_z.extend([z0, bend_z, mid_z])
-        # Create hover text for edges using display names
         edge_0_name = graph.nodes[edge[0]].get('full_name', edge[0]) if use_full_names else edge[0]
         edge_1_name = graph.nodes[edge[1]].get('full_name', edge[1]) if use_full_names else edge[1]
         hover_text = f"{edge_0_name} - {edge_1_name}"
@@ -389,6 +360,7 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
         if edge_attrs:
             hover_text += "<br>" + "<br>".join([f"{k}: {v}" for k, v in edge_attrs.items()])
         edge_marker_text.extend([hover_text, hover_text, hover_text])
+
     edge_trace = go.Scatter3d(
         x=edge_x, y=edge_y, z=edge_z,
         line=dict(width=2, color='#888'),
@@ -398,32 +370,28 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
     edge_marker_trace = go.Scatter3d(
         x=edge_marker_x, y=edge_marker_y, z=edge_marker_z,
         mode='markers',
-        marker=dict(size=6, color='rgba(0,0,0,0)'),  # Invisible
+        marker=dict(size=6, color='rgba(0,0,0,0)'),
         hoverinfo='text',
         hovertext=edge_marker_text,
         showlegend=False
     )
-    # Use propagated_power to scale node size
+
+    # Node size scaling
     prop_powers = [graph.nodes[n].get('propagated_power', 0) for n in graph.nodes]
     if prop_powers:
-        min_power = min(prop_powers)
-        max_power = max(prop_powers)
-        if max_power == min_power:
-            norm_power = [0.5 for _ in prop_powers]
-        else:
-            norm_power = [(p - min_power) / (max_power - min_power) for p in prop_powers]
-        # Scale size between 4 and 16
-        node_sizes = [4 + 12 * x for x in norm_power]
+        min_power, max_power = min(prop_powers), max(prop_powers)
+        norm_power = [0.5 if max_power == min_power else (p - min_power) / (max_power - min_power) for p in prop_powers]
+        node_sizes = [8 + 12 * x for x in norm_power]
     else:
         node_sizes = [8 for _ in graph.nodes]
 
-    # Create a trace for each type for legend
+    # Node traces by type
     node_traces = []
     for t in unique_types:
         indices = [i for i, typ in enumerate(node_type_list) if typ == t]
         if not indices:
             continue
-        trace = go.Scatter3d(
+        node_traces.append(go.Scatter3d(
             x=[node_x[i] for i in indices],
             y=[node_y[i] for i in indices],
             z=[node_z[i] for i in indices],
@@ -438,33 +406,26 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
             ),
             hovertext=[node_text[i] for i in indices],
             name=str(t)
-        )
-        node_traces.append(trace)
-    # --- Add building bounds as a rectangular prism if metadata is present ---
+        ))
+
+    # Building bounds as prism
+    prism_trace = None
     building_length = graph.graph.get('building_length')
     building_width = graph.graph.get('building_width')
     num_floors = graph.graph.get('num_floors')
     floor_height = graph.graph.get('floor_height')
-    prism_trace = None
     if all(v is not None for v in [building_length, building_width, num_floors, floor_height]):
         try:
-            # Convert to float for plotting
-            lx = float(building_length)
-            ly = float(building_width)
-            lz = float(num_floors) * float(floor_height)
-            # Prism corners (origin at 0,0,0)
+            lx, ly, lz = float(building_length), float(building_width), float(num_floors) * float(floor_height)
             x_corners = [0, lx, lx, 0, 0, lx, lx, 0]
             y_corners = [0, 0, ly, ly, 0, 0, ly, ly]
             z_corners = [0, 0, 0, 0, lz, lz, lz, lz]
-            # 12 lines for the box edges
             prism_lines = [
-                [0,1],[1,2],[2,3],[3,0], # bottom
-                [4,5],[5,6],[6,7],[7,4], # top
-                [0,4],[1,5],[2,6],[3,7]  # verticals
+                [0,1],[1,2],[2,3],[3,0],
+                [4,5],[5,6],[6,7],[7,4],
+                [0,4],[1,5],[2,6],[3,7]
             ]
-            prism_x = []
-            prism_y = []
-            prism_z = []
+            prism_x, prism_y, prism_z = [], [], []
             for a, b in prism_lines:
                 prism_x += [x_corners[a], x_corners[b], None]
                 prism_y += [y_corners[a], y_corners[b], None]
@@ -479,45 +440,25 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
             )
         except Exception as e:
             print(f"Error drawing building bounds: {e}")
-            prism_trace = None
+
     # Compose figure data
     fig_data = [edge_trace, edge_marker_trace] + node_traces
     if prism_trace:
         fig_data.append(prism_trace)
-    # Create legend configuration based on settings  
-    legend_config = {}
+
+    # Legend configuration
+    default_legend = dict(
+        x=0.98, y=0.98, xanchor='right', yanchor='top',
+        bgcolor='rgba(255,255,255,0.95)', bordercolor='rgba(0,0,0,0.5)',
+        borderwidth=1, font=dict(size=8), itemwidth=30, itemsizing='constant',
+        tracegroupgap=0, orientation='v', itemclick='toggleothers',
+        itemdoubleclick='toggle', entrywidth=0.5, entrywidthmode='fraction'
+    )
+    legend_config = default_legend.copy()
     if legend_settings:
-        legend_config = dict(
-            x=legend_settings.get('x', 0.98),
-            y=legend_settings.get('y', 0.98), 
-            xanchor=legend_settings.get('xanchor', 'right'),
-            yanchor=legend_settings.get('yanchor', 'top'),
-            bgcolor=legend_settings.get('bgcolor', 'rgba(255,255,255,0.95)'),
-            bordercolor='rgba(0,0,0,0.5)',
-            borderwidth=1,
-            font=dict(size=legend_settings.get('font_size', 8)),
-            itemwidth=30,
-            itemsizing='constant',
-            tracegroupgap=0,
-            orientation='v',
-            itemclick='toggleothers',
-            itemdoubleclick='toggle',
-            entrywidth=legend_settings.get('entrywidth', 0.5),
-            entrywidthmode='fraction'
-        )
-        
-        annotations = []
-    else:
-        # Default legend config
-        legend_config = dict(
-            x=0.98, y=0.98, xanchor='right', yanchor='top',
-            bgcolor='rgba(255,255,255,0.95)', bordercolor='rgba(0,0,0,0.5)',
-            borderwidth=1, font=dict(size=8), itemwidth=30, itemsizing='constant',
-            tracegroupgap=0, orientation='v', itemclick='toggleothers',
-            itemdoubleclick='toggle', entrywidth=0.5, entrywidthmode='fraction'
-        )
-        
-        annotations = []
+        legend_config.update({
+            k: legend_settings.get(k, v) for k, v in default_legend.items()
+        })
 
     fig = go.Figure(data=fig_data,
                     layout=go.Layout(
@@ -525,17 +466,59 @@ def visualize_graph_three_d(graph, use_full_names=False, legend_settings=None):
                         hovermode='closest',
                         margin=dict(b=20,l=5,r=5,t=40),
                         legend=legend_config,
-                        annotations=annotations,
+                        annotations=[],
                         scene=dict(
-                            domain=dict(x=[0, 1], y=[0, 1]),  # 3D scene uses full area
+                            domain=dict(x=[0, 1], y=[0, 1]),
                             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=axis_range),
                             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=axis_range),
                             zaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=axis_range)
                         )
                     ))
-    
     fig.update_layout(title='3D Graph Colored by Type')
-    
+
+    # Default to no node labels
+    fig.update_traces(text=[None]*len(edge_trace.x), selector=dict(mode='markers+text'))
+
+    # --- Visualization Buttons ---
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="down",
+                x=0.01,
+                y=0.8,
+                showactive=True,
+                buttons=[
+                    dict(
+                        label="Hide Node Labels",
+                        method="update",
+                        args=[
+                            {"text": [None, None] + [[None]*len(trace.x) for trace in node_traces] + ([None] if prism_trace else [])},
+                            {"title": "3D Graph (Node Labels Hidden)"}
+                        ],
+                    ),
+                    dict(
+                        label="Show Node Labels",
+                        method="update",
+                        args=[
+                            {"text": [None, None] + [trace.text for trace in node_traces] + ([None] if prism_trace else [])},
+                            {"title": "3D Graph Colored by Type"}
+                        ],
+                    ),
+                    dict(
+                        label="Orthographic",
+                        method="relayout",
+                        args=[{"scene.camera.projection.type": "orthographic"}],
+                    ),
+                    dict(
+                        label="Perspective",
+                        method="relayout",
+                        args=[{"scene.camera.projection.type": "perspective"}],
+                    ),
+                ],
+            )
+        ]
+    )
     return fig
 
 def generate_bar_chart_figure(prioritized_schedule, current_date: pd.Timestamp):
@@ -700,8 +683,10 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp
     for t in types:
         node_colors.append(type_color_dict.get(t))
 
+    node_dates = [node['date'] for node in node_dict.values()]
+
     fig.add_trace(go.Scatter(
-        x=[node['date'] for node in node_dict.values()],
+        x=node_dates,
         y=list(node_dict.keys()),
         mode='markers',
         marker=dict(size=marker_sizes, color=node_colors),
@@ -751,6 +736,9 @@ def generate_failure_timeline_figure(graph: nx.Graph, current_date: pd.Timestamp
 
     # Show xlabels at the top and bottom
     fig.update_layout(
+        xaxis=dict(
+            range=[min(node_dates) - datetime.timedelta(days=15), max(node_dates) + datetime.timedelta(days=15)] if node_dates else [current_date, current_date + datetime.timedelta(days=1)],
+        ),
         xaxis2=dict(
             title='Failure Date',
             overlaying='x', 
@@ -975,7 +963,7 @@ def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Times
         x=all_periods,
         y=total_money_costs,
         mode='lines+markers',
-        name='Total Maintenance Costs',
+        name='Total Combined Costs',
         fill='tozeroy',
         line=dict(shape='spline')
     ))
@@ -1048,9 +1036,12 @@ def get_maintenance_costs_fig(prioritized_schedule: dict, current_date: pd.Times
                         method="relayout",
                         args=[{"xaxis.range": default_range}],
                     )
-                ],
+                ], 
             )
         ]
     )
+
+    # Add vertical hover mode
+    fig.update_layout(hovermode='x unified')
 
     return fig

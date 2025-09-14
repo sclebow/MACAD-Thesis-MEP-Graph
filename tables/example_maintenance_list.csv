@@ -14,3 +14,13 @@ S-02,switchboard,test grounding,12,Test switchboard grounding and bonding connec
 S-03,switchboard,test circuit breakers,6,Test all circuit breakers for proper operation.,1,1,20,Document any failed devices.
 S-04,switchboard,test voltage,12,Test switchboard voltage levels.,1,1,30,Ensure all voltage levels are within specifications.
 S-05,switchboard,replacement,110,Replace switchboard at end of service life or if failed.,1,48,3500,Coordinate with utility if required.
+SP-01,sub_panel,visual inspection,4,"Visually inspect panel for signs of overheating, corrosion, or damage.",2,0.5,30,Check for missing or loose covers.
+SP-02,sub_panel,test grounding,12,Test panel grounding and bonding connections.,1,0.5,20,Verify all ground lugs are tight.
+SP-03,sub_panel,test gfci,6,Test all GFCI breakers and receptacles for proper operation.,1,0.25,10,Document any failed devices.
+SP-04,sub_panel,inspect breakers,9,Inspect all breakers for signs of wear or damage.,2,0.5,15,Replace any defective breakers.
+SP-05,sub_panel,replacement,100,Replace panel at end of service life or if failed.,1,6,2000,Label all circuits after replacement.
+MP-01,main_panel,visual inspection,4,"Visually inspect panel for signs of overheating, corrosion, or damage.",2,0.5,30,Check for missing or loose covers.
+MP-02,main_panel,test grounding,12,Test panel grounding and bonding connections.,1,0.5,20,Verify all ground lugs are tight.
+MP-03,main_panel,test gfci,6,Test all GFCI breakers and receptacles for proper operation.,1,0.25,10,Document any failed devices.
+MP-04,main_panel,inspect breakers,9,Inspect all breakers for signs of wear or damage.,2,0.5,15,Replace any defective breakers.
+MP-05,main_panel,replacement,100,Replace panel at end of service life or if failed.,1,6,2000,Label all circuits after replacement.

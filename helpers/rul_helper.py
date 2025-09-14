@@ -22,6 +22,8 @@ class RULConfig:
         'panelboard': 20,
         'panel': 20,
         'end_load': 15,
+        'sub_panel': 20,
+        'main_panel': 25,
         # 'unknown': 20
     }
     
@@ -33,6 +35,8 @@ class RULConfig:
         'panelboard': 0.030,              # 3.0% annual
         'panel': 0.030,                   # 3.0% annual
         'end_load': 0.050,                # 5.0% annual
+        'sub_panel': 0.035,               # 3.5% annual
+        'main_panel': 0.025,              # 2.5% annual 
         # 'unknown': 0.025                  # 2.5% default
     }
     

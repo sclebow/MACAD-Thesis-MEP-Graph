@@ -110,13 +110,14 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
                 "metric_value": metric_value,
                 "relationship": "direct",
             })
-            budget_goal_seek_viewer.clear()
+            # budget_goal_seek_viewer.clear()
             partial_results = [results[0]] + iteration_log.copy()
             fig = create_visualization(partial_results, number_of_iterations=number_of_iterations, bounds=bounds)
-            budget_goal_seek_viewer.append(pn.pane.Plotly(
-                fig, 
-                # sizing_mode='scale_both'
-                ))
+            budget_goal_seek_viewer.object = fig
+            # budget_goal_seek_viewer.append(pn.pane.Plotly(
+            #     fig, 
+            #     # sizing_mode='scale_both'
+            #     ))
 
             # Update the results widget with current iteration data
             results_df = pd.DataFrame([results[0]] + iteration_log)
@@ -147,10 +148,11 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
             "metric_value": optimal_metric_value,
             "relationship": "direct",
         })
-        budget_goal_seek_viewer.clear()
+        # budget_goal_seek_viewer.clear()
         all_results = [results[0]] + iteration_log + [results[1]]
         fig = create_visualization(all_results, number_of_iterations=number_of_iterations, bounds=bounds)
-        budget_goal_seek_viewer.append(pn.pane.Plotly(fig))
+        budget_goal_seek_viewer.object = fig
+        # budget_goal_seek_viewer.append(pn.pane.Plotly(fig))
         results_df = pd.DataFrame(all_results)
         budget_goal_seek_results.value = results_df
         results_markdown = f"""
@@ -194,10 +196,11 @@ def run_budget_goal_seeker(money_budget, hours_budget, num_months, goal, optimiz
             "metric_value": metric_value,
             "relationship": "direct",
         })
-        budget_goal_seek_viewer.clear()
+        # budget_goal_seek_viewer.clear()
         partial_results = [results[0]] + iteration_log.copy()
         fig = create_visualization(partial_results, number_of_iterations=number_of_iterations, bounds=bounds)
-        budget_goal_seek_viewer.append(pn.pane.Plotly(fig, sizing_mode='stretch_both'))
+        budget_goal_seek_viewer.object = fig
+        # budget_goal_seek_viewer.append(pn.pane.Plotly(fig, sizing_mode='stretch_both'))
         return -metric_value if direction == 'maximize' else metric_value
 
     bounds = (initial_budget * (1 - aggressiveness), initial_budget * (1 + aggressiveness))
@@ -321,7 +324,7 @@ def create_visualization(results, number_of_iterations, bounds=None):
             yaxis_range = [bounds[0][0] * 0.8, bounds[0][1] * 1.2]
             yaxis2_range = [bounds[1][0] * 0.8, bounds[1][1] * 1.2]
             metric_delta = max(metric_values) - min(metric_values)
-            yaxis3_range = [min(metric_values) - metric_delta * 0.2, max(metric_values) + metric_delta * 0.1]
+            yaxis3_range = [min(metric_values) - metric_delta * 0.5, max(metric_values) + metric_delta * 0.1]
 
         # Get the colors from the traces
         yaxis_color = fig.data[0].line.color
@@ -414,11 +417,13 @@ def create_visualization(results, number_of_iterations, bounds=None):
             yaxis_range = [bounds[0] * 0.8, bounds[1] * 1.2]
             fig.update_layout(yaxis=dict(range=yaxis_range))
 
+    # Set the yaxis3
+
     # Layout for all cases
     fig.update_layout(
         title=f"Budget Goal Seeker Results: {goal}",
         xaxis_title="Iteration",
-        legend=dict(x=0.99, y=0.01, xanchor='right', yanchor='bottom'),
+        legend=dict(x=0.9, y=0.01, xanchor='right', yanchor='bottom'),
         hovermode='x unified',
     )
 

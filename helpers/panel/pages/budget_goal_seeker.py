@@ -10,8 +10,8 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
     money_budget_input = pn.widgets.FloatInput(name='Starting Budget ($)', value=graph_controller.monthly_budget_money, step=1000)
     hours_budget_input = pn.widgets.FloatInput(name='Starting Hours Budget', value=graph_controller.monthly_budget_time, step=10)
     num_months_input = pn.widgets.IntInput(name='Number of Months to Schedule', value=60, step=1) # Default to 5 years
-    goal_input = pn.widgets.RadioButtonGroup(name='Goals', options=['Maximize RUL', 'Maximize Condition Levels', 'Minimize Average Budget'], value='Maximize Condition Levels')
-    optimization_value_input = pn.widgets.RadioButtonGroup(name='Optimization Value', options=['Money', 'Hours', 'Both'], value='Both')
+    goal_input = pn.widgets.RadioButtonGroup(name='Goals', options=['Maximize RUL', 'Maximize Condition Levels', 'Minimize Average Budget'], value='Maximize Condition Levels', orientation='vertical', align="center")
+    optimization_value_input = pn.widgets.RadioButtonGroup(name='Optimization Value', options=['Money', 'Hours', 'Both'], value='Both', align="center")
     number_of_iterations_input = pn.widgets.IntInput(name='Number of Iterations', value=10, step=1)
     percentage_bounds = pn.widgets.FloatInput(name='Percentage Bounds', value=0.5, step=0.05, start=0.0)
 
@@ -45,16 +45,23 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
 
     # Arrange inputs in a form layout
     inputs_form = pn.Column(
+        pn.pane.Markdown("### Input Parameters"),
         money_budget_input,
         hours_budget_input,
         num_months_input,
-        goal_input,
-        optimization_value_input,
+        pn.Row(
+            pn.pane.Markdown("Goal Metric:", width=80, align="center"),
+            goal_input,
+        ),
+        pn.Row(
+            pn.pane.Markdown("Optimize Budget By:", width=80, align="center"),
+            optimization_value_input,
+        ),
         number_of_iterations_input,
         percentage_bounds,
         bounds_markdown,
         # sizing_mode='stretch_width',
-        max_width=150,
+        max_width=130,
         # margin=(0, 0, 20, 0)
     )
 
@@ -70,12 +77,13 @@ def layout_budget_goal_seeker(budget_goal_seeker_container, graph_controller: Gr
         inputs_form,
         run_button,
         results_pane,
-        sizing_mode='stretch_width',
+        # sizing_mode='stretch_width',
+        width=300,
         # margin=10
     )
 
-    budget_goal_seek_viewer = pn.Column(
-            # sizing_mode='stretch_both'
+    budget_goal_seek_viewer = pn.pane.Plotly(
+            sizing_mode='stretch_width'
         )
     pn.state.cache["budget_goal_seek_viewer"] = budget_goal_seek_viewer
 

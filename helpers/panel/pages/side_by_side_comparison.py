@@ -3,7 +3,7 @@ import pandas as pd
 from helpers.controllers.graph_controller import GraphController
 import copy
 from helpers.panel.analytics_viz import _create_enhanced_kpi_card
-from helpers.visualization import get_risk_distribution_fig, get_equipment_conditions_fig
+from helpers.visualization import get_risk_distribution_fig, get_equipment_conditions_fig, get_maintenance_costs_fig
 
 def layout_side_by_side_comparison(side_by_side_comparison_container, graph_controller: GraphController):
     side_by_side_comparison_container.append(pn.pane.Markdown("### Side-by-Side Comparison"))
@@ -24,11 +24,17 @@ def layout_side_by_side_comparison(side_by_side_comparison_container, graph_cont
         
     )
     number_of_simulations_input = pn.widgets.IntInput(
-        name="Number of Simulations (1-5)",
+        name="Number of Simulations (2-5)",
         value=3,
         step=1,
-        start=1,
+        start=2,
         end=5,
+        width=200,
+    )
+    container_width_input = pn.widgets.IntInput(
+        name="Simulation Container Width",
+        value=500,
+        step=10,
         width=200,
     )
     run_rul_simulations_button = pn.widgets.Button(
@@ -42,6 +48,7 @@ def layout_side_by_side_comparison(side_by_side_comparison_container, graph_cont
             num_months_input,
             generate_synthetic_maintenance_logs_input,
             number_of_simulations_input,
+            container_width_input,
             run_rul_simulations_button
         )
     )
@@ -58,7 +65,9 @@ def layout_side_by_side_comparison(side_by_side_comparison_container, graph_cont
         simulation_inputs_row.clear()
         simulation_dicts.clear()
         for simulation_number in range(1, number_of_simulations + 1):
-            simulation_input_container = pn.Column()
+            simulation_input_container = pn.Column(
+                width=container_width_input.value,
+            )
 
             simulation_dicts.append({
                 "input_container": simulation_input_container,
@@ -76,6 +85,7 @@ def layout_side_by_side_comparison(side_by_side_comparison_container, graph_cont
             simulation_inputs_row.append(simulation_input_container)
 
     number_of_simulations_input.param.watch(lambda event: build_simulation_inputs(event.new), 'value')
+    container_width_input.param.watch(lambda event: build_simulation_inputs(number_of_simulations_input.value), 'value')
     build_simulation_inputs(number_of_simulations_input.value)
 
     def on_run_simulations(event):
@@ -112,20 +122,20 @@ def build_simulation_container(simulation_container, simulation_number: int, def
 
     money_step = 100.0
     time_step = 1
-    width = 300
+    # width = 300
 
     # Add the budget input widgets
     money_budget_input = pn.widgets.FloatInput(
         name="Money Budget ($)", 
         value=default_money_budget, 
         step=money_step, 
-        width=width
+        # width=width
     )
     time_budget_input = pn.widgets.IntInput(
         name="Time Budget (hours)", 
         value=default_time_budget, 
         step=time_step, 
-        width=width
+        # width=width
     )
     simulation_container.append(money_budget_input)
     simulation_container.append(time_budget_input)
@@ -141,8 +151,69 @@ def run_simulation_with_params(graph_controller: GraphController, money_budget: 
 
     print()
     graph_controller.run_rul_simulation(generate_synthetic_maintenance_logs=generate_synthetic_maintenance_logs)
-
     current_date_graph = graph_controller.get_current_date_graph()
+
+    results_container.append(pn.pane.Markdown("### Budget Summary:"))
+
+    budget_df = graph_controller.get_budget_overview_df()
+
+    # Update the budget markdown summary
+    maintenance_budget_markdown_summary_str_list = []
+    
+    total_money_budget_spent_to_date = budget_df[budget_df['Month'] <= str(graph_controller.current_date.to_period('M'))]['Used Money'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Money Budget Spent to Date**: ${total_money_budget_spent_to_date:,.2f}")
+
+    total_hours_budget_spent_to_date = budget_df[budget_df['Month'] <= str(graph_controller.current_date.to_period('M'))]['Used Hours'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Hours Budget Spent to Date**: {total_hours_budget_spent_to_date:,.2f}")
+
+    total_money_budget_full_schedule = budget_df['Used Money'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Money Budget (Full Schedule)**: ${total_money_budget_full_schedule:,.2f}")
+
+    total_hours_budget_full_schedule = budget_df['Used Hours'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Hours Budget (Full Schedule)**: {total_hours_budget_full_schedule:,.2f}")
+
+    average_monthly_money_budget = budget_df['Used Money'].mean()
+    maintenance_budget_markdown_summary_str_list.append(f"**Average Monthly Money Used (Full Schedule)**: ${average_monthly_money_budget:,.2f}")
+
+    average_monthly_hours_budget = budget_df['Used Hours'].mean()
+    maintenance_budget_markdown_summary_str_list.append(f"**Average Monthly Hours Used (Full Schedule)**: {average_monthly_hours_budget:,.2f}")
+
+    maintenance_budget_markdown_summary = pn.pane.Markdown("\n\n".join(maintenance_budget_markdown_summary_str_list))
+
+    results_container.append(maintenance_budget_markdown_summary)
+
+    results_container.append(pn.pane.Markdown("### Full Simulation Graph Visualizations:"))
+
+    # Add the task status bar chart
+    fig = graph_controller.get_bar_chart_figure()
+    results_container.append(fig)
+
+    # Add the risk level distribution pie chart
+    risk_level_pie_chart = get_risk_distribution_fig(current_date_graph)
+    results_container.append(risk_level_pie_chart)
+
+    # Add the average remaining useful life graph
+    graphs = []
+    periods = list(graph_controller.prioritized_schedule.keys())
+    for period in periods:
+        graph = graph_controller.prioritized_schedule[period].get('graph')
+        graphs.append(graph)
+    
+    average_rul_line_chart = get_equipment_conditions_fig(
+        graphs=graphs,
+        periods=periods,
+        current_date=graph_controller.current_date,
+    )
+    results_container.append(average_rul_line_chart)
+
+    # Add the monthly budget and time information
+    fig = get_maintenance_costs_fig(
+        prioritized_schedule=graph_controller.prioritized_schedule,
+        current_date=graph_controller.current_date,
+    )
+    results_container.append(fig)
+
+    results_container.append(pn.pane.Markdown("### Current Date Metrics:"))
 
     node_conditions = []
     for node_id, attrs in current_date_graph.nodes(data=True):
@@ -235,21 +306,3 @@ def run_simulation_with_params(graph_controller: GraphController, money_budget: 
             unit='%'
         )
     )
-
-    # Add the risk level distribution pie chart
-    risk_level_pie_chart = get_risk_distribution_fig(current_date_graph)
-    results_container.append(risk_level_pie_chart)
-
-    # Add the average remaining useful life graph
-    graphs = []
-    periods = list(graph_controller.prioritized_schedule.keys())
-    for period in periods:
-        graph = graph_controller.prioritized_schedule[period].get('graph')
-        graphs.append(graph)
-    
-    average_rul_line_chart = get_equipment_conditions_fig(
-        graphs=graphs,
-        periods=periods,
-        current_date=graph_controller.current_date,
-    )
-    results_container.append(average_rul_line_chart)

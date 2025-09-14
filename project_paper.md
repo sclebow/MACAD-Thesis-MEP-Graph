@@ -235,7 +235,7 @@ Once the synthetic building data is generated, users can simulate the Remaining 
 #### Maintenance Task Templates
 Maintenance tasks are defined using a template that specifies the type of task, associated equipment types, frequency, time and money costs, and priority. These template helps standardize maintenance activities across different equipment. The simulation engine uses the uploaded maintenance task template to generate and schedule maintenance tasks for each piece of equipment in the building graph.
 
-When the simulation engine processes maintenance tasks, it generates detailed tasks based on the equipment type and the recommended frequency specified in the template. Each task is linked to a specific equipment node and scheduled accordingly. Tasks are prioritized based on risk score and template priority, with replacement tasks for critical equipment considered before routine maintenance.
+When the simulation engine processes maintenance tasks, it generates detailed tasks based on the equipment type and the recommended frequency specified in the template. Each task is linked to a specific equipment node and scheduled accordingly. Tasks are prioritized based on risk score and template priority, with repair and replacement tasks for critical equipment considered before routine maintenance.
 
 For example, a maintenance task template might specify that all "panel" equipment requires a "grounding test" every 12 months with a time cost of 2 hours and a money cost of $150. The simulation engine will create individual grounding test tasks for each panel in the building graph, scheduled based on their installation date and the recommended frequency.
 
@@ -248,7 +248,7 @@ Each month could include a mix of scheduled tasks, executed tasks, and deferred 
   - The type of equipment this maintenance task applies to (e.g., "panel", "transformer").
 - task_type
   - The category of maintenance task (e.g., "inspection", "cleaning", "testing").
-  - Replacement tasks are handled separately using the Replacement Task Templates.
+  - Repair and replacement tasks are handled separately using the Repair and Replacement Task Templates.
 - recommended_frequency_months
   - The recommended interval (in months) between recurring maintenance tasks.  Tasks will be scheduled based on this frequency starting from the equipment installation date.  When a task is deferred, the next occurrence will be scheduled based on the deferral date.
 - description
@@ -262,14 +262,14 @@ Each month could include a mix of scheduled tasks, executed tasks, and deferred 
 - notes
   - Additional information or special instructions related to the task. This field is optional and can be left blank.
 
-#### Replacement Task Templates
-Replacement tasks are defined using a template that specifies the type of replacement, associated equipment types, time and money costs, and condition thresholds. The simulation engine uses the uploaded replacement task template to generate and schedule replacement tasks for equipment flagged for replacement based on RUL and condition.
+#### Repair and Replacement Task Templates
+Repair and replacement tasks are defined using templates that specify the type of task, associated equipment types, time and money costs, and condition thresholds. The simulation engine uses the uploaded repair and replacement task templates to generate and schedule these tasks for equipment flagged for repair or replacement based on RUL and condition.
 
-Replacement tasks are prioritized before routine maintenance tasks and are scheduled when equipment is flagged for replacement due to low RUL or poor condition, subject to budget constraints.  These tasks can be deferred if budgets do not allow for immediate replacement, but they will be tracked until completed.  
+Repair and replacement tasks are prioritized before routine maintenance tasks and are scheduled when equipment is flagged for repair or replacement due to low RUL or poor condition, subject to budget constraints. These tasks can be deferred if budgets do not allow for immediate action, but they will be tracked until completed.
 
-If multiple pieces of equipment are flagged for replacement in the same month, the simulation engine will prioritize replacements based on risk level and available budget.  This can cause scenarios where for many consecutive months, all available budget is consumed by replacement tasks, leading to deferral of routine maintenance tasks.  This behavior reflects real-world scenarios where critical replacements take precedence over regular upkeep.
+If multiple pieces of equipment are flagged for repair or replacement in the same month, the simulation engine will prioritize these tasks based on risk level and available budget. This can cause scenarios where for many consecutive months, all available budget is consumed by repair and replacement tasks, leading to deferral of routine maintenance tasks. This behavior reflects real-world scenarios where critical repairs and replacements take precedence over regular upkeep.
 
-##### Replacement Task Template Fields
+##### Repair and Replacement Task Template Fields
 - task_id
 - equipment_type
 - task_name
@@ -296,9 +296,9 @@ The budget parameters are:
 
 #### Input Reflections
 
-In reality these maintenance and replacement tasks would be determined by the specific equipment and manufacturer recommendations.  For the purposes of this simulation, we use generic replacement tasks that apply to broad equipment categories.  Users can customize the replacement task templates to better reflect their specific asset management practices.
+In reality these tasks would be determined by the specific equipment and manufacturer recommendations.  For the purposes of this simulation, we use generic maintenance, repair/replacement tasks that apply to broad equipment categories.  Users can customize both maintenance and repair/replacement task templates to better reflect their specific asset management practices.
 
-Increased simulation accuracy may even require more granular equipment types in the graph to ensure that the correct replacement tasks are applied.  For example, if a user wants to differentiate between different sizes or models of transformers, they may need to create separate equipment types in the graph (e.g., "transformer_small", "transformer_large") and define corresponding replacement tasks for each type.  This allows for more precise control over maintenance and replacement strategies based on the specific characteristics of the equipment.  
+Increased simulation accuracy may even require more granular equipment types in the graph to ensure that the correct tasks are applied.  For example, if a user wants to differentiate between different sizes or models of transformers, they may need to create separate equipment types in the graph (e.g., "transformer_small", "transformer_large") and define corresponding tasks for each type.  This allows for more precise control over maintenance and repair/replacement strategies based on the specific characteristics of the equipment.  
 
 We see this as an area for future improvement, where future researchers can explore more detailed equipment classifications and their impact on asset management strategies, based on real-world data and practices.
 
@@ -401,9 +401,26 @@ The filtered_descendants_count function counts the number of downstream equipmen
 
 ## Simulation Analysis and Visualization
 
+### Budget Summary
+After all scenarios are simulated, the tool generates a summary table displaying the money and time budgets for each scenario, allowing users to quickly compare the different budget allocations.  The following data is shown in the summary table:
+- **Total Money Budget Spent to Date:** This is the cumulative amount of money spent on maintenance tasks across all months simulated up to the current date.
+- **Total Hours Budget Spent to Date:** This is the cumulative number of hours spent on maintenance tasks across all months simulated up to the current date.
+- **Total Money Budget (Full Schedule):** This is the cumulative amount of money spent on maintenance tasks across all months simulated in the full schedule.
+- **Total Hours Budget (Full Schedule):** This is the cumulative number of hours spent on maintenance tasks across all months simulated in the full schedule.
+- **Average Monthly Money Used (Full Schedule):** This is the average amount of money spent per month on maintenance tasks across the full schedule.
+- **Average Monthly Hours Used (Full Schedule):** This is the average number of hours spent per month on maintenance tasks across the full schedule.
+
+An example output is shown below:
+
+&nbsp; **Total Money Budget Spent to Date:** \$474,845.00
+&nbsp; **Total Hours Budget Spent to Date:** 4,373.75  
+&nbsp; **Total Money Budget (Full Schedule):** \$1,047,420.00  
+&nbsp; **Total Hours Budget (Full Schedule):** 9,508.75  
+&nbsp; **Average Monthly Money Used (Full Schedule):** \$1,558.66  
+&nbsp; **Average Monthly Hours Used (Full Schedule):** 14.15
+
 ### System Health Overview
 The system health overview provides a very high-level summary of the overall condition and risk levels of all equipment.  An example output is shown below:
-<br>
 &nbsp; **Average Condition:** 97%
 &nbsp; **Total Number of Nodes:** 40
 &nbsp; **Risk Levels: LOW:** 31 | **MEDIUM:** 8 | **HIGH:** 1
@@ -553,7 +570,7 @@ The average remaining useful life (RUL) by equipment type over time chart visual
 An example chart is shown below:
 ![Average RUL by Equipment Type Over Time Chart](images/average_rul_by_equipment_type_over_time_chart.png)
 
-This chart is a key indicator of how well maintenance strategies are preserving the lifespan of different equipment types.  The average RUL for
+This chart is a key indicator of how well maintenance strategies are preserving the lifespan of different equipment types.  The average RUL for each equipment type should decrease over time, reflecting the natural aging and wear of the equipment.  However this decrease will be faster if maintenance is regularly deferred due to budget constraints, and conversely, the decrease will be slower if repair and replacement is consistently performed on schedule.
 
 ### Total Maintenance Cost Over Time Chart
 The total maintenance cost over time chart visualizes the cumulative maintenance expenses incurred throughout the simulation period. This chart helps users monitor budget utilization, identify cost trends, and evaluate the financial impact of maintenance strategies.
@@ -561,10 +578,84 @@ The total maintenance cost over time chart visualizes the cumulative maintenance
 An example chart is shown below:
 ![Total Maintenance Cost Over Time Chart](images/total_maintenance_cost_over_time_chart.png)
 
-## Budget Optimizer
+## Budget Goal Seeker
+The Budget Goal Seeker module enables users to optimize maintenance budgets and resource allocation using an interactive, simulation-driven approach. It allows both single variable and multivariate optimization and visualization to help users identify the best budget strategies for maximizing asset health, condition, or minimizing costs.
 
+### Workflow and Logic
+
+1. **User Inputs:**
+  - Users specify starting budgets for money and hours, the number of months to schedule, optimization goals (e.g., Maximize RUL, Maximize Condition Levels, Minimize Average Budget), and the optimization value (Money, Hours, or Both).
+  - Additional controls include the number of optimization iterations and percentage bounds for budget search space.
+    - These bounds define the range within which the optimization algorithm will search for the optimal budget values. For example, if the starting budget is $10,000 and the bounds are set to ±50%, the algorithm will explore budgets between $5,000 and $15,000.
+  - Users can also select the output metric to evaluate (Average RUL, Average Condition, or Average Budget Used).
+    - The choice of output metric determines how the optimization algorithm assesses the effectiveness of different budget allocations. If the user selects Average RUL, the algorithm will aim to find budget values that maximize the average remaining useful life of equipment over the simulation period; if Average Condition is selected, it will focus on maximizing the average condition levels of all equipment over the simulation period; and if Average Budget Used is chosen, it will seek to minimize the average budget expenditure each simulated month.
+
+2. **Optimization Process:**
+  - The system runs a baseline simulation with the initial budgets and records the metric value for the selected goal.
+  - For single-variable optimization (Money or Hours), the tool uses `scipy.optimize.minimize_scalar` to search for the optimal budget within user-defined bounds.
+  - For multivariate optimization (Both), the tool uses `scipy.optimize.minimize` (Nelder-Mead) to simultaneously optimize both money and hours budgets.
+  - At each iteration, the simulation engine updates the graph controller with the candidate budgets, runs the RUL simulation, and evaluates the chosen metric (average RUL, condition, or budget usage).
+  - All iterations and results are logged for analysis and visualization in real-time, as iterations are completed.  This allows users to see the optimization progress and understand how different budget allocations impact the selected metric.
+
+3. **Visualization:**
+  - Results are visualized using Plotly charts with up to three y-axes: Money Budget, Hours Budget, and the output metric (e.g., Average RUL).
+  - The UI displays the optimization progress, bounds, and final results, allowing users to compare baseline, iterative, and optimal outcomes.
+  - DataFrames and markdown panes provide tabular and textual summaries of the optimization process.
+
+4. **UI Integration:**
+  - The Panel-based UI presents all controls, results, and charts in a responsive layout.
+  - Users can adjust inputs and rerun the optimization to explore different scenarios and strategies.
+  - The system caches results and visualizations for seamless interaction and review.
+
+An example animation of the optimization process is shown below:
+![Budget Goal Seeker Optimization Animation](images/budget_goal_seeker_optimization_animation.gif)
+
+The final graph is shown below:
+![Budget Goal Seeker Final Graph](images/budget_goal_seeker_final_graph.png)
+
+You can see in this example that the relationship between budget and average RUL is not linear, and there are diminishing returns as budgets increase.  This highlights the importance of finding an optimal budget that balances cost with asset health outcomes.
 
 ## Budget Comparison Tool
+The Budget Comparison Tool enables users to run multiple maintenance budget scenarios in parallel and compare their outcomes side-by-side using a consistent building graph and simulation logic. This interactive module is designed to help users understand how different budget allocations affect key performance indicators (KPIs) such as average Remaining Useful Life (RUL), average condition, total maintenance cost, and task execution rates.
+
+### Workflow and Logic
+
+1. **User Inputs:**
+   - Users specify the number of scenarios to compare (between 2 and 5), the number of months to schedule, and whether to generate synthetic maintenance logs for each simulation.
+   - For each scenario, users can adjust the money and time budgets using input widgets. Default budgets are offset for each scenario to facilitate comparison.
+
+2. **Simulation Execution:**
+   - For each scenario, the tool creates a copy of the building graph and simulation controller, sets the specified budgets, and runs the RUL simulation for the chosen period.
+   - The simulation engine updates the graph with the new budget values and executes the maintenance scheduling, risk assessment, and RUL calculations for each month.
+
+1. **Budget Summary**
+    - For each scenario, the tool generates a budget summary table that is identical to the one described in the Simulation Analysis and Visualization section. This table includes:
+      - **Total Money Budget Spent to Date**
+      - **Total Hours Budget Spent to Date**
+      - **Total Money Budget (Full Schedule)**
+      - **Total Hours Budget (Full Schedule)**
+      - **Average Monthly Money Used (Full Schedule)**
+      - **Average Monthly Hours Used (Full Schedule)**
+
+3. **Visualization and Output:**
+   - For each scenario, the following charts and visualizations are generated:
+     - **Task Status Each Month:** Stacked bar chart showing executed and deferred tasks over time.
+     - **Risk Level Distribution Pie Chart:** Shows the proportion of equipment at each risk level (LOW, MEDIUM, HIGH, CRITICAL).
+     - **Average RUL by Equipment Type Over Time:** Line chart tracking average RUL for each equipment type across the simulation period.
+     - **Total Maintenance Cost Over Time:** Line chart showing cumulative maintenance costs for each scenario.
+4. **KPI Calculation:**
+   - After each simulation, the tool calculates and displays key metrics:
+     - **Average System Health:** The mean condition of all equipment nodes after the simulation period.
+     - **Critical Equipment Count:** The number of equipment nodes classified as 'CRITICAL' risk level.
+     - **Average RUL (Months):** The mean remaining useful life of all equipment, converted to months.
+     - **System Reliability:** The percentage of non-critical equipment nodes, representing overall system reliability.
+
+### Analysis and Insights
+Results, KPI cards, and charts are displayed side-by-side for direct comparison between different budget scenarios.
+
+By comparing scenarios with different budget allocations, users can identify trade-offs between cost, system health, reliability, and risk. The tool supports rapid iteration, allowing users to adjust budgets and immediately see the impact on KPIs and visualizations.
+
+For example, users might find that a moderate increase in budget leads to significant improvements in average RUL and system reliability, while further increases yield diminishing returns. Alternatively, users may discover that the current date shows positive metrics, but the overall costs in the past months were very high, indicating an unsustainable maintenance strategy.
 
 ## Future Work
 Future enhancements to AssetPulse could include:

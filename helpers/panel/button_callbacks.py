@@ -254,6 +254,13 @@ def update_app_status(message: str):
 def run_simulation(event, graph_controller: GraphController):
     print("\nRunning simulation...")
 
+    update_app_status("Updating System View...")
+    generated_graph_viewer = pn.state.cache["generated_graph_viewer"]
+    generated_graph_viewer.object = graph_controller.get_visualization_data()
+
+    generated_graph_viewer_3d = pn.state.cache["generated_graph_viewer_3d"]
+    generated_graph_viewer_3d.object = graph_controller.get_visualization_data(viz_type='3d')
+
     update_app_status("Running RUL Simulation... Please wait.")
     graph_controller.run_rul_simulation(generate_synthetic_maintenance_logs=pn.state.cache["generate_synthetic_maintenance_logs"])
 
@@ -348,6 +355,12 @@ def run_simulation(event, graph_controller: GraphController):
 
     total_hours_budget_spent_to_date = budget_df[budget_df['Month'] <= str(graph_controller.current_date.to_period('M'))]['Used Hours'].sum()
     maintenance_budget_markdown_summary_str_list.append(f"**Total Hours Budget Spent to Date**: {total_hours_budget_spent_to_date:,.2f}")
+
+    total_money_budget_full_schedule = budget_df['Used Money'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Money Budget (Full Schedule)**: ${total_money_budget_full_schedule:,.2f}")
+
+    total_hours_budget_full_schedule = budget_df['Used Hours'].sum()
+    maintenance_budget_markdown_summary_str_list.append(f"**Total Hours Budget (Full Schedule)**: {total_hours_budget_full_schedule:,.2f}")
 
     average_monthly_money_budget = budget_df['Used Money'].mean()
     maintenance_budget_markdown_summary_str_list.append(f"**Average Monthly Money Used (Full Schedule)**: ${average_monthly_money_budget:,.2f}")
