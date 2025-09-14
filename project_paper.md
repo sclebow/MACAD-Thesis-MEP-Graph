@@ -568,8 +568,68 @@ The final graph is shown below:
 
 You can see in this example that the relationship between budget and average RUL is not linear, and there are diminishing returns as budgets increase.  This highlights the importance of finding an optimal budget that balances cost with asset health outcomes.
 
-
 ## Budget Comparison Tool
+The Budget Comparison Tool enables users to run multiple maintenance budget scenarios in parallel and compare their outcomes side-by-side using a consistent building graph and simulation logic. This interactive module is designed to help users understand how different budget allocations affect key performance indicators (KPIs) such as average Remaining Useful Life (RUL), average condition, total maintenance cost, and task execution rates.
+
+### Workflow and Logic
+
+1. **User Inputs:**
+  - Users specify the number of scenarios to compare (between 2 and 5), the number of months to schedule, and whether to generate synthetic maintenance logs for each simulation.
+  - For each scenario, users can adjust the money and time budgets using input widgets. Default budgets are offset for each scenario to facilitate comparison.
+
+2. **Simulation Execution:**
+  - For each scenario, the tool creates a copy of the building graph and simulation controller, sets the specified budgets, and runs the RUL simulation for the chosen period.
+  - The simulation engine updates the graph with the new budget values and executes the maintenance scheduling, risk assessment, and RUL calculations for each month.
+
+3. **KPI Calculation:**
+  - After each simulation, the tool calculates and displays key metrics:
+    - **Average System Health:** The mean condition of all equipment nodes after the simulation period.
+    - **Critical Equipment Count:** The number of equipment nodes classified as 'CRITICAL' risk level.
+    - **Average RUL (Months):** The mean remaining useful life of all equipment, converted to months.
+    - **System Reliability:** The percentage of non-critical equipment nodes, representing overall system reliability.
+
+4. **Visualization and Output:**
+  - For each scenario, the following charts and visualizations are generated:
+    - **Risk Level Distribution Pie Chart:** Shows the proportion of equipment at each risk level (LOW, MEDIUM, HIGH, CRITICAL).
+    - **Average RUL by Equipment Type Over Time:** Line chart tracking average RUL for each equipment type across the simulation period.
+    - **Total Maintenance Cost Over Time:** Line chart showing cumulative maintenance costs for each scenario.
+  - KPI cards and charts are displayed side-by-side for direct comparison.
+
+5. **Analysis and Insights:**
+  - By comparing scenarios with different budget allocations, users can identify trade-offs between cost, system health, reliability, and risk.
+  - The tool supports rapid iteration, allowing users to adjust budgets and immediately see the impact on KPIs and visualizations.
+
+### Example Output
+
+An example side-by-side comparison might show:
+
+- **Scenario 1:**
+  - Money Budget: $10,000
+  - Time Budget: 40 hours
+  - Average System Health: 97%
+  - Critical Equipment: 2
+  - Average RUL: 18.2 months
+  - System Reliability: 95%
+
+- **Scenario 2:**
+  - Money Budget: $12,000
+  - Time Budget: 45 hours
+  - Average System Health: 98%
+  - Critical Equipment: 1
+  - Average RUL: 19.5 months
+  - System Reliability: 97%
+
+Each scenario includes risk distribution, RUL trends, and cost charts, enabling users to visually compare the impact of budget changes on asset performance and maintenance outcomes.
+
+### Technical Implementation
+
+- The tool is implemented using Panel for the UI, with input widgets for scenario configuration and budget adjustment.
+- Simulations are run in parallel using deep copies of the graph controller to ensure independent results for each scenario.
+- Results are displayed in KPI cards and Plotly charts, with all outputs organized in a responsive layout for easy comparison.
+
+This approach provides a powerful decision-support tool for asset managers, enabling data-driven evaluation of maintenance strategies and budget planning.
+
+
 
 ## Future Work
 Future enhancements to AssetPulse could include:

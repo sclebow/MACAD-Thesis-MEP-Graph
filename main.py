@@ -114,7 +114,7 @@ main_tabs = pn.Tabs(
     ("Settings", settings_container),
     ("Graph Generator", graph_generator_container),
     ("Budget Goal Seeker", budget_goal_seeker_container),
-    ("Side-by-Side Comparison", side_by_side_comparison_container),
+    ("Budget Comparison", side_by_side_comparison_container),
     dynamic=True,
     tabs_location="left",
     stylesheets=[stylesheet]
