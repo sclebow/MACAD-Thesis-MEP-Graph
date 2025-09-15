@@ -93,6 +93,29 @@ Key differentiators of AssetPulse:
 4. How can simulation tools be designed to facilitate user interaction and decision-making in asset management?
 
 ## Methodology
+### Overall Architecture and Workflow
+The following diagram illustrates the overall architecture and workflow of the AssetPulse simulation tool, including key components such as the user interface, graph controller, simulation engine, and data storage.
+
+```mermaid
+flowchart TD
+    A[User Interface] --> B[Graph Controller]
+    B --> F[Graph Generation Module]
+    B --> C[Simulation Engine]
+    C --> D[Data Storage]
+    D --> A
+    C --> E[Visualization Module]
+    E --> A
+    F --> B
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#bfb,stroke:#333,stroke-width:2px
+    style D fill:#ffb,stroke:#333,stroke-width:2px
+    style E fill:#fbb,stroke:#333,stroke-width:2px
+    style F fill:#fbc,stroke:#333,stroke-width:2px
+```
+
+The workflow begins with the user interacting with the interface to define simulation parameters and upload necessary files. The graph controller manages the creation and manipulation of asset graphs, which are then processed by the simulation engine to model asset behaviors and outcomes. Results are stored in a database and visualized through interactive dashboards, allowing users to analyze and interpret the data effectively.
+
 ### Simulation Tool Development
 - Graph-Based Modeling
     -  Utilize graph structures to represent assets, their relationships, and lifecycle
@@ -196,29 +219,6 @@ The required node attributes for the RUL simulation are:
   - Cost to replace the equipment, allows for varying costs based on unique instances of an equipment type.  For example, a larger transformer may cost more to replace than a smaller one of the same type.
 - current_condition
   - Current condition of the equipment, on a scale from 0.0 (failed) to 1.0 (new). If not provided, defaults to 1.0.
-
-## Overall Architecture and Workflow
-The following diagram illustrates the overall architecture and workflow of the AssetPulse simulation tool, including key components such as the user interface, graph controller, simulation engine, and data storage.
-
-```mermaid
-flowchart TD
-    A[User Interface] --> B[Graph Controller]
-    B --> F[Graph Generation Module]
-    B --> C[Simulation Engine]
-    C --> D[Data Storage]
-    D --> A
-    C --> E[Visualization Module]
-    E --> A
-    F --> B
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style B fill:#bbf,stroke:#333,stroke-width:2px
-    style C fill:#bfb,stroke:#333,stroke-width:2px
-    style D fill:#ffb,stroke:#333,stroke-width:2px
-    style E fill:#fbb,stroke:#333,stroke-width:2px
-    style F fill:#fbc,stroke:#333,stroke-width:2px
-```
-
-The workflow begins with the user interacting with the interface to define simulation parameters and upload necessary files. The graph controller manages the creation and manipulation of asset graphs, which are then processed by the simulation engine to model asset behaviors and outcomes. Results are stored in a database and visualized through interactive dashboards, allowing users to analyze and interpret the data effectively.
 
 ## Risk Assessment
 Before calculating RUL, the simulation engine assesses the risk level of failure for each piece of equipment based on its graph attributes.  This assessment uses the load seen at each node and the quantity of total downstream equipment nodes in the graph to determine a risk score.  Equipment with higher loads and more downstream dependencies will have higher risk scores, indicating that their failure would have a more significant impact on the overall system performance.
