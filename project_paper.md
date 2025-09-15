@@ -11,6 +11,8 @@ AssetPulse is an advanced asset management simulation tool and synthetic data ge
 ## Problem
 Effective management of physical assets is critical for operational efficiency and cost control across industries. However, many organizations face challenges in modeling asset lifecycles, predicting maintenance needs, and allocating resources optimally due to a lack of data-driven decision-assistance tools. The financial impact of operational readiness related refurbishment works and frequency of maintenance activities is difficult to forecast or measure, while on an empirical basis they are potent cost savers on the long run. Meanwhile, the ROI of infrastructure development related CAPEX works is relatively straightforward to forecast and justify, hence they are overly favored during budget allocations.
 
+Too often, asset management decisions are made based on historical practices or intuition rather than data-driven insights, leading to suboptimal outcomes. Additionally, the complexity of asset networks and the interdependencies between different components make it challenging to assess risk and prioritize maintenance activities effectively, without comprehensive modeling and simulation capabilities.
+
 AssetPulse aims to address these challenges by providing a simulation environment that allows users to model asset behaviors, evaluate different budget strategies, and make informed decisions based on simulated outcomes.
 
 ## Objectives
@@ -83,23 +85,7 @@ Key differentiators of AssetPulse:
 ## Overall Architecture and Workflow
 The following diagram illustrates the overall architecture and workflow of the AssetPulse simulation tool, including key components such as the user interface, graph controller, simulation engine, and data storage.
 
-```mermaid
-flowchart TD
-    A[User Interface] --> B[Graph Controller]
-    B --> F[Graph Generation Module]
-    B --> C[Simulation Engine]
-    C --> D[Data Storage]
-    D --> A
-    C --> E[Visualization Module]
-    E --> A
-    F --> B
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style B fill:#bbf,stroke:#333,stroke-width:2px
-    style C fill:#bfb,stroke:#333,stroke-width:2px
-    style D fill:#ffb,stroke:#333,stroke-width:2px
-    style E fill:#fbb,stroke:#333,stroke-width:2px
-    style F fill:#fbc,stroke:#333,stroke-width:2px
-```
+![Overall Architecture](images/system_architecture.png)
 
 The workflow begins with the user interacting with the interface to define simulation parameters and upload necessary files. The graph controller manages the creation and manipulation of asset graphs, which are then processed by the simulation engine to model asset behaviors and outcomes. Results are stored in a database and visualized through interactive dashboards, allowing users to analyze and interpret the data effectively.
 
@@ -196,6 +182,7 @@ For example, in a water distribution network, equipment types might include pump
 One would also need to ensure that the graph nodes include load information to determine risk scores, or alternatively develop a different method for assessing risk based on the specific attributes of the equipment in that domain.
 
 The required node attributes for the RUL simulation are:
+
 - type
   - Type of equipment (e.g., "transformer", "panel", "switchboard", "end load")
 - installation_date
@@ -258,6 +245,7 @@ Once the synthetic building data is generated, users can simulate the Remaining 
   - Equipment types to exclude from RUL calculations.
 
 ### Default Lifespans
+
 | Equipment Type       | Default Lifespan (years) |
 |----------------------|--------------------------|
 | Utility Transformer  | 35                       |
@@ -277,6 +265,7 @@ Once the synthetic building data is generated, users can simulate the Remaining 
 | End Load             | 5.0%                      |
 
 ### Maintenance Task Templates
+
 Maintenance tasks are defined using a template that specifies the type of task, associated equipment types, frequency, time and money costs, and priority. These template helps standardize maintenance activities across different equipment. The simulation engine uses the uploaded maintenance task template to generate and schedule maintenance tasks for each piece of equipment in the building graph.
 
 When the simulation engine processes maintenance tasks, it generates detailed tasks based on the equipment type and the recommended frequency specified in the template. Each task is linked to a specific equipment node and scheduled accordingly. Tasks are prioritized based on risk score and template priority, with repair and replacement tasks for critical equipment considered before routine maintenance.
@@ -286,6 +275,7 @@ For example, a maintenance task template might specify that all "panel" equipmen
 Each month could include a mix of scheduled tasks, executed tasks, and deferred tasks. The scheduled tasks list will show all tasks that were planned for that month, including those that were deferred from previous months. The executed tasks list will show which of those scheduled tasks were actually completed, while the deferred tasks list will indicate which tasks could not be completed due to budget constraints or other factors.
 
 #### Maintenance Task Template Fields
+
 - task_id
   - The unique identifier for the maintenance task. When the tasks for each piece of equipment are generated from the template, this field is concatenated with the equipment ID to ensure uniqueness.
 - equipment_type
@@ -314,6 +304,7 @@ Repair and replacement tasks are prioritized before routine maintenance tasks an
 If multiple pieces of equipment are flagged for repair or replacement in the same month, the simulation engine will prioritize these tasks based on risk level and available budget. This can cause scenarios where for many consecutive months, all available budget is consumed by repair and replacement tasks, leading to deferral of routine maintenance tasks. This behavior reflects real-world scenarios where critical repairs and replacements take precedence over regular upkeep.
 
 #### Repair and Replacement Task Template Fields
+
 - task_id
 - equipment_type
 - task_name
@@ -375,7 +366,6 @@ Once the user sets the RUL simulation parameters, the simulation engine uses the
 6. Update Graph Attributes
    - Store calculated RUL (in days and years), risk level, failure probability, and condition history in each node's attributes.
    - Optionally, print warnings for critically low RUL or high failure risk if enabled.
-
 
 6. Maintenance Task Scheduling and Execution
    - For each month, the simulation engine generates a prioritized schedule of maintenance tasks for equipment nodes, using generic and replacement task templates.
@@ -448,6 +438,7 @@ The following animation illustrates the RUL simulation process on an example bui
 
 ## Budget Summary
 After all scenarios are simulated, the tool generates a summary table displaying the money and time budgets for each scenario, allowing users to quickly compare the different budget allocations.  The following data is shown in the summary table:
+
 - **Total Money Budget Spent to Date:** This is the cumulative amount of money spent on maintenance tasks across all months simulated up to the current date.
 - **Total Hours Budget Spent to Date:** This is the cumulative number of hours spent on maintenance tasks across all months simulated up to the current date.
 - **Total Money Budget (Full Schedule):** This is the cumulative amount of money spent on maintenance tasks across all months simulated in the full schedule.
@@ -466,6 +457,7 @@ An example output is shown below:
 
 ## System Health Overview
 The system health overview provides a very high-level summary of the overall condition and risk levels of all equipment.  An example output is shown below:
+
 &nbsp; **Average Condition:** 97%
 &nbsp; **Total Number of Nodes:** 40
 &nbsp; **Risk Levels: LOW:** 31 | **MEDIUM:** 8 | **HIGH:** 1
@@ -474,6 +466,7 @@ The system health overview provides a very high-level summary of the overall con
 The critical component overview highlights the most at-risk equipment in the system, allowing users to quickly identify components that may require immediate attention.  An example output is shown below:
 
 **Critical Components:** 16
+
 1. MP0.0
 1. TR0.0.208.L
 1. TR0.0.208.R
@@ -495,72 +488,84 @@ The critical component overview highlights the most at-risk equipment in the sys
 The next 12 months overview provides a summary of scheduled maintenance tasks, executed tasks, deferred tasks, and budget utilization for the upcoming year.  An example output is shown below:
 
 **2025-10:**
+
 - **Expected Executed Tasks:** 7
 - **Most Critical Expected Task:** P-03-MP2.0
 - **Deferred Tasks:** 136
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2025-11:**
+
 - **Expected Executed Tasks:** 5
 - **Most Critical Expected Task:** P-02-SP0.0.480.R
 - **Deferred Tasks:** 135
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2025-12:**
+
 - **Expected Executed Tasks:** 6
 - **Most Critical Expected Task:** P-03-SP3.0.480.R
 - **Deferred Tasks:** 134
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-01:**
+
 - **Expected Executed Tasks:** 3
 - **Most Critical Expected Task:** S-03-MP0.0
 - **Deferred Tasks:** 138
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-02:**
+
 - **Expected Executed Tasks:** 9
 - **Most Critical Expected Task:** S-04-MP0.0
 - **Deferred Tasks:** 140
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-03:**
+
 - **Expected Executed Tasks:** 8
 - **Most Critical Expected Task:** P-03-MP3.0
 - **Deferred Tasks:** 135
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-04:**
+
 - **Expected Executed Tasks:** 7
 - **Most Critical Expected Task:** P-02-MP1.0
 - **Deferred Tasks:** 131
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-05:**
+
 - **Expected Executed Tasks:** 8
 - **Most Critical Expected Task:** P-02-MP2.0
 - **Deferred Tasks:** 125
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-06:**
+
 - **Expected Executed Tasks:** 6
 - **Most Critical Expected Task:** P-03-SP3.0.480.R
 - **Deferred Tasks:** 123
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-07:**
+
 - **Expected Executed Tasks:** 2
 - **Most Critical Expected Task:** S-03-MP0.0
 - **Deferred Tasks:** 124
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-08:**
+
 - **Expected Executed Tasks:** 11
 - **Most Critical Expected Task:** P-02-SP1.0.480.H
 - **Deferred Tasks:** 125
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-09:**
+
 - **Expected Executed Tasks:** 8
 - **Most Critical Expected Task:** P-03-MP3.0
 - **Deferred Tasks:** 124
