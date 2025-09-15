@@ -675,13 +675,9 @@ The Budget Goal Seeker module enables users to optimize maintenance budgets and 
   - Users can adjust inputs and rerun the optimization to explore different scenarios and strategies.
   - The system caches results and visualizations for seamless interaction and review.
 
-An example animation of the optimization process is shown below:
-
-![Budget Goal Seeker Optimization Animation](images/budget_goal_seeker_optimization_animation.gif)
-
 The final graph is shown below:
 
-![Budget Goal Seeker Final Graph](images/budget_goal_seeker_final_graph.png)
+_![Budget Goal Seeker Final Graph](images/budget_goal_seeker_final_graph.png)
 
 You can see in this example that the relationship between budget and average condition level is not linear, and there are diminishing returns as budgets increase.  This highlights the importance of finding an optimal budget that balances cost with asset health outcomes.
 
@@ -841,6 +837,7 @@ Enhancements:
 :::
 # Appendix A: Example Test Data: Simple Building
 The following parameters were used to generate a simple building for testing and validation of the AssetPulse simulation tool:
+
 - Construction Year: 2000
 - Total Load: 200 kW
 - Building Length: 20 m
