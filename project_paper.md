@@ -30,8 +30,7 @@ We see the interface as both a research tool and a practical application for ass
 The interface is built using the Panel library from Holoviz, which provides a flexible and powerful framework for creating interactive web applications in Python.  It can be easily extended and customized to meet specific user requirements and integrate additional features as needed.  It also supports deployment as a standalone web application or integration into existing asset management platforms, as a future area of improvement.
 
 [See Appendix A for an example system diagram of the full AssetPulse architecture.](#appendix-a-system-diagrams)
-
-[See Appendix D for screenshots of the current user interface.](#appendix-d-user-interface-screenshots)
+[See Appendix C for screenshots of the current user interface.](#appendix-c-user-interface-screenshots)
 
 ## Related Work
 
@@ -163,9 +162,9 @@ The synthetic data generator uses the provided parameters to create a building e
 11. Reporting and Output
     -  Print a summary report of the generated building, including total load, equipment counts, end load breakdown, and per-floor/riser details. Save the graph in GraphML format for further analysis or visualization.
 
-An example of a simple building generated using these parameters is provided in [Appendix B](#appendix-b-simple-building-example).  Another example of a more complex building is provided in [Appendix C](#appendix-c-complex-building-example).
+An example of a simple building generated using these parameters is provided in [Appendix A](#appendix-a-simple-building-example).  Another example of a more complex building is provided in [Appendix B](#appendix-b-complex-building-example).
 
-For all subsequent sections, the complex building from [Appendix C](#appendix-c-complex-building-example) will be used as the reference example.  This allows us to illustrate the various features and outputs of the AssetPulse simulation tool in a more comprehensive manner.
+For all subsequent sections, the complex building from [Appendix B](#appendix-b-complex-building-example) will be used as the reference example.  This allows us to illustrate the various features and outputs of the AssetPulse simulation tool in a more comprehensive manner.
 
 Because the synthetic data generator produces a complete building electrical system graph with detailed attributes, it can be used to test and validate the RUL simulation and maintenance scheduling features of AssetPulse.  The generated graph includes all necessary node types, connections, and attributes required for the RUL simulation engine to function effectively.
 
@@ -197,6 +196,29 @@ The required node attributes for the RUL simulation are:
   - Cost to replace the equipment, allows for varying costs based on unique instances of an equipment type.  For example, a larger transformer may cost more to replace than a smaller one of the same type.
 - current_condition
   - Current condition of the equipment, on a scale from 0.0 (failed) to 1.0 (new). If not provided, defaults to 1.0.
+
+### Overall Architecture and Workflow
+The following diagram illustrates the overall architecture and workflow of the AssetPulse simulation tool, including key components such as the user interface, graph controller, simulation engine, and data storage.
+
+```mermaid
+flowchart TD
+    A[User Interface] --> B[Graph Controller]
+    B --> F[Graph Generation Module]
+    B --> C[Simulation Engine]
+    C --> D[Data Storage]
+    D --> A
+    C --> E[Visualization Module]
+    E --> A
+    F --> B
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#bfb,stroke:#333,stroke-width:2px
+    style D fill:#ffb,stroke:#333,stroke-width:2px
+    style E fill:#fbb,stroke:#333,stroke-width:2px
+    style F fill:#fbc,stroke:#333,stroke-width:2px
+```
+
+The workflow begins with the user interacting with the interface to define simulation parameters and upload necessary files. The graph controller manages the creation and manipulation of asset graphs, which are then processed by the simulation engine to model asset behaviors and outcomes. Results are stored in a database and visualized through interactive dashboards, allowing users to analyze and interpret the data effectively.
 
 ## Risk Assessment
 Before calculating RUL, the simulation engine assesses the risk level of failure for each piece of equipment based on its graph attributes.  This assessment uses the load seen at each node and the quantity of total downstream equipment nodes in the graph to determine a risk score.  Equipment with higher loads and more downstream dependencies will have higher risk scores, indicating that their failure would have a more significant impact on the overall system performance.
@@ -380,6 +402,10 @@ Once the user sets the RUL simulation parameters, the simulation engine uses the
    - Replacement tasks are triggered for equipment with low condition or high risk, prioritized before routine tasks.
    - For each executed task, the equipment node's condition is improved, and the maintenance history is updated. Deferred tasks increase the deferred count, impacting future RUL calculations.
 
+The beta distribution function is shown below, with alpha=5 and beta=1, which skews the distribution towards higher condition values, simulating realistic maintenance outcomes:
+
+![Beta Distribution](images/beta_distribution.png)
+
 7. Reporting and Analysis
    - After each month, the simulation engine records the scheduled, executed, and deferred tasks, maintenance logs, and replacement actions.
    - The updated graph state (including RUL, condition, and risk) is saved for each month, enabling time-series analysis.
@@ -418,25 +444,18 @@ The simulation engine outputs each month's RUL and risk assessment results in a 
   - List of equipment replacement tasks completed during the month, with details on replaced components and associated costs.
 - replacement_tasks_not_executed
   - List of planned replacement tasks that were not executed, including reasons.
-## Risk Assessment
-Before calculating RUL, the simulation engine assesses the risk level of failure for each piece of equipment based on its graph attributes.  This assessment uses the load seen at each node and the quantity of total downstream equipment nodes in the graph to determine a risk score.  Equipment with higher loads and more downstream dependencies will have higher risk scores, indicating that their failure would have a more significant impact on the overall system performance.
-
-We use the following formula to calculate the risk score for each piece of equipment:
-
-```
-propagated_power = graph.nodes[node].get('propagated_power', 0) or 0
-norm_power = propagated_power / total_load if total_load else 0
-descendants_count = filtered_descendants_count(graph, node)
-norm_descendants = descendants_count / max_descendants
-risk = (norm_power + norm_descendants) / 2
-```
-
-The filtered_descendants_count function counts the number of downstream equipment nodes, excluding end loads, to focus on critical distribution components. The risk score is then normalized between 0 and 1, with higher values indicating greater risk.
 
 ### Remaining Useful Life (RUL) Simulation Diagram
 The following diagram illustrates the components and workflow of the Remaining Useful Life (RUL) Simulation, which is responsible for simulating maintenance scheduling, risk assessment, and RUL calculations over time.
 
 ![RUL Simulation Workflow](images/rul_simulation_diagram.png)
+
+<!-- ### Animation of RUL Simulation on an Example Building Graph
+The following animation illustrates the RUL simulation process on an example building graph. It colors each node based on its RUL value, and animates the changes in RUL over time as maintenance tasks are executed or deferred.
+
+![Graph Animation](images/graph_rul_animation.mp4)
+
+![RUL Animation](images/rul_animations.mp4) -->
 
 ## Simulation Analysis and Visualization
 
@@ -714,7 +733,7 @@ For example, users might find that a moderate increase in budget leads to signif
     Purpose: Create a comprehensive, multi-domain digital twin for holistic asset management.
 
     Enhancements:
-    - Extend beyond electrical to include mechanical, plumbingm structural, architectural, fire safety, IT, transportation, and sustainability systems.
+    - Extend beyond electrical to include mechanical, plumbing, structural, architectural, fire safety, IT, transportation, and sustainability systems.
     - Model cross-discipline dependencies (e.g., structural changes affecting MEP layouts or fire safety zones).
     - Simulate cascading impacts across disciplines for risk forecasting and lifecycle planning.
     - Provide unified visualization and reporting to compare multi-system trade-offs in a single interface.
@@ -804,30 +823,7 @@ For example, users might find that a moderate increase in budget leads to signif
     - Maintain a changelog and version history for accountability.
     - Provide secure cloud storage for simulation results and configuration files.
 
-## Appendix A: System Diagrams
-
-### Overall Architecture and Workflow
-The following diagram illustrates the overall architecture and workflow of the AssetPulse simulation tool, including key components such as the user interface, graph controller, simulation engine, and data storage.
-
-```mermaid
-flowchart TD
-    A[User Interface] --> B[Graph Controller]
-    B --> F[Graph Generation Module]
-    B --> C[Simulation Engine]
-    C --> D[Data Storage]
-    D --> A
-    C --> E[Visualization Module]
-    E --> A
-    F --> B
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style B fill:#bbf,stroke:#333,stroke-width:2px
-    style C fill:#bfb,stroke:#333,stroke-width:2px
-    style D fill:#ffb,stroke:#333,stroke-width:2px
-    style E fill:#fbf,stroke:#333,stroke-width:2px
-    style F fill:#fbb,stroke:#333,stroke-width:2px
-```
-
-## Appendix B: Example Test Data: Simple Building
+## Appendix A: Example Test Data: Simple Building
 The following parameters were used to generate a simple building for testing and validation of the AssetPulse simulation tool:
 - Construction Year: 2000
 - Total Load: 200 kW
@@ -891,7 +887,7 @@ The following parameters were used to generate a simple building for testing and
 
 You can see from this example that the maintenance tasks have been generated for each panel in the building, with appropriate scheduling based on the recommended frequency and installation date. Each task includes details such as time and money costs, priority, and description.  There are no maintenance tasks generated for transformers in this example because there are no transformers in the simple building test case.  Note that the `last_performed` dates are placeholders and will be updated as maintenance activities are carried out.
 
-## Appendix C: Example Test Data: Complex Building
+## Appendix B: Example Test Data: Complex Building
 The following parameters were used to generate a complex building for testing and validation of the AssetPulse simulation tool:
 - Construction Year: 2000
 - Total Load: 1000 kW
@@ -1134,7 +1130,7 @@ The following parameters were used to generate a complex building for testing an
 
 The dataset above represents a comprehensive maintenance schedule for various electrical components, including panels and transformers. Each entry details specific tasks, their frequency, duration, cost, and other relevant information to ensure proper upkeep and functionality of the equipment. Note that the `last_performed` dates are placeholders and will be updated as maintenance activities are carried out.
 
-## Appendix D: Screenshots of the AssetPulse Interface
+## Appendix C: Screenshots of the AssetPulse Interface
 Below are screenshots of the various features and views available in the AssetPulse user interface.
 
 ### System View
