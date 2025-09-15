@@ -1,0 +1,417 @@
+[
+	{
+		"id": "http://zotero.org/users/local/mkjTYlJ0/items/ISYSAWMH",
+		"type": "paper-conference",
+		"container-title": "2010 IEEE International Conference on Systems, Man and Cybernetics",
+		"DOI": "10.1109/ICSMC.2010.5641927",
+		"event-place": "Istanbul, Turkey",
+		"event-title": "2010 IEEE International Conference on Systems, Man and Cybernetics - SMC",
+		"ISBN": "978-1-4244-6586-6",
+		"page": "2867-2873",
+		"publisher": "IEEE",
+		"publisher-place": "Istanbul, Turkey",
+		"source": "DOI.org (Crossref)",
+		"title": "Algorithms in electric power system one-line diagram creation",
+		"URL": "http://ieeexplore.ieee.org/document/5641927/",
+		"author": [
+			{
+				"family": "Lendak",
+				"given": "Imre"
+			},
+			{
+				"family": "Erdeljan",
+				"given": "Aleksandar"
+			},
+			{
+				"family": "Capko",
+				"given": "Darko"
+			},
+			{
+				"family": "Vukmirovic",
+				"given": "Srdan"
+			}
+		],
+		"accessed": {
+			"date-parts": [
+				[
+					"2025",
+					9,
+					15
+				]
+			]
+		},
+		"issued": {
+			"date-parts": [
+				[
+					"2010",
+					10
+				]
+			]
+		}
+	},
+	{
+		"id": "http://zotero.org/users/local/mkjTYlJ0/items/WB72HJIF",
+		"type": "paper-conference",
+		"container-title": "IEEE 8th International Symposium on Intelligent Systems and Informatics",
+		"DOI": "10.1109/SISY.2010.5647311",
+		"event-place": "Subotica, Serbia",
+		"event-title": "2010 IEEE 8th International Symposium on Intelligent Systems and Informatics (SISY 2010)",
+		"ISBN": "978-1-4244-7394-6",
+		"page": "487-491",
+		"publisher": "IEEE",
+		"publisher-place": "Subotica, Serbia",
+		"source": "DOI.org (Crossref)",
+		"title": "Electric power system one-line diagram generation with genetic algorithm",
+		"URL": "http://ieeexplore.ieee.org/document/5647311/",
+		"author": [
+			{
+				"family": "Lendak",
+				"given": "I."
+			},
+			{
+				"family": "Poth",
+				"given": "M."
+			},
+			{
+				"family": "Capko",
+				"given": "D."
+			},
+			{
+				"family": "Vukmirovic",
+				"given": "S."
+			},
+			{
+				"family": "Erdeljan",
+				"given": "A."
+			}
+		],
+		"accessed": {
+			"date-parts": [
+				[
+					"2025",
+					9,
+					15
+				]
+			]
+		},
+		"issued": {
+			"date-parts": [
+				[
+					"2010",
+					9
+				]
+			]
+		}
+	},
+	{
+		"id": "http://zotero.org/users/local/mkjTYlJ0/items/467T4EC7",
+		"type": "article-journal",
+		"container-title": "IEEE Systems Journal",
+		"DOI": "10.1109/JSYST.2015.2427994",
+		"ISSN": "1932-8184, 1937-9234, 2373-7816",
+		"issue": "3",
+		"journalAbbreviation": "IEEE Systems Journal",
+		"license": "https://ieeexplore.ieee.org/Xplorehelp/downloads/license-information/IEEE.html",
+		"page": "1810-1821",
+		"source": "DOI.org (Crossref)",
+		"title": "Visualizing the Electrical Structure of Power Systems",
+		"URL": "http://ieeexplore.ieee.org/document/7109118/",
+		"volume": "11",
+		"author": [
+			{
+				"family": "Cuffe",
+				"given": "Paul"
+			},
+			{
+				"family": "Keane",
+				"given": "Andrew"
+			}
+		],
+		"accessed": {
+			"date-parts": [
+				[
+					"2025",
+					9,
+					15
+				]
+			]
+		},
+		"issued": {
+			"date-parts": [
+				[
+					"2017",
+					9
+				]
+			]
+		}
+	},
+	{
+		"id": "http://zotero.org/users/local/mkjTYlJ0/items/FI5MZ9ET",
+		"type": "article-journal",
+		"container-title": "Journal of Modern Power Systems and Clean Energy",
+		"DOI": "10.35833/MPCE.2021.000058",
+		"ISSN": "2196-5625",
+		"issue": "2",
+		"language": "en",
+		"page": "345-360",
+		"source": "DOI.org (Crossref)",
+		"title": "A Review of Graph Neural Networks and Their Applications in Power Systems",
+		"URL": "https://ieeexplore.ieee.org/document/9520300/",
+		"volume": "10",
+		"author": [
+			{
+				"family": "Liao",
+				"given": "Wenlong"
+			},
+			{
+				"family": "Bak-Jensen",
+				"given": "Birgitte"
+			},
+			{
+				"family": "Radhakrishna Pillai",
+				"given": "Jayakrishnan"
+			},
+			{
+				"family": "Wang",
+				"given": "Yuelong"
+			},
+			{
+				"family": "Wang",
+				"given": "Yusen"
+			}
+		],
+		"accessed": {
+			"date-parts": [
+				[
+					"2025",
+					9,
+					15
+				]
+			]
+		},
+		"issued": {
+			"date-parts": [
+				[
+					"2022"
+				]
+			]
+		}
+	},
+	{
+		"id": "http://zotero.org/users/local/mkjTYlJ0/items/X6YIV3A4",
+		"type": "article-journal",
+		"container-title": "IEEE Access",
+		"DOI": "10.1109/ACCESS.2023.3345795",
+		"ISSN": "2169-3536",
+		"journalAbbreviation": "IEEE Access",
+		"license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+		"page": "145067-145084",
+		"source": "DOI.org (Crossref)",
+		"title": "From Graph Theory to Graph Neural Networks (GNNs): The Opportunities of GNNs in Power Electronics",
+		"title-short": "From Graph Theory to Graph Neural Networks (GNNs)",
+		"URL": "https://ieeexplore.ieee.org/document/10368010/",
+		"volume": "11",
+		"author": [
+			{
+				"family": "Li",
+				"given": "Yuzhuo"
+			},
+			{
+				"family": "Xue",
+				"given": "Cheng"
+			},
+			{
+				"family": "Zargari",
+				"given": "Faraz"
+			},
+			{
+				"family": "Li",
+				"given": "Yunwei Ryan"
+			}
+		],
+		"accessed": {
+			"date-parts": [
+				[
+					"2025",
+					9,
+					15
+				]
+			]
+		},
+		"issued": {
+			"date-parts": [
+				[
+					"2023"
+				]
+			]
+		}
+	},
+	{
+		"id": "http://zotero.org/users/local/mkjTYlJ0/items/KH3PUY3X",
+		"type": "article-journal",
+		"abstract": "Abstract\n            With the deepening application of knowledge graph technology, in order to solve the problems that it is difficult to quickly obtain knowledge and complete the maintenance task, an intelligent auxiliary operation and maintenance system of power communication network based on knowledge graph is designed and implemented. The proposed system addresses effectively the two mentioned challenges accordingly by aggregating semantic information of different granularity in the constructed knowledge graph. Specifically, a Relation-Tuple-Entity Heterogeneous Graph Neural Network (SG-HGNN) is proposed to model effectively the different granularities of semantic information for knowledge reasoning. Comprehensive experiments which are conducted on the constructed knowledge graph demonstrate the effectiveness of the proposed framework. After the pilot application of the system, the problem hit rate and problem response time are significantly reduced, which greatly improves the operation and maintenance efficiency of power communication network.",
+		"container-title": "Journal of Physics: Conference Series",
+		"DOI": "10.1088/1742-6596/1684/1/012105",
+		"ISSN": "1742-6588, 1742-6596",
+		"issue": "1",
+		"journalAbbreviation": "J. Phys.: Conf. Ser.",
+		"page": "012105",
+		"source": "DOI.org (Crossref)",
+		"title": "Intelligent Auxiliary Operation and Maintenance System of Power Communication Network based on Knowledge Graph",
+		"URL": "https://iopscience.iop.org/article/10.1088/1742-6596/1684/1/012105",
+		"volume": "1684",
+		"author": [
+			{
+				"family": "Miao",
+				"given": "Weiwei"
+			},
+			{
+				"family": "Wu",
+				"given": "Haiyang"
+			},
+			{
+				"family": "Chen",
+				"given": "Peng"
+			},
+			{
+				"family": "Jing",
+				"given": "Jiangping"
+			}
+		],
+		"accessed": {
+			"date-parts": [
+				[
+					"2025",
+					9,
+					15
+				]
+			]
+		},
+		"issued": {
+			"date-parts": [
+				[
+					"2020",
+					11,
+					1
+				]
+			]
+		}
+	},
+	{
+		"id": "http://zotero.org/users/local/mkjTYlJ0/items/72GLGXMP",
+		"type": "article-journal",
+		"abstract": "Knowledge graph (KG) technology is a newly emerged knowledge representation method in the field of artificial intelligence. Knowledge graphs can form logical mappings from cluttered data and establish triadic relationships between entities. Accurate derivation and reasoning of knowledge graphs play an important role in guiding power equipment operation and decision-making. Due to the complex and weak relations from multi-source heterogeneous data, the use of KGs has become popular in research to represent potential information in power knowledge reasoning. In this review, we first summarize the key technologies of knowledge graph representation and learning. Then, based on the complexity and real-time changes of power system operation and maintenance, we present multiple data processing, knowledge representation learning, and the graph construction process. In three typical power operation and fault decision application scenarios, we investigate current algorithms in power KG acquisition, representation embedding, and knowledge completion to illustrate accurate and exhaustive recommendations. Thus, using KGs to provide reference solutions and decision guidance has a significant role in improving the efficiency of power system operations. Finally, we summarize the achievements and difficulties of current research and give an outlook for future, promising roles of KG in power systems.",
+		"container-title": "Applied Sciences",
+		"DOI": "10.3390/app13074357",
+		"ISSN": "2076-3417",
+		"issue": "7",
+		"journalAbbreviation": "Applied Sciences",
+		"language": "en",
+		"license": "https://creativecommons.org/licenses/by/4.0/",
+		"page": "4357",
+		"source": "DOI.org (Crossref)",
+		"title": "A Review of Knowledge Graph-Based Reasoning Technology in the Operation of Power Systems",
+		"URL": "https://www.mdpi.com/2076-3417/13/7/4357",
+		"volume": "13",
+		"author": [
+			{
+				"family": "Liu",
+				"given": "Rui"
+			},
+			{
+				"family": "Fu",
+				"given": "Rong"
+			},
+			{
+				"family": "Xu",
+				"given": "Kang"
+			},
+			{
+				"family": "Shi",
+				"given": "Xuanzhe"
+			},
+			{
+				"family": "Ren",
+				"given": "Xiaoning"
+			}
+		],
+		"accessed": {
+			"date-parts": [
+				[
+					"2025",
+					9,
+					15
+				]
+			]
+		},
+		"issued": {
+			"date-parts": [
+				[
+					"2023",
+					3,
+					29
+				]
+			]
+		}
+	},
+	{
+		"id": "http://zotero.org/users/local/mkjTYlJ0/items/F94C3U62",
+		"type": "chapter",
+		"container-title": "Industry 4.0 for the Built Environment",
+		"event-place": "Cham",
+		"ISBN": "978-3-030-82429-7",
+		"language": "en",
+		"note": "collection-title: Structural Integrity\nDOI: 10.1007/978-3-030-82430-3_7",
+		"page": "157-183",
+		"publisher": "Springer International Publishing",
+		"publisher-place": "Cham",
+		"source": "DOI.org (Crossref)",
+		"title": "Knowledge Graphs and Linked Data for the Built Environment",
+		"URL": "https://link.springer.com/10.1007/978-3-030-82430-3_7",
+		"volume": "20",
+		"editor": [
+			{
+				"family": "Bolpagni",
+				"given": "Marzia"
+			},
+			{
+				"family": "Gavina",
+				"given": "Rui"
+			},
+			{
+				"family": "Ribeiro",
+				"given": "Diogo"
+			}
+		],
+		"author": [
+			{
+				"family": "Pauwels",
+				"given": "Pieter"
+			},
+			{
+				"family": "Costin",
+				"given": "Aaron"
+			},
+			{
+				"family": "Rasmussen",
+				"given": "Mads Holten"
+			}
+		],
+		"accessed": {
+			"date-parts": [
+				[
+					"2025",
+					9,
+					15
+				]
+			]
+		},
+		"issued": {
+			"date-parts": [
+				[
+					"2022"
+				]
+			]
+		}
+	}
+]

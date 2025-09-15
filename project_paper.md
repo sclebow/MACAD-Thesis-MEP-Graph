@@ -1,59 +1,48 @@
 ---
-title: AssetPulse - Project Paper
+title: AssetPulse - Asset Management Simulation
 author: Scott C. Lebow, PE and Krisztian Hajdu
 date: 15 September 2025
+bibliograph: ./references.json
 ---
-
-# AssetPulse - Project Paper
-
-## Abstract
+# Abstract
 AssetPulse is an advanced asset management simulation tool and synthetic data generator designed to optimize resource allocation, improve decision-making, and facilitate research through realistic scenario modeling. Building on a graph-based approach, AssetPulse models asset lifecycles, calculates remaining useful life (RUL), and applies business rules for budget planning, risk management, and both reactive and preventive maintenance. The system aggregates risk, cost, and downtime metrics, supports automated scheduling, and visualizes results through an interactive interface. By enabling robust scenario analysis and comprehensive planning, AssetPulse helps users optimize maintenance strategies and resource allocation for complex building systems and infrastructure networks. This paper discusses the objectives, research questions, methodology, and future work related to the project.
 
-## Introduction
-### Problem
+# Introduction
+## Problem
 Effective management of physical assets is critical for operational efficiency and cost control across industries. However, many organizations face challenges in modeling asset lifecycles, predicting maintenance needs, and allocating resources optimally due to a lack of data-driven decision-assistance tools. The financial impact of operational readiness related refurbishment works and frequency of maintenance activities is difficult to forecast or measure, while on an empirical basis they are potent cost savers on the long run. Meanwhile, the ROI of infrastructure development related CAPEX works is relatively straightforward to forecast and justify, hence they are overly favored during budget allocations.
+
+Too often, asset management decisions are made based on historical practices or intuition rather than data-driven insights, leading to suboptimal outcomes. Additionally, the complexity of asset networks and the interdependencies between different components make it challenging to assess risk and prioritize maintenance activities effectively, without comprehensive modeling and simulation capabilities.
 
 AssetPulse aims to address these challenges by providing a simulation environment that allows users to model asset behaviors, evaluate different budget strategies, and make informed decisions based on simulated outcomes.
 
-### Objectives
+## Objectives
 1. Develop a graph-based simulation tool that models asset management scenarios, including asset lifecycles, maintenance schedules, and budget allocations.
 2. Create a synthetic data generator to produce realistic datasets for testing and validating asset management strategies.
 3. Enable users to visualize and analyze the impact of different asset management decisions through interactive dashboards and reports.
 4. Compare the effectiveness of various budget allocation strategies in asset management through simulation experiments.
 5. Optimize budget allocation strategies based on different metrics such as maximizing asset longevity, maximizing equipment condition, and minimizing monthly costs.
 
-### Interface
+## Interface
 We designed an intuitive user interface that allows users to easily set up simulation scenarios, define asset parameters, allocate budgets, and visualize results. The interface includes features such as file upload/download, interactive graphs, and customizable reports to enhance user experience and facilitate decision-making.
 
 We see the interface as both a research tool and a practical application for asset managers, enabling them to explore various strategies and their outcomes in a user-friendly manner.  While the interface is not a finished product, it provides a solid foundation for future development and refinement based on user feedback and evolving needs in asset management.  And despite its current limitations, it effectively demonstrates the core functionalities and potential of the AssetPulse system.
 
 The interface is built using the Panel library from Holoviz, which provides a flexible and powerful framework for creating interactive web applications in Python.  It can be easily extended and customized to meet specific user requirements and integrate additional features as needed.  It also supports deployment as a standalone web application or integration into existing asset management platforms, as a future area of improvement.
 
-[See Appendix A for an example system diagram of the full AssetPulse architecture.](#appendix-a-system-diagrams)
-[See Appendix C for screenshots of the current user interface.](#appendix-c-user-interface-screenshots)
+[See Appendix A for an example test dataset representing a simple building.](#appendix-a-example-test-data-simple-building)  
+[See Appendix B for an example test dataset representing a more complex building.](#appendix-b-example-test-data-complex-building)  
+[See Appendix C for screenshots of the current user interface.](#appendix-c-user-interface-screenshots)  
 
-## Related Work
+# Related Work
 
-### Literature Review
-A review of existing literature reveals various approaches to asset management, including statistical models, machine learning techniques, and optimization algorithms. However, many of these approaches focus on specific aspects of asset management rather than providing a comprehensive simulation environment that integrates lifecycle modeling, maintenance scheduling, and budget allocation.
+# Literature Review
+We conducted a literature review to identify existing tools and frameworks related to asset management, focusing on their capabilities, limitations, and relevance to our project. The review highlighted the need for a comprehensive simulation tool that integrates graph-based modeling, synthetic data generation, and interactive visualization to support asset management decision-making.
 
-E. Cotilla-Sanchez, P. D. H. Hines, C. Barrows and S. Blumsack, "Comparing the Topological and Electrical Structure of the North American Electric Power Infrastructure," in IEEE Systems Journal, vol. 6, no. 4, pp. 616-626, Dec. 2012, doi: 10.1109/JSYST.2012.2183033. I. Lendak, A. Erdeljan, D. Čapko and S. Vukmirović, "Algorithms in electric power system one-line diagram creation," 2010 IEEE International Conference on Systems, Man and Cybernetics, Istanbul, Turkey, 2010, pp. 2867-2873, doi: 10.1109/ICSMC.2010.5641927.
+Some research has explored the use of graph based modeling for electrical systems, such as [@http://zotero.org/users/local/mkjTYlJ0/items/467T4EC7] who developed graph-based visualization techniques for circuit-level electrical power systems using graph theory.  [@http://zotero.org/users/local/mkjTYlJ0/items/72GLGXMP] reviewed the application of graph neural networks (GNNs) in utility-scale power electronics, for example modeling power grid accident behaviors.  [@http://zotero.org/users/local/mkjTYlJ0/items/ISYSAWMH] proposed algorithms for generating one-line diagrams of electrical power systems using genetic algorithms.  [@http://zotero.org/users/local/mkjTYlJ0/items/FI5MZ9ET ]provides a review of graph neural networks (GNNs) and their applications in specifically utility-level power systems, including fault prediction, time-series forecasing, and power flow calculation.  [@http://zotero.org/users/local/mkjTYlJ0/items/KH3PUY3X] applied knowledge graphs to power communcation networks. However, these studies primarily focus on high-voltage power systems or very low-voltage systems and do not address the specific needs of low-voltage building electrical systems or asset management.
 
-I. Lendák, M. Póth, D. Čapko, S. Vukmirović and A. Erdeljan, "Electric power system one-line diagram generation with genetic algorithm," IEEE 8th International Symposium on Intelligent Systems and Informatics, Subotica, Serbia, 2010, pp. 487-491, doi: 10.1109/SISY.2010.5647311.
+Knowledges are particularly of interest, as they provide a structured way to represent and reason about complex systems.  [@http://zotero.org/users/local/mkjTYlJ0/items/F94C3U62] provides a review of knowledge graphs and their applications in the built environment.  Much of this work focuses on ontology development rather than simulation or asset management.  Our simulation relies on a building's knowledge graph to represent the relationships between assets and their attributes, enabling more accurate modeling of asset behaviors and interactions.
 
-P. Cuffe and A. Keane, "Visualizing the Electrical Structure of Power Systems," in IEEE Systems Journal, vol. 11, no. 3, pp. 1810-1821, Sept. 2017, doi: 10.1109/JSYST.2015.2427994. 
-
-W. Liao, B. Bak-Jensen, J. R. Pillai, Y. Wang and Y. Wang, "A Review of Graph Neural Networks and Their Applications in Power Systems," in Journal of Modern Power Systems and Clean Energy, vol. 10, no. 2, pp. 345-360, March 2022, doi: 10.35833/MPCE.2021.000058. 
-
-Y. Li, C. Xue, F. Zargari and Y. R. Li, "From Graph Theory to Graph Neural Networks (GNNs): The Opportunities of GNNs in Power Electronics," in IEEE Access, vol. 11, pp. 145067-145084, 2023, doi: 10.1109/ACCESS.2023.3345795.
-
-Weiwei Miao et al 2020 J. Phys.: Conf. Ser. 1684 012105 DOI 10.1088/1742-6596/1684/1/012105
-
-Liu, R., Fu, R., Xu, K., Shi, X., & Ren, X. (2023). A Review of Knowledge Graph-Based Reasoning Technology in the Operation of Power Systems. Applied Sciences, 13(7), 4357. https://doi.org/10.3390/app13074357 
-
-Pauwels, P., Costin, A., & Rasmussen, M. H. (2022). Knowledge Graphs and Linked Data for the Built Environment. In Industry 4.0 for the Built Environment (pp. 157-183). Springer. https://doi.org/10.1007/978-3-030-82430-3_7
-
-### Existing Tools and Frameworks
+## Existing Tools and Frameworks
 Several existing tools and frameworks address various aspects of asset management, including maintenance scheduling, risk assessment, and budget optimization. However, many of these tools lack the comprehensive integration of graph-based modeling, synthetic data generation, and interactive visualization that AssetPulse offers.
 
 1. IBM Maximo
@@ -86,37 +75,21 @@ Key differentiators of AssetPulse:
 - Scenario simulation, analysis and interactive visualization.
 - Customizable for complex infrastructure, not just standard asset lists.
 
-## Research Questions
+# Research Questions
 1. How can graph-based methods support the tracking of changes and lifecycle management of building systems?
 2. How can synthetic data generation be utilized to create realistic asset management scenarios for testing and validation?
 3. What are the comparative advantages of different budget allocation strategies in asset management?
 4. How can simulation tools be designed to facilitate user interaction and decision-making in asset management?
 
-## Methodology
-### Overall Architecture and Workflow
+# Methodology
+## Overall Architecture and Workflow
 The following diagram illustrates the overall architecture and workflow of the AssetPulse simulation tool, including key components such as the user interface, graph controller, simulation engine, and data storage.
 
-```mermaid
-flowchart TD
-    A[User Interface] --> B[Graph Controller]
-    B --> F[Graph Generation Module]
-    B --> C[Simulation Engine]
-    C --> D[Data Storage]
-    D --> A
-    C --> E[Visualization Module]
-    E --> A
-    F --> B
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style B fill:#bbf,stroke:#333,stroke-width:2px
-    style C fill:#bfb,stroke:#333,stroke-width:2px
-    style D fill:#ffb,stroke:#333,stroke-width:2px
-    style E fill:#fbb,stroke:#333,stroke-width:2px
-    style F fill:#fbc,stroke:#333,stroke-width:2px
-```
+![Overall Architecture](images/system_architecture.png)
 
 The workflow begins with the user interacting with the interface to define simulation parameters and upload necessary files. The graph controller manages the creation and manipulation of asset graphs, which are then processed by the simulation engine to model asset behaviors and outcomes. Results are stored in a database and visualized through interactive dashboards, allowing users to analyze and interpret the data effectively.
 
-### Simulation Tool Development
+## Simulation Tool Development
 - Graph-Based Modeling
     -  Utilize graph structures to represent assets, their relationships, and lifecycle
 - Simulation Engine
@@ -128,10 +101,10 @@ The workflow begins with the user interacting with the interface to define simul
 - Validation and Evaluation
     -  Conduct experiments to validate the simulation accuracy and evaluate the impact of different budget allocation strategies using the synthetic data.
 
-## Synthetic Data Generation
+# Synthetic Data Generation
 We were unable to acquire appropriate real-life dataframes and decided to build the application using synthetic data. To quickly generate realistic building data for testing and validation, we developed a synthetic data generator. This tool creates building electrical system graphs based on the following user-defined parameters:
 
-### User-Defined Parameters
+## User-Defined Parameters
 - Construction Year
   - Older buildings will allow the simulation of more failures and maintenance needs.
 - Total Load (kW)
@@ -149,7 +122,7 @@ We were unable to acquire appropriate real-life dataframes and decided to build 
 - Random Seed
   - An optional integer seed for random number generation to ensure reproducibility of the synthetic data.
 
-### Building Electrical System Generation Logic
+## Building Electrical System Generation Logic
 The synthetic data generator uses the provided parameters to create a building electrical system graph. The process involves:
 
 1. Define Building Characteristics 
@@ -199,7 +172,7 @@ This allows us to determine which equipment should be maintained in situations w
 
 Should the lower risk equipment fail due to deferred maintenance, the resulting failure event should affect less of the overall system performance, as the higher risk equipment will have been maintained and is less likely to fail.
 
-### Other System Graphs
+## Other System Graphs
 The synthetic data generator can be adapted to create other types of system graphs beyond building electrical systems. For example, with modification it could generate water distribution networks, HVAC systems, or transportation infrastructure graphs by modifying the node types, connections, and attributes according to the specific domain requirements. This flexibility allows AssetPulse to be applied to a wide range of asset management scenarios across different industries.
 
 The key parameters used in the remaining useful life (RUL) simulation are described in the next section.  To apply the RUL simulation to a different type of system graph, the user would need to define appropriate equipment types, lifespans, failure rates, and maintenance tasks relevant to that domain, however the core simulation logic would remain the same.
@@ -209,6 +182,7 @@ For example, in a water distribution network, equipment types might include pump
 One would also need to ensure that the graph nodes include load information to determine risk scores, or alternatively develop a different method for assessing risk based on the specific attributes of the equipment in that domain.
 
 The required node attributes for the RUL simulation are:
+
 - type
   - Type of equipment (e.g., "transformer", "panel", "switchboard", "end load")
 - installation_date
@@ -220,7 +194,7 @@ The required node attributes for the RUL simulation are:
 - current_condition
   - Current condition of the equipment, on a scale from 0.0 (failed) to 1.0 (new). If not provided, defaults to 1.0.
 
-## Risk Assessment
+# Risk Assessment
 Before calculating RUL, the simulation engine assesses the risk level of failure for each piece of equipment based on its graph attributes.  This assessment uses the load seen at each node and the quantity of total downstream equipment nodes in the graph to determine a risk score.  Equipment with higher loads and more downstream dependencies will have higher risk scores, indicating that their failure would have a more significant impact on the overall system performance.
 
 We use the following formula to calculate the risk score for each piece of equipment:
@@ -235,10 +209,10 @@ risk = (norm_power + norm_descendants) / 2
 
 The filtered_descendants_count function counts the number of downstream equipment nodes, excluding end loads, to focus on critical distribution components. The risk score is then normalized between 0 and 1, with higher values indicating greater risk.
 
-## Remaining Useful Life (RUL) Simulation
+# Remaining Useful Life (RUL) Simulation
 Once the synthetic building data is generated, users can simulate the Remaining Useful Life (RUL) of equipment based on various parameters. These parameters allow users to customize how maintenance deferrals, aging, and equipment types affect RUL calculations.
 
-### User-Defined Simulation Parameters
+## User-Defined Simulation Parameters
 - TASK_DEFERMENT_FACTOR
   - Impact of each deferred maintenance task on RUL reduction. Higher values increase the penalty for deferred tasks.
 - OVERDUE_IMPACT_MULTIPLIER
@@ -270,7 +244,8 @@ Once the synthetic building data is generated, users can simulate the Remaining 
 - TYPES_TO_IGNORE
   - Equipment types to exclude from RUL calculations.
 
-#### Default Lifespans
+### Default Lifespans
+
 | Equipment Type       | Default Lifespan (years) |
 |----------------------|--------------------------|
 | Utility Transformer  | 35                       |
@@ -279,7 +254,7 @@ Once the synthetic building data is generated, users can simulate the Remaining 
 | Panelboard           | 20                       |
 | End Load             | 15                       |
 
-#### Default Base Failure Rates
+### Default Base Failure Rates
 
 | Equipment Type       | Base Failure Rate (annual) |
 |----------------------|---------------------------|
@@ -289,7 +264,8 @@ Once the synthetic building data is generated, users can simulate the Remaining 
 | Panelboard           | 3.0%                      |
 | End Load             | 5.0%                      |
 
-#### Maintenance Task Templates
+### Maintenance Task Templates
+
 Maintenance tasks are defined using a template that specifies the type of task, associated equipment types, frequency, time and money costs, and priority. These template helps standardize maintenance activities across different equipment. The simulation engine uses the uploaded maintenance task template to generate and schedule maintenance tasks for each piece of equipment in the building graph.
 
 When the simulation engine processes maintenance tasks, it generates detailed tasks based on the equipment type and the recommended frequency specified in the template. Each task is linked to a specific equipment node and scheduled accordingly. Tasks are prioritized based on risk score and template priority, with repair and replacement tasks for critical equipment considered before routine maintenance.
@@ -298,7 +274,8 @@ For example, a maintenance task template might specify that all "panel" equipmen
 
 Each month could include a mix of scheduled tasks, executed tasks, and deferred tasks. The scheduled tasks list will show all tasks that were planned for that month, including those that were deferred from previous months. The executed tasks list will show which of those scheduled tasks were actually completed, while the deferred tasks list will indicate which tasks could not be completed due to budget constraints or other factors.
 
-##### Maintenance Task Template Fields
+#### Maintenance Task Template Fields
+
 - task_id
   - The unique identifier for the maintenance task. When the tasks for each piece of equipment are generated from the template, this field is concatenated with the equipment ID to ensure uniqueness.
 - equipment_type
@@ -319,24 +296,37 @@ Each month could include a mix of scheduled tasks, executed tasks, and deferred 
 - notes
   - Additional information or special instructions related to the task. This field is optional and can be left blank.
 
-#### Repair and Replacement Task Templates
+### Repair and Replacement Task Templates
 Repair and replacement tasks are defined using templates that specify the type of task, associated equipment types, time and money costs, and condition thresholds. The simulation engine uses the uploaded repair and replacement task templates to generate and schedule these tasks for equipment flagged for repair or replacement based on RUL and condition.
 
 Repair and replacement tasks are prioritized before routine maintenance tasks and are scheduled when equipment is flagged for repair or replacement due to low RUL or poor condition, subject to budget constraints. These tasks can be deferred if budgets do not allow for immediate action, but they will be tracked until completed.
 
 If multiple pieces of equipment are flagged for repair or replacement in the same month, the simulation engine will prioritize these tasks based on risk level and available budget. This can cause scenarios where for many consecutive months, all available budget is consumed by repair and replacement tasks, leading to deferral of routine maintenance tasks. This behavior reflects real-world scenarios where critical repairs and replacements take precedence over regular upkeep.
 
-##### Repair and Replacement Task Template Fields
-- task_id
-- equipment_type
-- task_name
-- description
-- time_cost
-- money_cost
-- condition_level
-- condition_im
+#### Repair and Replacement Task Template Fields
 
-#### Budget Parameters
+- task_id
+  - The unique identifier for the repair or replacement task. When the tasks for each piece of equipment are generated from the template, this field is concatenated with the equipment ID to ensure uniqueness.
+- equipment_type
+  - The type of equipment this repair or replacement task applies to (e.g., "panel", "transformer").
+- task_name
+    - The name of the repair or replacement task (e.g., "replace breaker", "repair transformer").
+- description
+    - A brief explanation of the task's purpose and activities. This field is optional and can be left blank.
+- time_cost
+    - Estimated time required to complete the task (in hours).
+- money_cost
+    - Estimated monetary cost to perform the task (in dollars).
+- condition_level
+    - The condition threshold (0.0 to 1.0) below which the equipment is flagged for this task. For example, a value of 0.3 means the task is triggered when the equipment condition falls below 30%.
+- condition_improvement_amount
+      - The amount by which the equipment's condition improves after completing the task (e.g., 0.05 means a piece of equipment that is at 0.85 will improve to 0.90).
+- base_expected_lifespan_improvement_percentage
+      - The percentage increase in expected lifespan after completing the task (e.g., 0.10 means a piece of equipment with a baseline expected lifespan of 20 years will increase to 22 years).
+- notes
+      - Additional information or special instructions related to the task. This field is optional and can be left blank.
+
+### Budget Parameters
 The simulation engine allows users to define monthly budgets for maintenance tasks, including time and money constraints. These budgets influence which tasks can be executed each month, with higher-priority tasks being scheduled first. Users can also enable budget rollover, allowing unused budget from one month to carry over to the next.
 
 We see these as the key parameters for getting useful simulation results.  In the real world, budgets may vary month to month, and our simulation engine and analysis tools can allow operators to explore the impact of different budget scenarios on asset management outcomes.  
@@ -351,7 +341,7 @@ The budget parameters are:
 - Weeks to Schedule Ahead
   - Set how many weeks past the current date the maintenance scheduler should plan tasks. The simulation will always simulate between the system's construction date and the current date.
 
-#### Input Reflections
+### Input Reflections
 
 In reality these tasks would be determined by the specific equipment and manufacturer recommendations.  For the purposes of this simulation, we use generic maintenance, repair/replacement tasks that apply to broad equipment categories.  Users can customize both maintenance and repair/replacement task templates to better reflect their specific asset management practices.
 
@@ -359,7 +349,7 @@ Increased simulation accuracy may even require more granular equipment types in 
 
 We see this as an area for future improvement, where future researchers can explore more detailed equipment classifications and their impact on asset management strategies, based on real-world data and practices.
 
-### Simulation Logic
+## Simulation Logic
 
 Once the user sets the RUL simulation parameters, the simulation engine uses these values to calculate the Remaining Useful Life (RUL) for each piece of equipment in the building graph over each month of the simulation period. The process involves:
 
@@ -389,7 +379,6 @@ Once the user sets the RUL simulation parameters, the simulation engine uses the
    - Store calculated RUL (in days and years), risk level, failure probability, and condition history in each node's attributes.
    - Optionally, print warnings for critically low RUL or high failure risk if enabled.
 
-
 6. Maintenance Task Scheduling and Execution
    - For each month, the simulation engine generates a prioritized schedule of maintenance tasks for equipment nodes, using generic and replacement task templates.
    - Tasks are scheduled based on recommended frequency, equipment installation date, and current risk level.
@@ -412,8 +401,9 @@ The beta distribution function is shown below, with alpha=5 and beta=1, which sk
    - System-wide summaries include total tasks scheduled, executed, deferred, and replaced, as well as budget utilization and risk distribution.
    - Detailed component-level metrics and maintenance histories are available for further analysis and visualization.
 
-### Simulation Output
+## Simulation Output
 The simulation engine outputs each month's RUL and risk assessment results in a dictionary format, with keys representing the month (e.g., "2023-01"). Each month's record contains:
+
 - Month identifier (e.g., "2023-01")
 - List of tasks scheduled for the month
   - This list includes all tasks that were scheduled, regardless of whether they end up executed or deferred.  Tasks that were deferred from previous months will also appear in this list, since they will need to be tracked until they are completed.
@@ -445,22 +435,23 @@ The simulation engine outputs each month's RUL and risk assessment results in a 
 - replacement_tasks_not_executed
   - List of planned replacement tasks that were not executed, including reasons.
 
-### Remaining Useful Life (RUL) Simulation Diagram
+## Remaining Useful Life (RUL) Simulation Diagram
 The following diagram illustrates the components and workflow of the Remaining Useful Life (RUL) Simulation, which is responsible for simulating maintenance scheduling, risk assessment, and RUL calculations over time.
 
 ![RUL Simulation Workflow](images/rul_simulation_diagram.png)
 
-<!-- ### Animation of RUL Simulation on an Example Building Graph
+<!-- ## Animation of RUL Simulation on an Example Building Graph
 The following animation illustrates the RUL simulation process on an example building graph. It colors each node based on its RUL value, and animates the changes in RUL over time as maintenance tasks are executed or deferred.
 
 ![Graph Animation](images/graph_rul_animation.mp4)
 
 ![RUL Animation](images/rul_animations.mp4) -->
 
-## Simulation Analysis and Visualization
+# Simulation Analysis and Visualization
 
-### Budget Summary
+## Budget Summary
 After all scenarios are simulated, the tool generates a summary table displaying the money and time budgets for each scenario, allowing users to quickly compare the different budget allocations.  The following data is shown in the summary table:
+
 - **Total Money Budget Spent to Date:** This is the cumulative amount of money spent on maintenance tasks across all months simulated up to the current date.
 - **Total Hours Budget Spent to Date:** This is the cumulative number of hours spent on maintenance tasks across all months simulated up to the current date.
 - **Total Money Budget (Full Schedule):** This is the cumulative amount of money spent on maintenance tasks across all months simulated in the full schedule.
@@ -470,23 +461,27 @@ After all scenarios are simulated, the tool generates a summary table displaying
 
 An example output is shown below:
 
-&nbsp; **Total Money Budget Spent to Date:** \$474,845.00
-&nbsp; **Total Hours Budget Spent to Date:** 4,373.75  
-&nbsp; **Total Money Budget (Full Schedule):** \$1,047,420.00  
-&nbsp; **Total Hours Budget (Full Schedule):** 9,508.75  
-&nbsp; **Average Monthly Money Used (Full Schedule):** \$1,558.66  
-&nbsp; **Average Monthly Hours Used (Full Schedule):** 14.15
+**Total Money Budget Spent to Date:** \$474,845.00  
+**Total Hours Budget Spent to Date:** 4,373.75  
+**Total Money Budget (Full Schedule):** \$1,047,420.00  
+**Total Hours Budget (Full Schedule):** 9,508.75  
+**Average Monthly Money Used (Full Schedule):** \$1,558.66  
+**Average Monthly Hours Used (Full Schedule):** 14.15
 
-### System Health Overview
+## System Health Overview
 The system health overview provides a very high-level summary of the overall condition and risk levels of all equipment.  An example output is shown below:
-&nbsp; **Average Condition:** 97%
-&nbsp; **Total Number of Nodes:** 40
-&nbsp; **Risk Levels: LOW:** 31 | **MEDIUM:** 8 | **HIGH:** 1
 
-### Critical Component Overview
+**Average Condition:** 97%
+
+**Total Number of Nodes:** 40
+
+**Risk Levels: LOW:** 31 | **MEDIUM:** 8 | **HIGH:** 1 
+
+## Critical Component Overview
 The critical component overview highlights the most at-risk equipment in the system, allowing users to quickly identify components that may require immediate attention.  An example output is shown below:
 
 **Critical Components:** 16
+
 1. MP0.0
 1. TR0.0.208.L
 1. TR0.0.208.R
@@ -504,142 +499,160 @@ The critical component overview highlights the most at-risk equipment in the sys
 1. TR3.0.208.R
 1. TR3.0.208.H
 
-### Next 12 Months Overview
+## Next 12 Months Overview
 The next 12 months overview provides a summary of scheduled maintenance tasks, executed tasks, deferred tasks, and budget utilization for the upcoming year.  An example output is shown below:
 
 **2025-10:**
+
 - **Expected Executed Tasks:** 7
 - **Most Critical Expected Task:** P-03-MP2.0
 - **Deferred Tasks:** 136
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2025-11:**
+
 - **Expected Executed Tasks:** 5
 - **Most Critical Expected Task:** P-02-SP0.0.480.R
 - **Deferred Tasks:** 135
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2025-12:**
+
 - **Expected Executed Tasks:** 6
 - **Most Critical Expected Task:** P-03-SP3.0.480.R
 - **Deferred Tasks:** 134
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-01:**
+
 - **Expected Executed Tasks:** 3
 - **Most Critical Expected Task:** S-03-MP0.0
 - **Deferred Tasks:** 138
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-02:**
+
 - **Expected Executed Tasks:** 9
 - **Most Critical Expected Task:** S-04-MP0.0
 - **Deferred Tasks:** 140
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-03:**
+
 - **Expected Executed Tasks:** 8
 - **Most Critical Expected Task:** P-03-MP3.0
 - **Deferred Tasks:** 135
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-04:**
+
 - **Expected Executed Tasks:** 7
 - **Most Critical Expected Task:** P-02-MP1.0
 - **Deferred Tasks:** 131
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-05:**
+
 - **Expected Executed Tasks:** 8
 - **Most Critical Expected Task:** P-02-MP2.0
 - **Deferred Tasks:** 125
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-06:**
+
 - **Expected Executed Tasks:** 6
 - **Most Critical Expected Task:** P-03-SP3.0.480.R
 - **Deferred Tasks:** 123
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-07:**
+
 - **Expected Executed Tasks:** 2
 - **Most Critical Expected Task:** S-03-MP0.0
 - **Deferred Tasks:** 124
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-08:**
+
 - **Expected Executed Tasks:** 11
 - **Most Critical Expected Task:** P-02-SP1.0.480.H
 - **Deferred Tasks:** 125
 - **Most Critical Deferred Task:** S-05-MP0.0
 
 **2026-09:**
+
 - **Expected Executed Tasks:** 8
 - **Most Critical Expected Task:** P-03-MP3.0
 - **Deferred Tasks:** 124
 - **Most Critical Deferred Task:** S-05-MP0.0
 
-### Cost Forecast Overview
+## Cost Forecast Overview
 The cost forecast provides an estimate of the financial resources required to support the planned maintenance activities over the next 12 months. It accounts for expected executed tasks, deferred tasks, and associated time and money costs, enabling informed budgeting and resource allocation decisions.  An example output is shown below:
 
 **Total Expected Money Cost for Next 12 Months:** $1770.0
 **Total Expected Time Cost for Next 12 Months:** 36.0 hours
 
-### Task Status Each Month Chart
+## Task Status Each Month Chart
 The task status each month chart visualizes the number of executed, and deferred maintenance tasks over the simulation period as a stacked bar chart. This chart helps users understand trends in maintenance activities and identify periods of high deferral or execution rates.
 
 Preset time windows are available for quick selection, including 3 months, 6 months, 12 months, and the full simulation period. Users can also customize the time window by adjusting the timeline slider to focus on specific periods of interest.  The default view shows the previous 6 months and the next 12 months.
 
 An example chart is shown below:
+
 ![Task Status Each Month Chart](images/task_status_each_month_chart.png)
 
-### Node Failure Timeline Chart
+## Node Failure Timeline Chart
 The node failure timeline chart visualizes the expected failure events of equipment nodes over the simulation period. This chart helps users identify when and which components are likely to fail, supporting proactive maintenance planning and risk mitigation.
 
 The chart is sorted by the node risk score, with higher-risk nodes displayed at the top. Each node is represented by circular markers indicating the expected failure dates. The size of each marker corresponds to the risk level of the node, with larger markers indicating higher risk.
 
 An example chart is shown below:
+
 ![Node Failure Timeline Chart](images/node_failure_timeline_chart.png)
 
-### KPI Cards
+## KPI Cards
 The KPI cards provide quick access to key performance indicators related to the asset management simulation. These cards display important metrics such as average system health, quantity of critical equipment, average RUL, and system reliability.  An example set of KPI cards is shown below:
 
 ![KPI Cards](images/kpi_cards.png)
 
-### Remaining Useful Life (RUL) Distribution Chart
+## Remaining Useful Life (RUL) Distribution Chart
 The RUL distribution chart visualizes the distribution of Remaining Useful Life (RUL) across all equipment nodes in the system. This chart helps users understand the overall health and longevity of their assets, enabling informed maintenance and replacement planning.
 
 An example chart is shown below:
+
 ![RUL Distribution Chart](images/rul_distribution_chart.png)
 
 You can see in the example chart that some equipment has a high RUL and is in good condition, while other equipment has a low RUL and may require immediate attention.  This should be expected because the simulation will prioritize maintenance tasks based on each node's risk score and budget constraints, leading to some equipment being fwell-maintained while others may be deferred.
 
-### Risk Level Distribution Chart
+## Risk Level Distribution Chart
 The risk level distribution chart visualizes the distribution of risk scores across all equipment nodes in the system. This chart helps users identify the proportion of high-risk components, supporting prioritization of maintenance and replacement efforts.
 
 An example chart is shown below:
+
 ![Risk Level Distribution Chart](images/risk_level_distribution_chart.png)
 
 In the example chart, we can see that most equipment is classified as LOW risk, with the rest classified as MEDIUM, HIGH, and CRITICAL risk.  
 
-### Average Remaining Useful Life by Equipment Type Over Time Chart
+## Average Remaining Useful Life by Equipment Type Over Time Chart
 The average remaining useful life (RUL) by equipment type over time chart visualizes trends in asset longevity across different categories of equipment. This chart helps users identify which equipment types may require earlier replacement or more frequent maintenance, supporting targeted asset management strategies.
 
 An example chart is shown below:
+
 ![Average RUL by Equipment Type Over Time Chart](images/average_rul_by_equipment_type_over_time_chart.png)
 
 This chart is a key indicator of how well maintenance strategies are preserving the lifespan of different equipment types.  The average RUL for each equipment type should decrease over time, reflecting the natural aging and wear of the equipment.  However this decrease will be faster if maintenance is regularly deferred due to budget constraints, and conversely, the decrease will be slower if repair and replacement is consistently performed on schedule.
 
-### Total Maintenance Cost Over Time Chart
+## Total Maintenance Cost Over Time Chart
 The total maintenance cost over time chart visualizes the cumulative maintenance expenses incurred throughout the simulation period. This chart helps users monitor budget utilization, identify cost trends, and evaluate the financial impact of maintenance strategies.
 
 An example chart is shown below:
+
 ![Total Maintenance Cost Over Time Chart](images/total_maintenance_cost_over_time_chart.png)
 
-## Budget Goal Seeker
+# Budget Goal Seeker
 The Budget Goal Seeker module enables users to optimize maintenance budgets and resource allocation using an interactive, simulation-driven approach. It allows both single variable and multivariate optimization and visualization to help users identify the best budget strategies for maximizing asset health, condition, or minimizing costs.
 
-### Workflow and Logic
+## Workflow and Logic
 
 1. **User Inputs:**
   - Users specify starting budgets for money and hours, the number of months to schedule, optimization goals (e.g., Maximize RUL, Maximize Condition Levels, Minimize Average Budget), and the optimization value (Money, Hours, or Both).
@@ -665,18 +678,16 @@ The Budget Goal Seeker module enables users to optimize maintenance budgets and 
   - Users can adjust inputs and rerun the optimization to explore different scenarios and strategies.
   - The system caches results and visualizations for seamless interaction and review.
 
-An example animation of the optimization process is shown below:
-![Budget Goal Seeker Optimization Animation](images/budget_goal_seeker_optimization_animation.gif)
-
 The final graph is shown below:
+
 ![Budget Goal Seeker Final Graph](images/budget_goal_seeker_final_graph.png)
 
 You can see in this example that the relationship between budget and average condition level is not linear, and there are diminishing returns as budgets increase.  This highlights the importance of finding an optimal budget that balances cost with asset health outcomes.
 
-## Budget Comparison Tool
+# Budget Comparison Tool
 The Budget Comparison Tool enables users to run multiple maintenance budget scenarios in parallel and compare their outcomes side-by-side using a consistent building graph and simulation logic. This interactive module is designed to help users understand how different budget allocations affect key performance indicators (KPIs) such as average Remaining Useful Life (RUL), average condition, total maintenance cost, and task execution rates.
 
-### Workflow and Logic
+## Workflow and Logic
 
 1. **User Inputs:**
    - Users specify the number of scenarios to compare (between 2 and 5), the number of months to schedule, and whether to generate synthetic maintenance logs for each simulation.
@@ -708,123 +719,130 @@ The Budget Comparison Tool enables users to run multiple maintenance budget scen
      - **Average RUL (Months):** The mean remaining useful life of all equipment, converted to months.
      - **System Reliability:** The percentage of non-critical equipment nodes, representing overall system reliability.
 
-### Analysis and Insights
+## Analysis and Insights
 Results, KPI cards, and charts are displayed side-by-side for direct comparison between different budget scenarios.
 
 By comparing scenarios with different budget allocations, users can identify trade-offs between cost, system health, reliability, and risk. The tool supports rapid iteration, allowing users to adjust budgets and immediately see the impact on KPIs and visualizations.
 
 For example, users might find that a moderate increase in budget leads to significant improvements in average RUL and system reliability, while further increases yield diminishing returns. Alternatively, users may discover that the current date shows positive metrics, but the overall costs in the past months were very high, indicating an unsustainable maintenance strategy.
 
-## Future Work
-### Future enhancements to AssetPulse could include:
+# Future Work
+
+## Future enhancements to AssetPulse could include:
 
 1. Using real-world asset history and maintenance data to determine accurate simulation parameters, refine simulation logic, and validate synthetic data generation.
     
-    Purpose: Improve the accuracy and reliability of simulation results.
+Purpose: Improve the accuracy and reliability of simulation results.
 
-    Enhancements:
-    - Build connectors to import CMMS (Computerized Maintenance Management System) and BMS (Building Management System) data.
-    - Validate synthetic data generation models by comparing their predictions against historical failure/maintenance records.
-    - Use historical data to fine-tune degradation curves, failure probabilities, and RUL adjustment factors.
-    - Implement statistical dashboards comparing simulated vs. actual maintenance outcomes.
+Enhancements:
+- Build connectors to import CMMS (Computerized Maintenance Management System) and BMS (Building Management System) data.
+- Validate synthetic data generation models by comparing their predictions against historical failure/maintenance records.
+- Use historical data to fine-tune degradation curves, failure probabilities, and RUL adjustment factors.
+- Implement statistical dashboards comparing simulated vs. actual maintenance outcomes.
 
 2. Expand beyond the electrical discipline to all disciplines and tailor functionality to their specifics
 
-    Purpose: Create a comprehensive, multi-domain digital twin for holistic asset management.
+Purpose: Create a comprehensive, multi-domain digital twin for holistic asset management.
 
-    Enhancements:
-    - Extend beyond electrical to include mechanical, plumbing, structural, architectural, fire safety, IT, transportation, and sustainability systems.
-    - Model cross-discipline dependencies (e.g., structural changes affecting MEP layouts or fire safety zones).
-    - Simulate cascading impacts across disciplines for risk forecasting and lifecycle planning.
-    - Provide unified visualization and reporting to compare multi-system trade-offs in a single interface.
-    - Enable integrated decision-making workflows where maintenance, upgrades, or retrofits can be evaluated for their effects across all building systems.
+Enhancements:
+- Extend beyond electrical to include mechanical, plumbing, structural, architectural, fire safety, IT, transportation, and sustainability systems.
+- Model cross-discipline dependencies (e.g., structural changes affecting MEP layouts or fire safety zones).
+- Simulate cascading impacts across disciplines for risk forecasting and lifecycle planning.
+- Provide unified visualization and reporting to compare multi-system trade-offs in a single interface.
+- Enable integrated decision-making workflows where maintenance, upgrades, or retrofits can be evaluated for their effects across all building systems.
 
 3. Integrate IFC/BIM input workflow for automated graph generation and add a 3D viewer for interactive model review and FM queries.
 
-    Purpose: Streamline graph generation and improve spatial context.
+Purpose: Streamline graph generation and improve spatial context.
 
-    Enhancements:
-    - Parse IFC or Revit files to automatically create system graphs, including risers, transformers, and loads.
-    - Integrate open-source BIM libraries (e.g., IfcOpenShell) for data extraction.
-    - Add a 3D WebGL-based viewer (e.g., using Fragments) for interactive model exploration.
-    - Enable FM queries (e.g., “Show all switchboards on Floor 3” or “Highlight transformers older than 10 years”).
-    - Provide side-by-side 2D graph and 3D model linking—selecting a node in one highlights it in the other.
+Enhancements:
+- Parse IFC or Revit files to automatically create system graphs, including risers, transformers, and loads.
+- Integrate open-source BIM libraries (e.g., IfcOpenShell) for data extraction.
+- Add a 3D WebGL-based viewer (e.g., using Fragments) for interactive model exploration.
+- Enable FM queries (e.g., “Show all switchboards on Floor 3” or “Highlight transformers older than 10 years”).
+- Provide side-by-side 2D graph and 3D model linking—selecting a node in one highlights it in the other.
 
 4. Incorporating more complex asset interactions and dependencies in the graph model to better simulate real-world scenarios.
     
-    Purpose: More realistic simulations and risk propagation.
+Purpose: More realistic simulations and risk propagation.
 
-    Enhancements:
-    - Support cascading failures (e.g., transformer failure causing downstream loads to degrade faster).
-    - Add dependency weights for probabilistic risk transfer between nodes.
-    - Model shared resources (e.g., backup generators supplying multiple risers) and redundancy logic.
-    - Allow asset condition to affect energy efficiency or operating cost in simulations.
+Enhancements:
+- Support cascading failures (e.g., transformer failure causing downstream loads to degrade faster).
+- Add dependency weights for probabilistic risk transfer between nodes.
+- Model shared resources (e.g., backup generators supplying multiple risers) and redundancy logic.
+- Allow asset condition to affect energy efficiency or operating cost in simulations.
 
 5. Incorporate remodeling and expansion scenarios to simulate changes in building systems over time.
 
-    Purpose: Plan for future modifications and system growth.
+Purpose: Plan for future modifications and system growth.
 
-    Enhancements:
-    - Add a scenario editor to “clone” a baseline graph and apply remodeling actions 
-    - Simulate impacts on risk, maintenance cost, and asset lifespan after system expansions.
-    - Incorporate construction timelines and downtime effects on maintenance strategies.
-    - Visualize before-and-after states in both 2D and 3D views.
+Enhancements:
+- Add a scenario editor to “clone” a baseline graph and apply remodeling actions 
+- Simulate impacts on risk, maintenance cost, and asset lifespan after system expansions.
+- Incorporate construction timelines and downtime effects on maintenance strategies.
+- Visualize before-and-after states in both 2D and 3D views.
 
 6. Integrate machine learning techniques to predict failures and optimize maintenance schedules based on historical data.
 
-    Purpose: Move beyond static rules toward data-driven forecasting.
+Purpose: Move beyond static rules toward data-driven forecasting.
 
-    Enhancements:
-    - Use supervised learning on historical maintenance and failure records to predict time-to-failure for components.
-    - Train models to optimize maintenance schedules for minimal cost and risk.
-    - Use clustering to identify patterns in similar assets across portfolios.
-    - Implement anomaly detection for sensor streams (flagging early warning signs of failure).
-    - Provide explainable AI features to communicate why a prediction was made.
+Enhancements:
+- Use supervised learning on historical maintenance and failure records to predict time-to-failure for components.
+- Train models to optimize maintenance schedules for minimal cost and risk.
+- Use clustering to identify patterns in similar assets across portfolios.
+- Implement anomaly detection for sensor streams (flagging early warning signs of failure).
+- Provide explainable AI features to communicate why a prediction was made.
 
 7. Expand the user interface to include more advanced visualization and reporting features, enabling deeper insights into asset management strategies.
 
-    Purpose: Enhance decision-making with rich, interactive insights.
+Purpose: Enhance decision-making with rich, interactive insights.
 
-    Enhancements:
-    - Add multi-year cost and risk trend charts with drill-down to individual systems.
-    - Develop risk heatmaps and Sankey diagrams showing resource flows and dependencies.
-    - Provide PDF/Excel export of simulation results with customizable templates.
+Enhancements:
+- Add multi-year cost and risk trend charts with drill-down to individual systems.
+- Develop risk heatmaps and Sankey diagrams showing resource flows and dependencies.
+- Provide PDF/Excel export of simulation results with customizable templates.
 
 8. Expand the user interface to include more advanced system graph interaction and editing capabilities, allowing users to modify the building graph directly within the application.
 
-    Purpose: Improve usability for facility managers and engineers.
+Purpose: Improve usability for facility managers and engineers.
 
-    Enhancements:
-    - Allow drag-and-drop graph editing within the browser (e.g., adding/deleting equipment, re-routing connections).
-    - Support undo/redo history for safe experimentation.
-    - Enable versioning of system graphs (track changes over time).
-    - Add context-sensitive menus on nodes for editing properties or linking documents/specs.
-    - Auto-align and auto-layout options to maintain clean graph visuals after edits.
+Enhancements:
+- Allow drag-and-drop graph editing within the browser (e.g., adding/deleting equipment, re-routing connections).
+- Support undo/redo history for safe experimentation.
+- Enable versioning of system graphs (track changes over time).
+- Add context-sensitive menus on nodes for editing properties or linking documents/specs.
+- Auto-align and auto-layout options to maintain clean graph visuals after edits.
 
 9. Incorporate real-time data integration from building management systems (BMS) or Internet of Things (IoT) sensors to inform RUL calculations and maintenance scheduling.
 
-    Purpose: Enable predictive maintenance and live system monitoring.
+Purpose: Enable predictive maintenance and live system monitoring.
 
-    Enhancements:
-    - Connect to IoT platforms for streaming sensor data.
-    - Dynamically update RUL calculations as new readings arrive (e.g., temperature spikes reducing lifespan).
-    - Display live health indicators and risk levels on the graph.
-    - Trigger alerts or simulations automatically when conditions exceed thresholds.
-    - Provide an API to ingest external predictive signals.
+Enhancements:
+- Connect to IoT platforms for streaming sensor data.
+- Dynamically update RUL calculations as new readings arrive (e.g., temperature spikes reducing lifespan).
+- Display live health indicators and risk levels on the graph.
+- Trigger alerts or simulations automatically when conditions exceed thresholds.
+- Provide an API to ingest external predictive signals.
 
 10. Develop a collaborative platform where multiple users can work on the same asset management scenarios, sharing insights and strategies.
 
-    Purpose: Support multi-user workflows for portfolio-level asset management.
+Purpose: Support multi-user workflows for portfolio-level asset management.
 
-    Enhancements:
-    - Implement user accounts with role-based permissions (e.g., admin, engineer, analyst).
-    - Add shared scenario editing and commenting tools.
-    - Enable real-time co-editing of graphs with WebSocket synchronization.
-    - Maintain a changelog and version history for accountability.
-    - Provide secure cloud storage for simulation results and configuration files.
+Enhancements:
+- Implement user accounts with role-based permissions (e.g., admin, engineer, analyst).
+- Add shared scenario editing and commenting tools.
+- Enable real-time co-editing of graphs with WebSocket synchronization.
+- Maintain a changelog and version history for accountability.
+- Provide secure cloud storage for simulation results and configuration files.
 
-## Appendix A: Example Test Data: Simple Building
+# References
+
+::: {#refs}
+:::
+
+# Appendix A: Example Test Data: Simple Building
 The following parameters were used to generate a simple building for testing and validation of the AssetPulse simulation tool:
+
 - Construction Year: 2000
 - Total Load: 200 kW
 - Building Length: 20 m
@@ -834,61 +852,19 @@ The following parameters were used to generate a simple building for testing and
 - Cluster Strength: 0.95
 - Random Seed: 42
 
-### Example Generated Building Graph
+## Example Generated Building Graph
 
-#### Types of Nodes
+### Types of Nodes
+
 ![Example Building Graph](images/simple_building_graph.png)
 
-#### Risk Levels
+### Risk Levels
+
 ![Example Building Risk Levels](images/simple_building_graph_risk.png)
 
-### Maintenance Task Input Template
-| index |task_id|equipment_type|task_type                        |recommended_frequency_months|description                                                                     |default_priority|time_cost|money_cost|notes                                               |
-|-------|-------|--------------|---------------------------------|----------------------------|--------------------------------------------------------------------------------|----------------|---------|----------|----------------------------------------------------|
-| 0     |T-01   |transformer   |visual inspection                |9                           |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|2               |0.5      |50        |Check for oil leaks and discoloration.              |
-| 1     |T-02   |transformer   |test winding ratios              |24                          |Test transformer winding ratios to ensure correct operation.                    |1               |1        |100       |Use appropriate test equipment.                     |
-| 2     |T-03   |transformer   |test grounding                   |12                          |Test transformer grounding connections for integrity.                           |1               |0.5      |30        |Ensure all ground connections are secure.           |
-| 3     |T-04   |transformer   |test torque of bolted connections|18                          |Check and retorque all bolted electrical connections.                           |2               |0.5      |20        |Follow manufacturer's torque specifications.        |
-| 4     |T-05   |transformer   |replacement                      |120                         |Replace transformer at end of service life or if failed.                        |1               |8        |5000      |Coordinate with utility if required.                |
-| 5     |P-01   |panel         |visual inspection                |4                           |Visually inspect panel for signs of overheating, corrosion, or damage.          |2               |0.5      |30        |Check for missing or loose covers.                  |
-| 6     |P-02   |panel         |test grounding                   |12                          |Test panel grounding and bonding connections.                                   |1               |0.5      |20        |Verify all ground lugs are tight.                   |
-| 7     |P-03   |panel         |test gfci                       |6                           |Test all GFCI breakers and receptacles for proper operation.                    |1               |0.25     |10        |Document any failed devices.                         |
-| 8     |P-04   |panel         |inspect breakers                |9                           |Inspect all breakers for signs of wear or damage.                               |2               |0.5      |15        |Replace any defective breakers.                      |
-| 9     |P-05   |panel         |replacement                    |100                         |Replace panel at end of service life or if failed.                              |1               |6        |2000      |Label all circuits after replacement.                |
-| 10    |S-01   |switchboard   |visual inspection              |6                           |Visually inspect switchboard for signs of overheating, corrosion, or damage.    |2               |2        |60        |Check for missing or loose covers.                   |
-| 11    |S-02   |switchboard   |test grounding                 |12                          |Test switchboard grounding and bonding connections.                             |1               |2        |40        |Verify all ground lugs are tight.                    |
-| 12    |S-03   |switchboard   |test circuit breakers          |6                           |Test all circuit breakers for proper operation.                                 |1               |1        |20        |Document any failed devices.                          |
-| 13    |S-04   |switchboard   |test voltage                  |12                          |Test switchboard voltage levels.                                                |1               |1        |30        |Ensure all voltage levels are within specifications.|
-| 14    |S-05   |switchboard   |replacement                   |110                         |Replace switchboard at end of service life or if failed.                        |1               |48       |3500      |Coordinate with utility if required.                  |
-
-### Generated Detailed Maintenance Tasks
-| index |task_instance_id|equipment_id|equipment_type                   |task_type|priority                                                                        |time_cost|money_cost|notes|description                                         |task_id|recommended_frequency_months|equipment_installation_date|risk_score          |is_replacement|
-|----------------|----------------|------------|---------------------------------|---------|--------------------------------------------------------------------------------|---------|----------|-----|----------------------------------------------------|-------|----------------------------|---------------------------|--------------------|--------------|
-|  0 |P-01-MP0.0      |MP0.0       |panel                            |visual inspection|2                                                                               |0.5      |30.0      |Check for missing or loose covers.|Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.8                 |False         |
-|  1 |P-02-MP0.0      |MP0.0       |panel                            |test grounding|1                                                                               |0.5      |20.0      |Verify all ground lugs are tight.|Test panel grounding and bonding connections.       |P-02   |12                          |2000-01-01                 |0.8                 |False         |
-|  2 |P-03-MP0.0      |MP0.0       |panel                            |test gfci|1                                                                               |0.25     |10.0      |Document any failed devices.|Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.8                 |False         |
-|  3 |P-04-MP0.0      |MP0.0       |panel                            |inspect breakers|2                                                                               |0.5      |15.0      |Replace any defective breakers.|Inspect all breakers for signs of wear or damage.   |P-04   |9                           |2000-01-01                 |0.8                 |False         |
-|  4 |P-05-MP0.0      |MP0.0       |panel                            |replacement|1                                                                               |6.0      |2000.0    |Label all circuits after replacement.|Replace panel at end of service life or if failed.  |P-05   |100                         |2000-01-01                 |0.8                 |False         |
-|  5 |P-01-SP0.0.208.L|SP0.0.208.L |panel                            |visual inspection|2                                                                               |0.5      |30.0      |Check for missing or loose covers.|Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.034749999999999996|False         |
-|  6 |P-02-SP0.0.208.L|SP0.0.208.L |panel                            |test grounding|1                                                                               |0.5      |20.0      |Verify all ground lugs are tight.|Test panel grounding and bonding connections.       |P-02   |12                          |2000-01-01                 |0.034749999999999996|False         |
-|  7 |P-03-SP0.0.208.L|SP0.0.208.L |panel                            |test gfci|1                                                                               |0.25     |10.0      |Document any failed devices.|Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.034749999999999996|False         |
-|  8 |P-04-SP0.0.208.L|SP0.0.208.L |panel                            |inspect breakers|2                                                                               |0.5      |15.0      |Replace any defective breakers.|Inspect all breakers for signs of wear or damage.   |P-04   |9                           |2000-01-01                 |0.034749999999999996|False         |
-|  9 |P-05-SP0.0.208.L|SP0.0.208.L |panel                            |replacement|1                                                                               |6.0      |2000.0    |Label all circuits after replacement.|Replace panel at end of service life or if failed.  |P-05   |100                         |2000-01-01                 |0.034749999999999996|False         |
-| 10 |P-01-SP0.0.208.R|SP0.0.208.R |panel                            |visual inspection|2                                                                               |0.5      |30.0      |Check for missing or loose covers.|Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.09614999999999999 |False         |
-| 11 |P-02-SP0.0.208.R|SP0.0.208.R |panel                            |test grounding|1                                                                               |0.5      |20.0      |Verify all ground lugs are tight.|Test panel grounding and bonding connections.       |P-02   |12                          |2000-01-01                 |0.09614999999999999 |False         |
-| 12 |P-03-SP0.0.208.R|SP0.0.208.R |panel                            |test gfci|1                                                                               |0.25     |10.0      |Document any failed devices.|Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.09614999999999999 |False         |
-| 13 |P-04-SP0.0.208.R|SP0.0.208.R |panel                            |inspect breakers|2                                                                               |0.5      |15.0      |Replace any defective breakers.|Inspect all breakers for signs of wear or damage.   |P-04   |9                           |2000-01-01                 |0.09614999999999999 |False         |
-| 14 |P-05-SP0.0.208.R|SP0.0.208.R |panel                            |replacement|1                                                                               |6.0      |2000.0    |Label all circuits after replacement.|Replace panel at end of service life or if failed.  |P-05   |100                         |2000-01-01                 |0.09614999999999999 |False         |
-| 15 |P-01-SP0.0.208.H|SP0.0.208.H |panel                            |visual inspection|2                                                                               |0.5      |30.0      |Check for missing or loose covers.|Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.0691              |False         |
-| 16 |P-02-SP0.0.208.H|SP0.0.208.H |panel                            |test grounding|1                                                                               |0.5      |20.0      |Verify all ground lugs are tight.|Test panel grounding and bonding connections.       |P-02   |12                          |2000-01-01                 |0.0691              |False         |
-| 17 |P-03-SP0.0.208.H|SP0.0.208.H |panel                            |test gfci|1                                                                               |0.25     |10.0      |Document any failed devices.|Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.0691              |False         |
-| 18 |P-04-SP0.0.208.H|SP0.0.208.H |panel                            |inspect breakers|2                                                                               |0.5      |15.0      |Replace any defective breakers.|Inspect all breakers for signs of wear or damage.   |P-04   |9                           |2000-01-01                 |0.0691              |False         |
-| 19 |P-05-SP0.0.208.H|SP0.0.208.H |panel                            |replacement|1                                                                               |6.0      |2000.0    |Label all circuits after replacement.|Replace panel at end of service life or if failed.  |P-05   |100                         |2000-01-01                 |0.0691              |False         |
-
-You can see from this example that the maintenance tasks have been generated for each panel in the building, with appropriate scheduling based on the recommended frequency and installation date. Each task includes details such as time and money costs, priority, and description.  There are no maintenance tasks generated for transformers in this example because there are no transformers in the simple building test case.  Note that the `last_performed` dates are placeholders and will be updated as maintenance activities are carried out.
-
-## Appendix B: Example Test Data: Complex Building
+# Appendix B: Example Test Data: Complex Building
 The following parameters were used to generate a complex building for testing and validation of the AssetPulse simulation tool:
+
 - Construction Year: 2000
 - Total Load: 1000 kW
 - Building Length: 20 m
@@ -898,277 +874,66 @@ The following parameters were used to generate a complex building for testing an
 - Cluster Strength: 0.95
 - Random Seed: 42
 
-### Example Generated Building Graph
-#### Types of Nodes
+## Example Generated Building Graph
+### Types of Nodes
+
 ![Example Building Graph](images/complex_building_graph.png)
 
-#### Risk Levels
+### Risk Levels
+
 ![Example Building Risk Levels](images/complex_building_graph_risk.png)
 
-### Maintenance Task Input Template
-| index |task_id|equipment_type|task_type                        |recommended_frequency_months|description                                                                     |default_priority|time_cost|money_cost|notes                                               |
-|-------|-------|--------------|---------------------------------|----------------------------|--------------------------------------------------------------------------------|----------------|---------|----------|----------------------------------------------------|
-| 0     |T-01   |transformer   |visual inspection                |9                           |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|2               |0.5      |50        |Check for oil leaks and discoloration.              |
-| 1     |T-02   |transformer   |test winding ratios              |24                          |Test transformer winding ratios to ensure correct operation.                    |1               |1        |100       |Use appropriate test equipment.                     |
-| 2     |T-03   |transformer   |test grounding                   |12                          |Test transformer grounding connections for integrity.                           |1               |0.5      |30        |Ensure all ground connections are secure.           |
-| 3     |T-04   |transformer   |test torque of bolted connections|18                          |Check and retorque all bolted electrical connections.                           |2               |0.5      |20        |Follow manufacturer's torque specifications.        |
-| 4     |T-05   |transformer   |replacement                      |120                         |Replace transformer at end of service life or if failed.                        |1               |8        |5000      |Coordinate with utility if required.                |
-| 5     |P-01   |panel         |visual inspection                |4                           |Visually inspect panel for signs of overheating, corrosion, or damage.          |2               |0.5      |30        |Check for missing or loose covers.                  |
-| 6     |P-02   |panel         |test grounding                   |12                          |Test panel grounding and bonding connections.                                   |1               |0.5      |20        |Verify all ground lugs are tight.                   |
-| 7     |P-03   |panel         |test gfci                       |6                           |Test all GFCI breakers and receptacles for proper operation.                    |1               |0.25     |10        |Document any failed devices.                         |
-| 8     |P-04   |panel         |inspect breakers                |9                           |Inspect all breakers for signs of wear or damage.                               |2               |0.5      |15        |Replace any defective breakers.                      |
-| 9     |P-05   |panel         |replacement                    |100                         |Replace panel at end of service life or if failed.                              |1               |6        |2000      |Label all circuits after replacement.                |
-| 10    |S-01   |switchboard   |visual inspection              |6                           |Visually inspect switchboard for signs of overheating, corrosion, or damage.    |2               |2        |60        |Check for missing or loose covers.                   |
-| 11    |S-02   |switchboard   |test grounding                 |12                          |Test switchboard grounding and bonding connections.                             |1               |2        |40        |Verify all ground lugs are tight.                    |
-| 12    |S-03   |switchboard   |test circuit breakers          |6                           |Test all circuit breakers for proper operation.                                 |1               |1        |20        |Document any failed devices.                          |
-| 13    |S-04   |switchboard   |test voltage                  |12                          |Test switchboard voltage levels.                                                |1               |1        |30        |Ensure all voltage levels are within specifications.|
-| 14    |S-05   |switchboard   |replacement                   |110                         |Replace switchboard at end of service life or if failed.                        |1               |48       |3500      |Coordinate with utility if required.                  |
-
-### Generated Detailed Maintenance Tasks
-|index|task_instance_id|equipment_id                     |equipment_type|task_type                                                                       |priority|time_cost|money_cost|notes                                               |description|task_id|recommended_frequency_months|equipment_installation_date|risk_score|is_replacement|
-|------|----------------|---------------------------------|--------------|--------------------------------------------------------------------------------|--------|---------|----------|----------------------------------------------------|-----------|-------|----------------------------|---------------------------|----------|--------------|
-|0     |S-01-MP0.0      |MP0.0                            |switchboard   |visual inspection                                                               |2       |2.0      |60.0      |Check for missing or loose covers.                  |Visually inspect switchboard for signs of overheating, corrosion, or damage.|S-01   |6                           |2000-01-01                 |0.9787245310677399|False         |
-|1     |S-02-MP0.0      |MP0.0                            |switchboard   |test grounding                                                                  |1       |2.0      |40.0      |Verify all ground lugs are tight.                   |Test switchboard grounding and bonding connections.|S-02   |12                          |2000-01-01                 |0.9787245310677399|False         |
-|2     |S-03-MP0.0      |MP0.0                            |switchboard   |test circuit breakers                                                           |1       |1.0      |20.0      |Document any failed devices.                        |Test all circuit breakers for proper operation.|S-03   |6                           |2000-01-01                 |0.9787245310677399|False         |
-|3     |S-04-MP0.0      |MP0.0                            |switchboard   |test voltage                                                                    |1       |1.0      |30.0      |Ensure all voltage levels are within specifications.|Test switchboard voltage levels.|S-04   |12                          |2000-01-01                 |0.9787245310677399|False         |
-|4     |S-05-MP0.0      |MP0.0                            |switchboard   |replacement                                                                     |1       |48.0     |3500.0    |Coordinate with utility if required.                |Replace switchboard at end of service life or if failed.|S-05   |110                         |2000-01-01                 |0.9787245310677399|False         |
-|5     |P-01-SP0.0.480.L|SP0.0.480.L                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.05495896516843722|False         |
-|6     |P-02-SP0.0.480.L|SP0.0.480.L                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.05495896516843722|False         |
-|7     |P-03-SP0.0.480.L|SP0.0.480.L                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.05495896516843722|False         |
-|8     |P-04-SP0.0.480.L|SP0.0.480.L                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.05495896516843722|False         |
-|9     |P-05-SP0.0.480.L|SP0.0.480.L                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.05495896516843722|False         |
-|10    |T-01-TR0.0.208.L|TR0.0.208.L                      |transformer   |visual inspection                                                               |2       |0.5      |50.0      |Check for oil leaks and discoloration.              |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|T-01   |9                           |2000-01-01                 |0.026593833378770346|False         |
-|11    |T-02-TR0.0.208.L|TR0.0.208.L                      |transformer   |test winding ratios                                                             |1       |1.0      |100.0     |Use appropriate test equipment.                     |Test transformer winding ratios to ensure correct operation.|T-02   |24                          |2000-01-01                 |0.026593833378770346|False         |
-|12    |T-03-TR0.0.208.L|TR0.0.208.L                      |transformer   |test grounding                                                                  |1       |0.5      |30.0      |Ensure all ground connections are secure.           |Test transformer grounding connections for integrity.|T-03   |12                          |2000-01-01                 |0.026593833378770346|False         |
-|13    |T-04-TR0.0.208.L|TR0.0.208.L                      |transformer   |test torque of bolted connections                                               |2       |0.5      |20.0      |Follow manufacturer's torque specifications.        |Check and retorque all bolted electrical connections.|T-04   |18                          |2000-01-01                 |0.026593833378770346|False         |
-|14    |T-05-TR0.0.208.L|TR0.0.208.L                      |transformer   |replacement                                                                     |1       |8.0      |5000.0    |Coordinate with utility if required.                |Replace transformer at end of service life or if failed.|T-05   |120                         |2000-01-01                 |0.026593833378770346|False         |
-|15    |P-01-SP0.0.208.L|SP0.0.208.L                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.005318364446510215|False         |
-|16    |P-02-SP0.0.208.L|SP0.0.208.L                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.005318364446510215|False         |
-|17    |P-03-SP0.0.208.L|SP0.0.208.L                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.005318364446510215|False         |
-|18    |P-04-SP0.0.208.L|SP0.0.208.L                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.005318364446510215|False         |
-|19    |P-05-SP0.0.208.L|SP0.0.208.L                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.005318364446510215|False         |
-|20    |P-01-SP0.0.480.R|SP0.0.480.R                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.051581729258006234|False         |
-|21    |P-02-SP0.0.480.R|SP0.0.480.R                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.051581729258006234|False         |
-|22    |P-03-SP0.0.480.R|SP0.0.480.R                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.051581729258006234|False         |
-|23    |P-04-SP0.0.480.R|SP0.0.480.R                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.051581729258006234|False         |
-|24    |P-05-SP0.0.480.R|SP0.0.480.R                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.051581729258006234|False         |
-|25    |T-01-TR0.0.208.R|TR0.0.208.R                      |transformer   |visual inspection                                                               |2       |0.5      |50.0      |Check for oil leaks and discoloration.              |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|T-01   |9                           |2000-01-01                 |0.025790864629003117|False         |
-|26    |T-02-TR0.0.208.R|TR0.0.208.R                      |transformer   |test winding ratios                                                             |1       |1.0      |100.0     |Use appropriate test equipment.                     |Test transformer winding ratios to ensure correct operation.|T-02   |24                          |2000-01-01                 |0.025790864629003117|False         |
-|27    |T-03-TR0.0.208.R|TR0.0.208.R                      |transformer   |test grounding                                                                  |1       |0.5      |30.0      |Ensure all ground connections are secure.           |Test transformer grounding connections for integrity.|T-03   |12                          |2000-01-01                 |0.025790864629003117|False         |
-|28    |T-04-TR0.0.208.R|TR0.0.208.R                      |transformer   |test torque of bolted connections                                               |2       |0.5      |20.0      |Follow manufacturer's torque specifications.        |Check and retorque all bolted electrical connections.|T-04   |18                          |2000-01-01                 |0.025790864629003117|False         |
-|29    |T-05-TR0.0.208.R|TR0.0.208.R                      |transformer   |replacement                                                                     |1       |8.0      |5000.0    |Coordinate with utility if required.                |Replace transformer at end of service life or if failed.|T-05   |120                         |2000-01-01                 |0.025790864629003117|False         |
-|30    |P-01-SP0.0.208.R|SP0.0.208.R                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.004515395696742986|False         |
-|31    |P-02-SP0.0.208.R|SP0.0.208.R                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.004515395696742986|False         |
-|32    |P-03-SP0.0.208.R|SP0.0.208.R                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.004515395696742986|False         |
-|33    |P-04-SP0.0.208.R|SP0.0.208.R                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.004515395696742986|False         |
-|34    |P-05-SP0.0.208.R|SP0.0.208.R                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.004515395696742986|False         |
-|35    |P-01-SP0.0.480.H|SP0.0.480.H                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.0561135120720914|False         |
-|36    |P-02-SP0.0.480.H|SP0.0.480.H                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.0561135120720914|False         |
-|37    |P-03-SP0.0.480.H|SP0.0.480.H                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.0561135120720914|False         |
-|38    |P-04-SP0.0.480.H|SP0.0.480.H                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.0561135120720914|False         |
-|39    |P-05-SP0.0.480.H|SP0.0.480.H                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.0561135120720914|False         |
-|40    |T-01-TR0.0.208.H|TR0.0.208.H                      |transformer   |visual inspection                                                               |2       |0.5      |50.0      |Check for oil leaks and discoloration.              |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|T-01   |9                           |2000-01-01                 |0.0280567560360457|False         |
-|41    |T-02-TR0.0.208.H|TR0.0.208.H                      |transformer   |test winding ratios                                                             |1       |1.0      |100.0     |Use appropriate test equipment.                     |Test transformer winding ratios to ensure correct operation.|T-02   |24                          |2000-01-01                 |0.0280567560360457|False         |
-|42    |T-03-TR0.0.208.H|TR0.0.208.H                      |transformer   |test grounding                                                                  |1       |0.5      |30.0      |Ensure all ground connections are secure.           |Test transformer grounding connections for integrity.|T-03   |12                          |2000-01-01                 |0.0280567560360457|False         |
-|43    |T-04-TR0.0.208.H|TR0.0.208.H                      |transformer   |test torque of bolted connections                                               |2       |0.5      |20.0      |Follow manufacturer's torque specifications.        |Check and retorque all bolted electrical connections.|T-04   |18                          |2000-01-01                 |0.0280567560360457|False         |
-|44    |T-05-TR0.0.208.H|TR0.0.208.H                      |transformer   |replacement                                                                     |1       |8.0      |5000.0    |Coordinate with utility if required.                |Replace transformer at end of service life or if failed.|T-05   |120                         |2000-01-01                 |0.0280567560360457|False         |
-|45    |P-01-SP0.0.208.H|SP0.0.208.H                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.006781287103785573|False         |
-|46    |P-02-SP0.0.208.H|SP0.0.208.H                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.006781287103785573|False         |
-|47    |P-03-SP0.0.208.H|SP0.0.208.H                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.006781287103785573|False         |
-|48    |P-04-SP0.0.208.H|SP0.0.208.H                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.006781287103785573|False         |
-|49    |P-05-SP0.0.208.H|SP0.0.208.H                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.006781287103785573|False         |
-|50    |P-01-MP1.0      |MP1.0                            |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.22841578287963366|False         |
-|51    |P-02-MP1.0      |MP1.0                            |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.22841578287963366|False         |
-|52    |P-03-MP1.0      |MP1.0                            |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.22841578287963366|False         |
-|53    |P-04-MP1.0      |MP1.0                            |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.22841578287963366|False         |
-|54    |P-05-MP1.0      |MP1.0                            |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.22841578287963366|False         |
-|55    |P-01-SP1.0.480.L|SP1.0.480.L                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.04625740585973522|False         |
-|56    |P-02-SP1.0.480.L|SP1.0.480.L                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.04625740585973522|False         |
-|57    |P-03-SP1.0.480.L|SP1.0.480.L                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.04625740585973522|False         |
-|58    |P-04-SP1.0.480.L|SP1.0.480.L                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.04625740585973522|False         |
-|59    |P-05-SP1.0.480.L|SP1.0.480.L                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.04625740585973522|False         |
-|60    |T-01-TR1.0.208.L|TR1.0.208.L                      |transformer   |visual inspection                                                               |2       |0.5      |50.0      |Check for oil leaks and discoloration.              |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|T-01   |9                           |2000-01-01                 |0.022583458843754796|False         |
-|61    |T-02-TR1.0.208.L|TR1.0.208.L                      |transformer   |test winding ratios                                                             |1       |1.0      |100.0     |Use appropriate test equipment.                     |Test transformer winding ratios to ensure correct operation.|T-02   |24                          |2000-01-01                 |0.022583458843754796|False         |
-|62    |T-03-TR1.0.208.L|TR1.0.208.L                      |transformer   |test grounding                                                                  |1       |0.5      |30.0      |Ensure all ground connections are secure.           |Test transformer grounding connections for integrity.|T-03   |12                          |2000-01-01                 |0.022583458843754796|False         |
-|63    |T-04-TR1.0.208.L|TR1.0.208.L                      |transformer   |test torque of bolted connections                                               |2       |0.5      |20.0      |Follow manufacturer's torque specifications.        |Check and retorque all bolted electrical connections.|T-04   |18                          |2000-01-01                 |0.022583458843754796|False         |
-|64    |T-05-TR1.0.208.L|TR1.0.208.L                      |transformer   |replacement                                                                     |1       |8.0      |5000.0    |Coordinate with utility if required.                |Replace transformer at end of service life or if failed.|T-05   |120                         |2000-01-01                 |0.022583458843754796|False         |
-|65    |P-01-SP1.0.208.L|SP1.0.208.L                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.0013079899114946689|False         |
-|66    |P-02-SP1.0.208.L|SP1.0.208.L                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.0013079899114946689|False         |
-|67    |P-03-SP1.0.208.L|SP1.0.208.L                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.0013079899114946689|False         |
-|68    |P-04-SP1.0.208.L|SP1.0.208.L                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.0013079899114946689|False         |
-|69    |P-05-SP1.0.208.L|SP1.0.208.L                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.0013079899114946689|False         |
-|70    |P-01-SP1.0.480.R|SP1.0.480.R                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.056247588486709306|False         |
-|71    |P-02-SP1.0.480.R|SP1.0.480.R                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.056247588486709306|False         |
-|72    |P-03-SP1.0.480.R|SP1.0.480.R                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.056247588486709306|False         |
-|73    |P-04-SP1.0.480.R|SP1.0.480.R                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.056247588486709306|False         |
-|74    |P-05-SP1.0.480.R|SP1.0.480.R                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.056247588486709306|False         |
-|75    |T-01-TR1.0.208.R|TR1.0.208.R                      |transformer   |visual inspection                                                               |2       |0.5      |50.0      |Check for oil leaks and discoloration.              |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|T-01   |9                           |2000-01-01                 |0.02663554604109591|False         |
-|76    |T-02-TR1.0.208.R|TR1.0.208.R                      |transformer   |test winding ratios                                                             |1       |1.0      |100.0     |Use appropriate test equipment.                     |Test transformer winding ratios to ensure correct operation.|T-02   |24                          |2000-01-01                 |0.02663554604109591|False         |
-|77    |T-03-TR1.0.208.R|TR1.0.208.R                      |transformer   |test grounding                                                                  |1       |0.5      |30.0      |Ensure all ground connections are secure.           |Test transformer grounding connections for integrity.|T-03   |12                          |2000-01-01                 |0.02663554604109591|False         |
-|78    |T-04-TR1.0.208.R|TR1.0.208.R                      |transformer   |test torque of bolted connections                                               |2       |0.5      |20.0      |Follow manufacturer's torque specifications.        |Check and retorque all bolted electrical connections.|T-04   |18                          |2000-01-01                 |0.02663554604109591|False         |
-|79    |T-05-TR1.0.208.R|TR1.0.208.R                      |transformer   |replacement                                                                     |1       |8.0      |5000.0    |Coordinate with utility if required.                |Replace transformer at end of service life or if failed.|T-05   |120                         |2000-01-01                 |0.02663554604109591|False         |
-|80    |P-01-SP1.0.208.R|SP1.0.208.R                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.0053600771088357846|False         |
-|81    |P-02-SP1.0.208.R|SP1.0.208.R                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.0053600771088357846|False         |
-|82    |P-03-SP1.0.208.R|SP1.0.208.R                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.0053600771088357846|False         |
-|83    |P-04-SP1.0.208.R|SP1.0.208.R                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.0053600771088357846|False         |
-|84    |P-05-SP1.0.208.R|SP1.0.208.R                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.0053600771088357846|False         |
-|85    |P-01-SP1.0.480.H|SP1.0.480.H                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.06208438173640876|False         |
-|86    |P-02-SP1.0.480.H|SP1.0.480.H                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.06208438173640876|False         |
-|87    |P-03-SP1.0.480.H|SP1.0.480.H                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.06208438173640876|False         |
-|88    |P-04-SP1.0.480.H|SP1.0.480.H                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.06208438173640876|False         |
-|89    |P-05-SP1.0.480.H|SP1.0.480.H                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.06208438173640876|False         |
-|90    |T-01-TR1.0.208.H|TR1.0.208.H                      |transformer   |visual inspection                                                               |2       |0.5      |50.0      |Check for oil leaks and discoloration.              |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|T-01   |9                           |2000-01-01                 |0.029710365149666525|False         |
-|91    |T-02-TR1.0.208.H|TR1.0.208.H                      |transformer   |test winding ratios                                                             |1       |1.0      |100.0     |Use appropriate test equipment.                     |Test transformer winding ratios to ensure correct operation.|T-02   |24                          |2000-01-01                 |0.029710365149666525|False         |
-|92    |T-03-TR1.0.208.H|TR1.0.208.H                      |transformer   |test grounding                                                                  |1       |0.5      |30.0      |Ensure all ground connections are secure.           |Test transformer grounding connections for integrity.|T-03   |12                          |2000-01-01                 |0.029710365149666525|False         |
-|93    |T-04-TR1.0.208.H|TR1.0.208.H                      |transformer   |test torque of bolted connections                                               |2       |0.5      |20.0      |Follow manufacturer's torque specifications.        |Check and retorque all bolted electrical connections.|T-04   |18                          |2000-01-01                 |0.029710365149666525|False         |
-|94    |T-05-TR1.0.208.H|TR1.0.208.H                      |transformer   |replacement                                                                     |1       |8.0      |5000.0    |Coordinate with utility if required.                |Replace transformer at end of service life or if failed.|T-05   |120                         |2000-01-01                 |0.029710365149666525|False         |
-|95    |P-01-SP1.0.208.H|SP1.0.208.H                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.008434896217406397|False         |
-|96    |P-02-SP1.0.208.H|SP1.0.208.H                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.008434896217406397|False         |
-|97    |P-03-SP1.0.208.H|SP1.0.208.H                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.008434896217406397|False         |
-|98    |P-04-SP1.0.208.H|SP1.0.208.H                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.008434896217406397|False         |
-|99    |P-05-SP1.0.208.H|SP1.0.208.H                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.008434896217406397|False         |
-|100   |P-01-MP2.0      |MP2.0                            |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.22801504337372014|False         |
-|101   |P-02-MP2.0      |MP2.0                            |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.22801504337372014|False         |
-|102   |P-03-MP2.0      |MP2.0                            |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.22801504337372014|False         |
-|103   |P-04-MP2.0      |MP2.0                            |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.22801504337372014|False         |
-|104   |P-05-MP2.0      |MP2.0                            |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.22801504337372014|False         |
-|105   |P-01-SP2.0.480.L|SP2.0.480.L                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.04550359846199455|False         |
-|106   |P-02-SP2.0.480.L|SP2.0.480.L                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.04550359846199455|False         |
-|107   |P-03-SP2.0.480.L|SP2.0.480.L                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.04550359846199455|False         |
-|108   |P-04-SP2.0.480.L|SP2.0.480.L                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.04550359846199455|False         |
-|109   |P-05-SP2.0.480.L|SP2.0.480.L                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.04550359846199455|False         |
-|110   |T-01-TR2.0.208.L|TR2.0.208.L                      |transformer   |visual inspection                                                               |2       |0.5      |50.0      |Check for oil leaks and discoloration.              |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|T-01   |9                           |2000-01-01                 |0.022410649242691722|False         |
-|111   |T-02-TR2.0.208.L|TR2.0.208.L                      |transformer   |test winding ratios                                                             |1       |1.0      |100.0     |Use appropriate test equipment.                     |Test transformer winding ratios to ensure correct operation.|T-02   |24                          |2000-01-01                 |0.022410649242691722|False         |
-|112   |T-03-TR2.0.208.L|TR2.0.208.L                      |transformer   |test grounding                                                                  |1       |0.5      |30.0      |Ensure all ground connections are secure.           |Test transformer grounding connections for integrity.|T-03   |12                          |2000-01-01                 |0.022410649242691722|False         |
-|113   |T-04-TR2.0.208.L|TR2.0.208.L                      |transformer   |test torque of bolted connections                                               |2       |0.5      |20.0      |Follow manufacturer's torque specifications.        |Check and retorque all bolted electrical connections.|T-04   |18                          |2000-01-01                 |0.022410649242691722|False         |
-|114   |T-05-TR2.0.208.L|TR2.0.208.L                      |transformer   |replacement                                                                     |1       |8.0      |5000.0    |Coordinate with utility if required.                |Replace transformer at end of service life or if failed.|T-05   |120                         |2000-01-01                 |0.022410649242691722|False         |
-|115   |P-01-SP2.0.208.L|SP2.0.208.L                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.0011351803104315923|False         |
-|116   |P-02-SP2.0.208.L|SP2.0.208.L                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.0011351803104315923|False         |
-|117   |P-03-SP2.0.208.L|SP2.0.208.L                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.0011351803104315923|False         |
-|118   |P-04-SP2.0.208.L|SP2.0.208.L                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.0011351803104315923|False         |
-|119   |P-05-SP2.0.208.L|SP2.0.208.L                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.0011351803104315923|False         |
-|120   |P-01-SP2.0.480.R|SP2.0.480.R                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.04874526821986745|False         |
-|121   |P-02-SP2.0.480.R|SP2.0.480.R                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.04874526821986745|False         |
-|122   |P-03-SP2.0.480.R|SP2.0.480.R                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.04874526821986745|False         |
-|123   |P-04-SP2.0.480.R|SP2.0.480.R                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.04874526821986745|False         |
-|124   |P-05-SP2.0.480.R|SP2.0.480.R                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.04874526821986745|False         |
-|125   |T-01-TR2.0.208.R|TR2.0.208.R                      |transformer   |visual inspection                                                               |2       |0.5      |50.0      |Check for oil leaks and discoloration.              |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|T-01   |9                           |2000-01-01                 |0.02422515005385403|False         |
-|126   |T-02-TR2.0.208.R|TR2.0.208.R                      |transformer   |test winding ratios                                                             |1       |1.0      |100.0     |Use appropriate test equipment.                     |Test transformer winding ratios to ensure correct operation.|T-02   |24                          |2000-01-01                 |0.02422515005385403|False         |
-|127   |T-03-TR2.0.208.R|TR2.0.208.R                      |transformer   |test grounding                                                                  |1       |0.5      |30.0      |Ensure all ground connections are secure.           |Test transformer grounding connections for integrity.|T-03   |12                          |2000-01-01                 |0.02422515005385403|False         |
-|128   |T-04-TR2.0.208.R|TR2.0.208.R                      |transformer   |test torque of bolted connections                                               |2       |0.5      |20.0      |Follow manufacturer's torque specifications.        |Check and retorque all bolted electrical connections.|T-04   |18                          |2000-01-01                 |0.02422515005385403|False         |
-|129   |T-05-TR2.0.208.R|TR2.0.208.R                      |transformer   |replacement                                                                     |1       |8.0      |5000.0    |Coordinate with utility if required.                |Replace transformer at end of service life or if failed.|T-05   |120                         |2000-01-01                 |0.02422515005385403|False         |
-|130   |P-01-SP2.0.208.R|SP2.0.208.R                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.0029496811215939008|False         |
-|131   |P-02-SP2.0.208.R|SP2.0.208.R                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.0029496811215939008|False         |
-|132   |P-03-SP2.0.208.R|SP2.0.208.R                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.0029496811215939008|False         |
-|133   |P-04-SP2.0.208.R|SP2.0.208.R                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.0029496811215939008|False         |
-|134   |P-05-SP2.0.208.R|SP2.0.208.R                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.0029496811215939008|False         |
-|135   |P-01-SP2.0.480.H|SP2.0.480.H                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.06993976989507777|False         |
-|136   |P-02-SP2.0.480.H|SP2.0.480.H                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.06993976989507777|False         |
-|137   |P-03-SP2.0.480.H|SP2.0.480.H                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.06993976989507777|False         |
-|138   |P-04-SP2.0.480.H|SP2.0.480.H                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.06993976989507777|False         |
-|139   |P-05-SP2.0.480.H|SP2.0.480.H                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.06993976989507777|False         |
-|140   |T-01-TR2.0.208.H|TR2.0.208.H                      |transformer   |visual inspection                                                               |2       |0.5      |50.0      |Check for oil leaks and discoloration.              |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|T-01   |9                           |2000-01-01                 |0.032949055431659026|False         |
-|141   |T-02-TR2.0.208.H|TR2.0.208.H                      |transformer   |test winding ratios                                                             |1       |1.0      |100.0     |Use appropriate test equipment.                     |Test transformer winding ratios to ensure correct operation.|T-02   |24                          |2000-01-01                 |0.032949055431659026|False         |
-|142   |T-03-TR2.0.208.H|TR2.0.208.H                      |transformer   |test grounding                                                                  |1       |0.5      |30.0      |Ensure all ground connections are secure.           |Test transformer grounding connections for integrity.|T-03   |12                          |2000-01-01                 |0.032949055431659026|False         |
-|143   |T-04-TR2.0.208.H|TR2.0.208.H                      |transformer   |test torque of bolted connections                                               |2       |0.5      |20.0      |Follow manufacturer's torque specifications.        |Check and retorque all bolted electrical connections.|T-04   |18                          |2000-01-01                 |0.032949055431659026|False         |
-|144   |T-05-TR2.0.208.H|TR2.0.208.H                      |transformer   |replacement                                                                     |1       |8.0      |5000.0    |Coordinate with utility if required.                |Replace transformer at end of service life or if failed.|T-05   |120                         |2000-01-01                 |0.032949055431659026|False         |
-|145   |P-01-SP2.0.208.H|SP2.0.208.H                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.011673586499398892|False         |
-|146   |P-02-SP2.0.208.H|SP2.0.208.H                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.011673586499398892|False         |
-|147   |P-03-SP2.0.208.H|SP2.0.208.H                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.011673586499398892|False         |
-|148   |P-04-SP2.0.208.H|SP2.0.208.H                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.011673586499398892|False         |
-|149   |P-05-SP2.0.208.H|SP2.0.208.H                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.011673586499398892|False         |
-|150   |P-01-MP3.0      |MP3.0                            |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.2319866847222905|False         |
-|151   |P-02-MP3.0      |MP3.0                            |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.2319866847222905|False         |
-|152   |P-03-MP3.0      |MP3.0                            |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.2319866847222905|False         |
-|153   |P-04-MP3.0      |MP3.0                            |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.2319866847222905|False         |
-|154   |P-05-MP3.0      |MP3.0                            |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.2319866847222905|False         |
-|155   |P-01-SP3.0.480.L|SP3.0.480.L                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.06022667852498068|False         |
-|156   |P-02-SP3.0.480.L|SP3.0.480.L                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.06022667852498068|False         |
-|157   |P-03-SP3.0.480.L|SP3.0.480.L                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.06022667852498068|False         |
-|158   |P-04-SP3.0.480.L|SP3.0.480.L                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.06022667852498068|False         |
-|159   |P-05-SP3.0.480.L|SP3.0.480.L                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.06022667852498068|False         |
-|160   |T-01-TR3.0.208.L|TR3.0.208.L                      |transformer   |visual inspection                                                               |2       |0.5      |50.0      |Check for oil leaks and discoloration.              |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|T-01   |9                           |2000-01-01                 |0.03112114697903492|False         |
-|161   |T-02-TR3.0.208.L|TR3.0.208.L                      |transformer   |test winding ratios                                                             |1       |1.0      |100.0     |Use appropriate test equipment.                     |Test transformer winding ratios to ensure correct operation.|T-02   |24                          |2000-01-01                 |0.03112114697903492|False         |
-|162   |T-03-TR3.0.208.L|TR3.0.208.L                      |transformer   |test grounding                                                                  |1       |0.5      |30.0      |Ensure all ground connections are secure.           |Test transformer grounding connections for integrity.|T-03   |12                          |2000-01-01                 |0.03112114697903492|False         |
-|163   |T-04-TR3.0.208.L|TR3.0.208.L                      |transformer   |test torque of bolted connections                                               |2       |0.5      |20.0      |Follow manufacturer's torque specifications.        |Check and retorque all bolted electrical connections.|T-04   |18                          |2000-01-01                 |0.03112114697903492|False         |
-|164   |T-05-TR3.0.208.L|TR3.0.208.L                      |transformer   |replacement                                                                     |1       |8.0      |5000.0    |Coordinate with utility if required.                |Replace transformer at end of service life or if failed.|T-05   |120                         |2000-01-01                 |0.03112114697903492|False         |
-|165   |P-01-SP3.0.208.L|SP3.0.208.L                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.009845678046774792|False         |
-|166   |P-02-SP3.0.208.L|SP3.0.208.L                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.009845678046774792|False         |
-|167   |P-03-SP3.0.208.L|SP3.0.208.L                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.009845678046774792|False         |
-|168   |P-04-SP3.0.208.L|SP3.0.208.L                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.009845678046774792|False         |
-|169   |P-05-SP3.0.208.L|SP3.0.208.L                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.009845678046774792|False         |
-|170   |P-01-SP3.0.480.R|SP3.0.480.R                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.06251342626318604|False         |
-|171   |P-02-SP3.0.480.R|SP3.0.480.R                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.06251342626318604|False         |
-|172   |P-03-SP3.0.480.R|SP3.0.480.R                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.06251342626318604|False         |
-|173   |P-04-SP3.0.480.R|SP3.0.480.R                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.06251342626318604|False         |
-|174   |P-05-SP3.0.480.R|SP3.0.480.R                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.06251342626318604|False         |
-|175   |T-01-TR3.0.208.R|TR3.0.208.R                      |transformer   |visual inspection                                                               |2       |0.5      |50.0      |Check for oil leaks and discoloration.              |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|T-01   |9                           |2000-01-01                 |0.032597477277772076|False         |
-|176   |T-02-TR3.0.208.R|TR3.0.208.R                      |transformer   |test winding ratios                                                             |1       |1.0      |100.0     |Use appropriate test equipment.                     |Test transformer winding ratios to ensure correct operation.|T-02   |24                          |2000-01-01                 |0.032597477277772076|False         |
-|177   |T-03-TR3.0.208.R|TR3.0.208.R                      |transformer   |test grounding                                                                  |1       |0.5      |30.0      |Ensure all ground connections are secure.           |Test transformer grounding connections for integrity.|T-03   |12                          |2000-01-01                 |0.032597477277772076|False         |
-|178   |T-04-TR3.0.208.R|TR3.0.208.R                      |transformer   |test torque of bolted connections                                               |2       |0.5      |20.0      |Follow manufacturer's torque specifications.        |Check and retorque all bolted electrical connections.|T-04   |18                          |2000-01-01                 |0.032597477277772076|False         |
-|179   |T-05-TR3.0.208.R|TR3.0.208.R                      |transformer   |replacement                                                                     |1       |8.0      |5000.0    |Coordinate with utility if required.                |Replace transformer at end of service life or if failed.|T-05   |120                         |2000-01-01                 |0.032597477277772076|False         |
-|180   |P-01-SP3.0.208.R|SP3.0.208.R                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.011322008345511942|False         |
-|181   |P-02-SP3.0.208.R|SP3.0.208.R                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.011322008345511942|False         |
-|182   |P-03-SP3.0.208.R|SP3.0.208.R                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.011322008345511942|False         |
-|183   |P-04-SP3.0.208.R|SP3.0.208.R                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.011322008345511942|False         |
-|184   |P-05-SP3.0.208.R|SP3.0.208.R                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.011322008345511942|False         |
-|185   |P-01-SP3.0.480.H|SP3.0.480.H                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.045420173137343416|False         |
-|186   |P-02-SP3.0.480.H|SP3.0.480.H                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.045420173137343416|False         |
-|187   |P-03-SP3.0.480.H|SP3.0.480.H                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.045420173137343416|False         |
-|188   |P-04-SP3.0.480.H|SP3.0.480.H                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.045420173137343416|False         |
-|189   |P-05-SP3.0.480.H|SP3.0.480.H                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.045420173137343416|False         |
-|190   |T-01-TR3.0.208.H|TR3.0.208.H                      |transformer   |visual inspection                                                               |2       |0.5      |50.0      |Check for oil leaks and discoloration.              |Visually inspect for corrosion, scoring, stains or any other indicators of wear.|T-01   |9                           |2000-01-01                 |0.023188292447475566|False         |
-|191   |T-02-TR3.0.208.H|TR3.0.208.H                      |transformer   |test winding ratios                                                             |1       |1.0      |100.0     |Use appropriate test equipment.                     |Test transformer winding ratios to ensure correct operation.|T-02   |24                          |2000-01-01                 |0.023188292447475566|False         |
-|192   |T-03-TR3.0.208.H|TR3.0.208.H                      |transformer   |test grounding                                                                  |1       |0.5      |30.0      |Ensure all ground connections are secure.           |Test transformer grounding connections for integrity.|T-03   |12                          |2000-01-01                 |0.023188292447475566|False         |
-|193   |T-04-TR3.0.208.H|TR3.0.208.H                      |transformer   |test torque of bolted connections                                               |2       |0.5      |20.0      |Follow manufacturer's torque specifications.        |Check and retorque all bolted electrical connections.|T-04   |18                          |2000-01-01                 |0.023188292447475566|False         |
-|194   |T-05-TR3.0.208.H|TR3.0.208.H                      |transformer   |replacement                                                                     |1       |8.0      |5000.0    |Coordinate with utility if required.                |Replace transformer at end of service life or if failed.|T-05   |120                         |2000-01-01                 |0.023188292447475566|False         |
-|195   |P-01-SP3.0.208.H|SP3.0.208.H                      |panel         |visual inspection                                                               |2       |0.5      |30.0      |Check for missing or loose covers.                  |Visually inspect panel for signs of overheating, corrosion, or damage.|P-01   |4                           |2000-01-01                 |0.0019128235152154384|False         |
-|196   |P-02-SP3.0.208.H|SP3.0.208.H                      |panel         |test grounding                                                                  |1       |0.5      |20.0      |Verify all ground lugs are tight.                   |Test panel grounding and bonding connections.|P-02   |12                          |2000-01-01                 |0.0019128235152154384|False         |
-|197   |P-03-SP3.0.208.H|SP3.0.208.H                      |panel         |test gfci                                                                       |1       |0.25     |10.0      |Document any failed devices.                        |Test all GFCI breakers and receptacles for proper operation.|P-03   |6                           |2000-01-01                 |0.0019128235152154384|False         |
-|198   |P-04-SP3.0.208.H|SP3.0.208.H                      |panel         |inspect breakers                                                                |2       |0.5      |15.0      |Replace any defective breakers.                     |Inspect all breakers for signs of wear or damage.|P-04   |9                           |2000-01-01                 |0.0019128235152154384|False         |
-|199   |P-05-SP3.0.208.H|SP3.0.208.H                      |panel         |replacement                                                                     |1       |6.0      |2000.0    |Label all circuits after replacement.               |Replace panel at end of service life or if failed.|P-05   |100                         |2000-01-01                 |0.0019128235152154384|False         |
-
-The dataset above represents a comprehensive maintenance schedule for various electrical components, including panels and transformers. Each entry details specific tasks, their frequency, duration, cost, and other relevant information to ensure proper upkeep and functionality of the equipment. Note that the `last_performed` dates are placeholders and will be updated as maintenance activities are carried out.
-
-## Appendix C: Screenshots of the AssetPulse Interface
+# Appendix C: Screenshots of the AssetPulse Interface
 Below are screenshots of the various features and views available in the AssetPulse user interface.
 
-### System View
+## System View
 
-#### Nodes Colored by Type
+### Nodes Colored by Type
+
 ![System View](images/assetpulse_system_view_by_type.png)
 
-#### Nodes Colored by Risk Score
+### Nodes Colored by Risk Score
+
 ![System View](images/assetpulse_system_view_by_risk.png)
 
-#### 3D View of the System
+### 3D View of the System
+
 ![3D View](images/assetpulse_3d_view.png)
 
-### Failure Prediction
+## Failure Prediction
+
 ![Failure Prediction Main Dashboard](images/assetpulse_failure_prediction.png) 
 
-### Maintenance
+## Maintenance
 
-#### Maintenance Task List
+### Maintenance Task List
+
 ![Maintenance Task List](images/assetpulse_maintenance_task_list.png)
 
-#### Replacement Task List
+### Replacement Task List
+
 ![Replacement Task List](images/assetpulse_replacement_task_list.png)
 
-#### Budget Summary
+### Budget Summary
+
 ![Budget Summary](images/assetpulse_budget_summary.png)
 
-### Analytics
+## Analytics
+
 ![Analytics Dashboard](images/assetpulse_analytics_overview.png)
 
-### Settings
+## Settings
+
 ![Settings Page](images/assetpulse_settings.png)
 
-### Graph Generator
+## Graph Generator
+
 ![Graph Generator](images/assetpulse_graph_generator.png)
 
-### Budget Goal Seeker
+## Budget Goal Seeker
+
 ![Budget Goal Seeker](images/assetpulse_budget_goal_seeker.png)
 
-### Budget Scenario Comparison
+## Budget Scenario Comparison
+
 ![Budget Scenario Comparison](images/assetpulse_budget_scenario_comparison.png)
