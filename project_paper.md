@@ -197,7 +197,7 @@ The required node attributes for the RUL simulation are:
 - current_condition
   - Current condition of the equipment, on a scale from 0.0 (failed) to 1.0 (new). If not provided, defaults to 1.0.
 
-### Overall Architecture and Workflow
+## Overall Architecture and Workflow
 The following diagram illustrates the overall architecture and workflow of the AssetPulse simulation tool, including key components such as the user interface, graph controller, simulation engine, and data storage.
 
 ```mermaid
