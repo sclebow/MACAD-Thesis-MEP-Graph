@@ -306,13 +306,25 @@ If multiple pieces of equipment are flagged for repair or replacement in the sam
 #### Repair and Replacement Task Template Fields
 
 - task_id
+  - The unique identifier for the repair or replacement task. When the tasks for each piece of equipment are generated from the template, this field is concatenated with the equipment ID to ensure uniqueness.
 - equipment_type
+  - The type of equipment this repair or replacement task applies to (e.g., "panel", "transformer").
 - task_name
+- The name of the repair or replacement task (e.g., "replace breaker", "repair transformer").
 - description
+- A brief explanation of the task's purpose and activities. This field is optional and can be left blank.
 - time_cost
+- Estimated time required to complete the task (in hours).
 - money_cost
+- Estimated monetary cost to perform the task (in dollars).
 - condition_level
-- condition_im
+- The condition threshold (0.0 to 1.0) below which the equipment is flagged for this task. For example, a value of 0.3 means the task is triggered when the equipment condition falls below 30%.
+- condition_improvement_amount
+  - The amount by which the equipment's condition improves after completing the task (e.g., 0.05 means a piece of equipment that is at 0.85 will improve to 0.90).
+- base_expected_lifespan_improvement_percentage
+  - The percentage increase in expected lifespan after completing the task (e.g., 0.10 means a piece of equipment with a baseline expected lifespan of 20 years will increase to 22 years).
+- notes
+  - Additional information or special instructions related to the task. This field is optional and can be left blank.
 
 ### Budget Parameters
 The simulation engine allows users to define monthly budgets for maintenance tasks, including time and money constraints. These budgets influence which tasks can be executed each month, with higher-priority tasks being scheduled first. Users can also enable budget rollover, allowing unused budget from one month to carry over to the next.
@@ -583,6 +595,7 @@ The task status each month chart visualizes the number of executed, and deferred
 Preset time windows are available for quick selection, including 3 months, 6 months, 12 months, and the full simulation period. Users can also customize the time window by adjusting the timeline slider to focus on specific periods of interest.  The default view shows the previous 6 months and the next 12 months.
 
 An example chart is shown below:
+
 ![Task Status Each Month Chart](images/task_status_each_month_chart.png)
 
 ## Node Failure Timeline Chart
@@ -591,6 +604,7 @@ The node failure timeline chart visualizes the expected failure events of equipm
 The chart is sorted by the node risk score, with higher-risk nodes displayed at the top. Each node is represented by circular markers indicating the expected failure dates. The size of each marker corresponds to the risk level of the node, with larger markers indicating higher risk.
 
 An example chart is shown below:
+
 ![Node Failure Timeline Chart](images/node_failure_timeline_chart.png)
 
 ## KPI Cards
@@ -602,6 +616,7 @@ The KPI cards provide quick access to key performance indicators related to the 
 The RUL distribution chart visualizes the distribution of Remaining Useful Life (RUL) across all equipment nodes in the system. This chart helps users understand the overall health and longevity of their assets, enabling informed maintenance and replacement planning.
 
 An example chart is shown below:
+
 ![RUL Distribution Chart](images/rul_distribution_chart.png)
 
 You can see in the example chart that some equipment has a high RUL and is in good condition, while other equipment has a low RUL and may require immediate attention.  This should be expected because the simulation will prioritize maintenance tasks based on each node's risk score and budget constraints, leading to some equipment being fwell-maintained while others may be deferred.
@@ -610,6 +625,7 @@ You can see in the example chart that some equipment has a high RUL and is in go
 The risk level distribution chart visualizes the distribution of risk scores across all equipment nodes in the system. This chart helps users identify the proportion of high-risk components, supporting prioritization of maintenance and replacement efforts.
 
 An example chart is shown below:
+
 ![Risk Level Distribution Chart](images/risk_level_distribution_chart.png)
 
 In the example chart, we can see that most equipment is classified as LOW risk, with the rest classified as MEDIUM, HIGH, and CRITICAL risk.  
@@ -618,6 +634,7 @@ In the example chart, we can see that most equipment is classified as LOW risk, 
 The average remaining useful life (RUL) by equipment type over time chart visualizes trends in asset longevity across different categories of equipment. This chart helps users identify which equipment types may require earlier replacement or more frequent maintenance, supporting targeted asset management strategies.
 
 An example chart is shown below:
+
 ![Average RUL by Equipment Type Over Time Chart](images/average_rul_by_equipment_type_over_time_chart.png)
 
 This chart is a key indicator of how well maintenance strategies are preserving the lifespan of different equipment types.  The average RUL for each equipment type should decrease over time, reflecting the natural aging and wear of the equipment.  However this decrease will be faster if maintenance is regularly deferred due to budget constraints, and conversely, the decrease will be slower if repair and replacement is consistently performed on schedule.
@@ -626,6 +643,7 @@ This chart is a key indicator of how well maintenance strategies are preserving 
 The total maintenance cost over time chart visualizes the cumulative maintenance expenses incurred throughout the simulation period. This chart helps users monitor budget utilization, identify cost trends, and evaluate the financial impact of maintenance strategies.
 
 An example chart is shown below:
+
 ![Total Maintenance Cost Over Time Chart](images/total_maintenance_cost_over_time_chart.png)
 
 # Budget Goal Seeker
@@ -658,9 +676,11 @@ The Budget Goal Seeker module enables users to optimize maintenance budgets and 
   - The system caches results and visualizations for seamless interaction and review.
 
 An example animation of the optimization process is shown below:
+
 ![Budget Goal Seeker Optimization Animation](images/budget_goal_seeker_optimization_animation.gif)
 
 The final graph is shown below:
+
 ![Budget Goal Seeker Final Graph](images/budget_goal_seeker_final_graph.png)
 
 You can see in this example that the relationship between budget and average condition level is not linear, and there are diminishing returns as budgets increase.  This highlights the importance of finding an optimal budget that balances cost with asset health outcomes.
@@ -833,9 +853,11 @@ The following parameters were used to generate a simple building for testing and
 ## Example Generated Building Graph
 
 ### Types of Nodes
+
 ![Example Building Graph](images/simple_building_graph.png)
 
 ### Risk Levels
+
 ![Example Building Risk Levels](images/simple_building_graph_risk.png)
 
 <!-- ## Maintenance Task Input Template
@@ -896,9 +918,11 @@ The following parameters were used to generate a complex building for testing an
 
 ## Example Generated Building Graph
 ### Types of Nodes
+
 ![Example Building Graph](images/complex_building_graph.png)
 
 ### Risk Levels
+
 ![Example Building Risk Levels](images/complex_building_graph_risk.png)
 
 <!-- ## Maintenance Task Input Template
@@ -1132,39 +1156,51 @@ Below are screenshots of the various features and views available in the AssetPu
 ## System View
 
 ### Nodes Colored by Type
+
 ![System View](images/assetpulse_system_view_by_type.png)
 
 ### Nodes Colored by Risk Score
+
 ![System View](images/assetpulse_system_view_by_risk.png)
 
 ### 3D View of the System
+
 ![3D View](images/assetpulse_3d_view.png)
 
 ## Failure Prediction
+
 ![Failure Prediction Main Dashboard](images/assetpulse_failure_prediction.png) 
 
 ## Maintenance
 
 ### Maintenance Task List
+
 ![Maintenance Task List](images/assetpulse_maintenance_task_list.png)
 
 ### Replacement Task List
+
 ![Replacement Task List](images/assetpulse_replacement_task_list.png)
 
 ### Budget Summary
+
 ![Budget Summary](images/assetpulse_budget_summary.png)
 
 ## Analytics
+
 ![Analytics Dashboard](images/assetpulse_analytics_overview.png)
 
 ## Settings
+
 ![Settings Page](images/assetpulse_settings.png)
 
 ## Graph Generator
+
 ![Graph Generator](images/assetpulse_graph_generator.png)
 
 ## Budget Goal Seeker
+
 ![Budget Goal Seeker](images/assetpulse_budget_goal_seeker.png)
 
 ## Budget Scenario Comparison
+
 ![Budget Scenario Comparison](images/assetpulse_budget_scenario_comparison.png)
