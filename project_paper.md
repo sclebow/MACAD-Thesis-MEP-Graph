@@ -28,14 +28,14 @@ We designed an intuitive user interface that allows users to easily set up simul
 We see the interface as both a research tool and a practical application for asset managers, enabling them to explore various strategies and their outcomes in a user-friendly manner.  While the interface is not a finished product, it provides a solid foundation for future development and refinement based on user feedback and evolving needs in asset management.  And despite its current limitations, it effectively demonstrates the core functionalities and potential of the AssetPulse system.
 
 The interface is built using the Panel library from Holoviz, which provides a flexible and powerful framework for creating interactive web applications in Python.  It can be easily extended and customized to meet specific user requirements and integrate additional features as needed.  It also supports deployment as a standalone web application or integration into existing asset management platforms, as a future area of improvement.
-
-[See Appendix A for an example system diagram of the full AssetPulse architecture.](#appendix-a-system-diagrams)
-[See Appendix C for screenshots of the current user interface.](#appendix-c-user-interface-screenshots)
+[See Appendix A for an example test dataset representing a simple building.](#appendix-a-example-test-data-simple-building)  
+[See Appendix B for an example test dataset representing a more complex building.](#appendix-b-example-test-data-complex-building)  
+[See Appendix C for screenshots of the current user interface.](#appendix-c-user-interface-screenshots)  
 
 ## Related Work
 
 ### Literature Review
-A review of existing literature reveals various approaches to asset management, including statistical models, machine learning techniques, and optimization algorithms. However, many of these approaches focus on specific aspects of asset management rather than providing a comprehensive simulation environment that integrates lifecycle modeling, maintenance scheduling, and budget allocation.
+We found significant research covering graph approaches for medium-voltage (utility level) electrical systems, but little for low-voltage (building level) systems:
 
 E. Cotilla-Sanchez, P. D. H. Hines, C. Barrows and S. Blumsack, "Comparing the Topological and Electrical Structure of the North American Electric Power Infrastructure," in IEEE Systems Journal, vol. 6, no. 4, pp. 616-626, Dec. 2012, doi: 10.1109/JSYST.2012.2183033. I. Lendak, A. Erdeljan, D. Čapko and S. Vukmirović, "Algorithms in electric power system one-line diagram creation," 2010 IEEE International Conference on Systems, Man and Cybernetics, Istanbul, Turkey, 2010, pp. 2867-2873, doi: 10.1109/ICSMC.2010.5641927.
 
