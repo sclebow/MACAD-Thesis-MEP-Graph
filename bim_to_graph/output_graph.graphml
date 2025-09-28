@@ -1,0 +1,526 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+<key id="d1" for="node" attr.name="installation_date" attr.type="string"/>
+<key id="d2" for="node" attr.name="name" attr.type="string"/>
+<key id="d3" for="node" attr.name="supply_from_id" attr.type="string"/>
+<key id="d4" for="node" attr.name="type" attr.type="string"/>
+<key id="d5" for="node" attr.name="supply_from_name" attr.type="string"/><key id="d6" for="edge" attr.name="source" attr.type="string"/>
+<key id="d7" for="edge" attr.name="target" attr.type="string"/><graph id="G" edgedefault="directed">
+  <node id="n1403442">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P506</data>
+    <data key="d5">MB21</data>
+    <data key="d3">1668944</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1411464">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P408</data>
+    <data key="d5">MB23</data>
+    <data key="d3">1668951</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1411512">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P307</data>
+    <data key="d5">MB12</data>
+    <data key="d3">1668943</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1411627">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P205</data>
+    <data key="d5">MB21</data>
+    <data key="d3">1668944</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1414336">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P507</data>
+    <data key="d5">MB21</data>
+    <data key="d3">1668944</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1414509">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P504</data>
+    <data key="d5">MB11</data>
+    <data key="d3">1668942</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1414620">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P410</data>
+    <data key="d5">MB23</data>
+    <data key="d3">1668951</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1414656">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P404</data>
+    <data key="d5">MB22</data>
+    <data key="d3">1668950</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1415147">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P309</data>
+    <data key="d5">MB22</data>
+    <data key="d3">1668950</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1415326">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P304</data>
+    <data key="d5">MB12</data>
+    <data key="d3">1668943</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1415541">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P203</data>
+    <data key="d5">MB11</data>
+    <data key="d3">1668942</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1415838">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P202</data>
+    <data key="d5">MB11</data>
+    <data key="d3">1668942</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1416002">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P204</data>
+    <data key="d5">MB21</data>
+    <data key="d3">1668944</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1425656">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P200</data>
+    <data key="d5">HDP</data>
+    <data key="d3">1629705</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1439889">
+    <data key="d4">Panelboard</data>
+    <data key="d2">PV1</data>
+    <data key="d5"></data>
+    <data key="d3">None</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1440007">
+    <data key="d4">Panelboard</data>
+    <data key="d2">PV2</data>
+    <data key="d5"></data>
+    <data key="d3">None</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1440106">
+    <data key="d4">Panelboard</data>
+    <data key="d2">PV3</data>
+    <data key="d5"></data>
+    <data key="d3">None</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1443472">
+    <data key="d4">Panelboard</data>
+    <data key="d2">PV4</data>
+    <data key="d5"></data>
+    <data key="d3">None</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1445510">
+    <data key="d4">Panelboard</data>
+    <data key="d2">PV5</data>
+    <data key="d5"></data>
+    <data key="d3">None</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1445562">
+    <data key="d4">Panelboard</data>
+    <data key="d2">PV6</data>
+    <data key="d5"></data>
+    <data key="d3">None</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1445638">
+    <data key="d4">Panelboard</data>
+    <data key="d2">PV7</data>
+    <data key="d5"></data>
+    <data key="d3">None</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1475128">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P403</data>
+    <data key="d5">MB22</data>
+    <data key="d3">1668950</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1475317">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P405</data>
+    <data key="d5">MB22</data>
+    <data key="d3">1668950</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1475435">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P407</data>
+    <data key="d5">MB23</data>
+    <data key="d3">1668951</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1475617">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P409</data>
+    <data key="d5">MB23</data>
+    <data key="d3">1668951</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1475815">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P401</data>
+    <data key="d5">MB14</data>
+    <data key="d3">1668954</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1478846">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P109</data>
+    <data key="d5">MB13</data>
+    <data key="d3">1668955</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1482544">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P108</data>
+    <data key="d5">MB13</data>
+    <data key="d3">1668955</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1488488">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P106/7</data>
+    <data key="d5">HDP</data>
+    <data key="d3">1629705</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1488514">
+    <data key="d4">Panelboard</data>
+    <data key="d2">EL1</data>
+    <data key="d5">HDP</data>
+    <data key="d3">1629705</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1488616">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P105</data>
+    <data key="d5">MB11</data>
+    <data key="d3">1668942</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1492512">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P102</data>
+    <data key="d5">MB13</data>
+    <data key="d3">1668955</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1501278">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P306</data>
+    <data key="d5">MB12</data>
+    <data key="d3">1668943</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1503130">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P308</data>
+    <data key="d5">MB22</data>
+    <data key="d3">1668950</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1503329">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P303</data>
+    <data key="d5">MB12</data>
+    <data key="d3">1668943</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1503771">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P301</data>
+    <data key="d5">MB14</data>
+    <data key="d3">1668954</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1516898">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P406</data>
+    <data key="d5">MB23</data>
+    <data key="d3">1668951</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1533288">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P300</data>
+    <data key="d5">HDP</data>
+    <data key="d3">1629705</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1565773">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P500</data>
+    <data key="d5">HDP</data>
+    <data key="d3">1629705</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1566519">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P501</data>
+    <data key="d5">MB14</data>
+    <data key="d3">1668954</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1573238">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P400</data>
+    <data key="d5">HDP</data>
+    <data key="d3">1629705</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1574398">
+    <data key="d4">Panelboard</data>
+    <data key="d2">P-Roof</data>
+    <data key="d5">HDP</data>
+    <data key="d3">1629705</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1592415">
+    <data key="d4">Panelboard</data>
+    <data key="d2">LP000</data>
+    <data key="d5">HDP</data>
+    <data key="d3">1629705</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1629705">
+    <data key="d4">Panelboard</data>
+    <data key="d2">HDP</data>
+    <data key="d5">MB13</data>
+    <data key="d3">1668955</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1668940">
+    <data key="d4">Switchboard</data>
+    <data key="d2">MAIN1</data>
+    <data key="d5">SWITCHBOARD</data>
+    <data key="d3">1670604</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1668941">
+    <data key="d4">Switchboard</data>
+    <data key="d2">MAIN2</data>
+    <data key="d5">SWITCHBOARD</data>
+    <data key="d3">1670604</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1668942">
+    <data key="d4">Switchboard</data>
+    <data key="d2">MB11</data>
+    <data key="d5">MAIN1</data>
+    <data key="d3">1668940</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1668943">
+    <data key="d4">Switchboard</data>
+    <data key="d2">MB12</data>
+    <data key="d5">MAIN1</data>
+    <data key="d3">1668940</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1668944">
+    <data key="d4">Switchboard</data>
+    <data key="d2">MB21</data>
+    <data key="d5">MAIN2</data>
+    <data key="d3">1668941</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1668950">
+    <data key="d4">Switchboard</data>
+    <data key="d2">MB22</data>
+    <data key="d5">MAIN2</data>
+    <data key="d3">1668941</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1668951">
+    <data key="d4">Switchboard</data>
+    <data key="d2">MB23</data>
+    <data key="d5">MAIN2</data>
+    <data key="d3">1668941</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1668954">
+    <data key="d4">Switchboard</data>
+    <data key="d2">MB14</data>
+    <data key="d5">MAIN1</data>
+    <data key="d3">1668940</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1668955">
+    <data key="d4">Switchboard</data>
+    <data key="d2">MB13</data>
+    <data key="d5">MAIN1</data>
+    <data key="d3">1668940</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <node id="n1670604">
+    <data key="d4">Switchboard</data>
+    <data key="d2">SWITCHBOARD</data>
+    <data key="d5"></data>
+    <data key="d3">None</data>
+    <data key="d1">2023-06-01</data>
+  </node>
+  <edge source="n1668944" target="n1403442">
+    <data key="d6">Edge from 1668944 to 1403442</data>
+  </edge>
+  <edge source="n1668944" target="n1411627">
+    <data key="d6">Edge from 1668944 to 1411627</data>
+  </edge>
+  <edge source="n1668944" target="n1414336">
+    <data key="d6">Edge from 1668944 to 1414336</data>
+  </edge>
+  <edge source="n1668944" target="n1416002">
+    <data key="d6">Edge from 1668944 to 1416002</data>
+  </edge>
+  <edge source="n1668951" target="n1411464">
+    <data key="d6">Edge from 1668951 to 1411464</data>
+  </edge>
+  <edge source="n1668951" target="n1414620">
+    <data key="d6">Edge from 1668951 to 1414620</data>
+  </edge>
+  <edge source="n1668951" target="n1475435">
+    <data key="d6">Edge from 1668951 to 1475435</data>
+  </edge>
+  <edge source="n1668951" target="n1475617">
+    <data key="d6">Edge from 1668951 to 1475617</data>
+  </edge>
+  <edge source="n1668951" target="n1516898">
+    <data key="d6">Edge from 1668951 to 1516898</data>
+  </edge>
+  <edge source="n1668943" target="n1411512">
+    <data key="d6">Edge from 1668943 to 1411512</data>
+  </edge>
+  <edge source="n1668943" target="n1415326">
+    <data key="d6">Edge from 1668943 to 1415326</data>
+  </edge>
+  <edge source="n1668943" target="n1501278">
+    <data key="d6">Edge from 1668943 to 1501278</data>
+  </edge>
+  <edge source="n1668943" target="n1503329">
+    <data key="d6">Edge from 1668943 to 1503329</data>
+  </edge>
+  <edge source="n1668942" target="n1414509">
+    <data key="d6">Edge from 1668942 to 1414509</data>
+  </edge>
+  <edge source="n1668942" target="n1415541">
+    <data key="d6">Edge from 1668942 to 1415541</data>
+  </edge>
+  <edge source="n1668942" target="n1415838">
+    <data key="d6">Edge from 1668942 to 1415838</data>
+  </edge>
+  <edge source="n1668942" target="n1488616">
+    <data key="d6">Edge from 1668942 to 1488616</data>
+  </edge>
+  <edge source="n1668950" target="n1414656">
+    <data key="d6">Edge from 1668950 to 1414656</data>
+  </edge>
+  <edge source="n1668950" target="n1415147">
+    <data key="d6">Edge from 1668950 to 1415147</data>
+  </edge>
+  <edge source="n1668950" target="n1475128">
+    <data key="d6">Edge from 1668950 to 1475128</data>
+  </edge>
+  <edge source="n1668950" target="n1475317">
+    <data key="d6">Edge from 1668950 to 1475317</data>
+  </edge>
+  <edge source="n1668950" target="n1503130">
+    <data key="d6">Edge from 1668950 to 1503130</data>
+  </edge>
+  <edge source="n1629705" target="n1425656">
+    <data key="d6">Edge from 1629705 to 1425656</data>
+  </edge>
+  <edge source="n1629705" target="n1488488">
+    <data key="d6">Edge from 1629705 to 1488488</data>
+  </edge>
+  <edge source="n1629705" target="n1488514">
+    <data key="d6">Edge from 1629705 to 1488514</data>
+  </edge>
+  <edge source="n1629705" target="n1533288">
+    <data key="d6">Edge from 1629705 to 1533288</data>
+  </edge>
+  <edge source="n1629705" target="n1565773">
+    <data key="d6">Edge from 1629705 to 1565773</data>
+  </edge>
+  <edge source="n1629705" target="n1573238">
+    <data key="d6">Edge from 1629705 to 1573238</data>
+  </edge>
+  <edge source="n1629705" target="n1574398">
+    <data key="d6">Edge from 1629705 to 1574398</data>
+  </edge>
+  <edge source="n1629705" target="n1592415">
+    <data key="d6">Edge from 1629705 to 1592415</data>
+  </edge>
+  <edge source="n1668954" target="n1475815">
+    <data key="d6">Edge from 1668954 to 1475815</data>
+  </edge>
+  <edge source="n1668954" target="n1503771">
+    <data key="d6">Edge from 1668954 to 1503771</data>
+  </edge>
+  <edge source="n1668954" target="n1566519">
+    <data key="d6">Edge from 1668954 to 1566519</data>
+  </edge>
+  <edge source="n1668955" target="n1478846">
+    <data key="d6">Edge from 1668955 to 1478846</data>
+  </edge>
+  <edge source="n1668955" target="n1482544">
+    <data key="d6">Edge from 1668955 to 1482544</data>
+  </edge>
+  <edge source="n1668955" target="n1492512">
+    <data key="d6">Edge from 1668955 to 1492512</data>
+  </edge>
+  <edge source="n1668955" target="n1629705">
+    <data key="d6">Edge from 1668955 to 1629705</data>
+  </edge>
+  <edge source="n1670604" target="n1668940">
+    <data key="d6">Edge from 1670604 to 1668940</data>
+  </edge>
+  <edge source="n1670604" target="n1668941">
+    <data key="d6">Edge from 1670604 to 1668941</data>
+  </edge>
+  <edge source="n1668940" target="n1668942">
+    <data key="d6">Edge from 1668940 to 1668942</data>
+  </edge>
+  <edge source="n1668940" target="n1668943">
+    <data key="d6">Edge from 1668940 to 1668943</data>
+  </edge>
+  <edge source="n1668940" target="n1668954">
+    <data key="d6">Edge from 1668940 to 1668954</data>
+  </edge>
+  <edge source="n1668940" target="n1668955">
+    <data key="d6">Edge from 1668940 to 1668955</data>
+  </edge>
+  <edge source="n1668941" target="n1668944">
+    <data key="d6">Edge from 1668941 to 1668944</data>
+  </edge>
+  <edge source="n1668941" target="n1668950">
+    <data key="d6">Edge from 1668941 to 1668950</data>
+  </edge>
+  <edge source="n1668941" target="n1668951">
+    <data key="d6">Edge from 1668941 to 1668951</data>
+  </edge>
+</graph>
+</graphml>

@@ -117,7 +117,7 @@ We were unable to acquire appropriate real-life dataframes and decided to build 
   - The total number of floors, determining vertical distribution and riser lengths.
 - Floor Height (m)
   - The height of each floor, influencing vertical spacing and riser lengths.
-- Cluster Strength (m)
+- Cluster Strength (0-1)
   - This parameter determines how many end loads are grouped together in the final generated graph.  It does not affect the distribution equipment generation.  A value of 0 means that all end loads will be maximally clustered, while a value of 1 means that all end loads will be individually included.
 - Random Seed
   - An optional integer seed for random number generation to ensure reproducibility of the synthetic data.
@@ -332,6 +332,7 @@ The simulation engine allows users to define monthly budgets for maintenance tas
 We see these as the key parameters for getting useful simulation results.  In the real world, budgets may vary month to month, and our simulation engine and analysis tools can allow operators to explore the impact of different budget scenarios on asset management outcomes.  
 
 The budget parameters are:
+
 - Monthly Budget (Hours)
   - Set the monthly hour budget for maintenance tasks. This limits how many maintenance activities can be performed each month.
 - Monthly Budget (Dollars)
