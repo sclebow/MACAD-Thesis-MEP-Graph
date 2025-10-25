@@ -108,26 +108,18 @@ If multiple pieces of equipment are flagged for repair or replacement in the sam
 
 #### Repair and Replacement Task Template Fields
 
-- task_id
-  - The unique identifier for the repair or replacement task. When the tasks for each piece of equipment are generated from the template, this field is concatenated with the equipment ID to ensure uniqueness.
-- equipment_type
-  - The type of equipment this repair or replacement task applies to (e.g., "panel", "transformer").
-- task_name
-    - The name of the repair or replacement task (e.g., "replace breaker", "repair transformer").
-- description
-    - A brief explanation of the task's purpose and activities. This field is optional and can be left blank.
-- time_cost
-    - Estimated time required to complete the task (in hours).
-- money_cost
-    - Estimated monetary cost to perform the task (in dollars).
-- condition_level
-    - The condition threshold (0.0 to 1.0) below which the equipment is flagged for this task. For example, a value of 0.3 means the task is triggered when the equipment condition falls below 30%.
-- condition_improvement_amount
-      - The amount by which the equipment's condition improves after completing the task (e.g., 0.05 means a piece of equipment that is at 0.85 will improve to 0.90).
-- base_expected_lifespan_improvement_percentage
-      - The percentage increase in expected lifespan after completing the task (e.g., 0.10 means a piece of equipment with a baseline expected lifespan of 20 years will increase to 22 years).
-- notes
-      - Additional information or special instructions related to the task. This field is optional and can be left blank.
+| Repair/Replacement Task Template Field | Description                                         |
+|---------------------------------------|-----------------------------------------------------|
+| task_id                              | The unique identifier for the repair or replacement task. When the tasks for each piece of equipment are generated from the template, this field is concatenated with the equipment ID to ensure uniqueness. |
+| equipment_type                       | The type of equipment this repair or replacement task applies to (e.g., "panel", "transformer"). |
+| task_name                            | The name of the repair or replacement task (e.g., "replace breaker", "repair transformer"). |
+| description                          | A brief explanation of the task's purpose and activities. This field is optional and can be left blank. |
+| time_cost                            | Estimated time required to complete the task (in hours). |
+| money_cost                           | Estimated monetary cost to perform the task (in dollars). |
+| condition_level                      | The condition threshold (0.0 to 1.0) below which the equipment is flagged for this task. For example, a value of 0.3 means the task is triggered when the equipment condition falls below 30%. |
+| condition_improvement_amount         | The amount by which the equipment's condition improves after completing the task (e.g., 0.05 means a piece of equipment that is at 0.85 will improve to 0.90). |
+| base_expected_lifespan_improvement_percentage | The percentage increase in expected lifespan after completing the task (e.g., 0.10 means a piece of equipment with a baseline expected lifespan of 20 years will increase to 22 years). |
+| notes                                | Additional information or special instructions related to the task. This field is optional and can be left blank. |
 
 ### Budget Parameters
 The simulation engine allows users to define monthly budgets for maintenance tasks, including time and money constraints. These budgets influence which tasks can be executed each month, with higher-priority tasks being scheduled first. Users can also enable budget rollover, allowing unused budget from one month to carry over to the next.
@@ -158,7 +150,7 @@ Distribution equipment (main panels, sub‑panels, transformers) is placed for e
 
 Finally, helper modules assign risk scores and remaining useful life (RUL) values to each node, a summary report of the generated building is produced (total load, equipment counts, end load breakdown, per‑floor/riser details), and the graph is saved in GraphML for further analysis.
 
-## Simulation Process
+## Remaining Useful Life (RUL) Simulation Logic
 
 ### Risk Assessment
 
@@ -177,8 +169,57 @@ risk = (norm_power + norm_descendants) / 2
 The filtered_descendants_count function counts the number of downstream equipment nodes, excluding end loads, to focus on critical distribution components. The risk score is then normalized between 0 and 1, with higher values indicating greater risk.
 
 ### Remaining Useful Life (RUL) Simulation
+Once the user sets the RUL simulation parameters, the simulation engine uses these values to calculate the Remaining Useful Life (RUL) for each piece of equipment in the building graph over each month of the simulation period. The process begins with task generation, where maintenance tasks are generated from the building graph and generic/replacement task templates, with each task linked to a specific equipment node and scheduled based on installation date and recommended frequency.
 
-Once the synthetic building data is generated, users can simulate the Remaining Useful Life (RUL) of equipment based on various parameters. These parameters allow users to customize how maintenance deferrals, aging, and equipment types affect RUL calculations.
+The simulation engine then initializes RUL parameters by loading user-defined values, including equipment lifespans, failure rates, aging factors, maintenance impact factors, and risk thresholds. During the simulation period, the engine iterates over each month, updating the current date and recalculating RUL for all equipment nodes in the graph.
+
+For each equipment node, the engine calculates RUL by determining its installation date, expected lifespan, and operating history. It computes the baseline RUL as the difference between expected lifespan and operating time, then adjusts RUL for deferred maintenance tasks using the task deferment factor and overdue impact multiplier. The engine applies aging acceleration and caps aging impact using the aging acceleration factor and maximum aging multiplier, adjusts RUL based on current equipment condition while ensuring a minimum condition factor is applied, and ensures RUL does not fall below a minimum ratio of expected lifespan.
+
+The simulation assesses risk level and failure probability for each node by calculating annual failure probability using base failure rates, aging factor, and condition. It assigns a risk level (LOW, MEDIUM, HIGH, CRITICAL) based on RUL thresholds and condition, and flags equipment for replacement if the risk level meets the replacement threshold. The calculated RUL (in days and years), risk level, failure probability, and condition history are stored in each node's attributes, with optional warnings for critically low RUL or high failure risk if enabled.
+
+Maintenance task scheduling and execution occurs monthly, where the simulation engine generates a prioritized schedule of maintenance tasks for equipment nodes using generic and replacement task templates. Tasks are scheduled based on recommended frequency, equipment installation date, and current risk level, with each task including time and money cost estimates, priority, and status. Monthly budgets for time and money are enforced, with tasks exceeding the budget deferred to future months, and unused budget carrying forward if rollover is enabled.
+
+The system can generate synthetic maintenance logs for each node to simulate observed condition changes, using randomized condition values and log entries that include a date, condition rating (0.0–1.0), and description. These synthetic logs use a random seed for reproducibility and employ a beta distribution to model realistic condition changes using the formula `new_condition = round(random.betavariate(alpha=5, beta=1) * current_condition, 1)`. The beta distribution function, with alpha=5 and beta=1, skews the distribution towards higher condition values, simulating realistic maintenance outcomes as shown in the figure below.
+
+![Beta Distribution](images/beta_distribution.png)
+
+Replacement tasks are triggered for equipment with low condition or high risk and are prioritized before routine tasks. For each executed task, the equipment node's condition is improved and the maintenance history is updated, while deferred tasks increase the deferred count, impacting future RUL calculations.
+
+Finally, the simulation provides comprehensive reporting and analysis capabilities. After each month, the engine records the scheduled, executed, and deferred tasks, maintenance logs, and replacement actions. The updated graph state, including RUL, condition, and risk, is saved for each month to enable time-series analysis. System-wide summaries include total tasks scheduled, executed, deferred, and replaced, as well as budget utilization and risk distribution, while detailed component-level metrics and maintenance histories are available for further analysis and visualization.
+
+## Simulation Output
+The simulation engine outputs each month's RUL and risk assessment results in a dictionary format, with keys representing the month (e.g., "2023-01"). Each month's record contains:
+
+- Month identifier (e.g., "2023-01")
+- List of tasks scheduled for the month
+  - This list includes all tasks that were scheduled, regardless of whether they end up executed or deferred.  Tasks that were deferred from previous months will also appear in this list, since they will need to be tracked until they are completed.
+- rollover_time_budget
+  - Unused time budget carried over from previous month (if rollover is enabled)
+- rollover_money_budget
+  - Unused money budget carried over from previous month (if rollover is enabled)
+- time_budget
+  - Total time budget allocated for the month
+  - This is added to the rollover_time_budget to determine the total time available for maintenance tasks in the month.
+  - The time budget is refreshed at the start of each month based on user settings.
+- money_budget
+  - Total money budget allocated for the month
+  - This is added to the rollover_money_budget to determine the total money available for maintenance tasks in the month.
+  - The money budget is refreshed at the start of each month based on user settings.
+- graph
+  - The updated building graph with current RUL, risk levels, and condition for all equipment nodes, other metadata, and structural information, enabling detailed time-series analysis and visualization.
+  - This graph reflects all changes made during the month, including executed maintenance tasks, condition updates, and any replacements.
+  - The graph is stored in NetworkX format for compatibility with various analysis and visualization tools.
+- executed_tasks
+  - List of tasks that were successfully executed during the month, including details such as task type, associated equipment, time and money costs, and completion status.
+- deferred_tasks
+  - List of tasks that were deferred during the month, including reasons for deferral and any impacts on future scheduling.
+- maintenance_logs
+  - Records of all maintenance activities performed during the month, including inspections, repairs, and replacements.
+  - These are synthetic logs generated to simulate real-world maintenance records if synthetic log generation is enabled.
+- replacement_tasks_executed
+  - List of equipment replacement tasks completed during the month, with details on replaced components and associated costs.
+- replacement_tasks_not_executed
+  - List of planned replacement tasks that were not executed, including reasons.
 
 # Results
 
