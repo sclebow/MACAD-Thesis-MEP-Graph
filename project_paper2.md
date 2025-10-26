@@ -188,38 +188,22 @@ Replacement tasks are triggered for equipment with low condition or high risk an
 Finally, the simulation provides comprehensive reporting and analysis capabilities. After each month, the engine records the scheduled, executed, and deferred tasks, maintenance logs, and replacement actions. The updated graph state, including RUL, condition, and risk, is saved for each month to enable time-series analysis. System-wide summaries include total tasks scheduled, executed, deferred, and replaced, as well as budget utilization and risk distribution, while detailed component-level metrics and maintenance histories are available for further analysis and visualization.
 
 ## Simulation Output
-The simulation engine outputs each month's RUL and risk assessment results in a dictionary format, with keys representing the month (e.g., "2023-01"). Each month's record contains:
+The simulation engine outputs each month's RUL and risk assessment results in a dictionary format, with keys representing the month (e.g., "2023-01"). Each monthly record provides a comprehensive snapshot of the system's maintenance activities, budget utilization, and equipment status. The output includes scheduled tasks for the month, which encompasses all planned activities regardless of their execution status, including tasks deferred from previous months that require continued tracking until completion. Budget information captures both the monthly allocation and any rollover amounts from previous periods when budget rollover is enabled, providing visibility into resource availability and utilization patterns. The system maintains the complete building graph in NetworkX format, reflecting all changes made during the month including executed maintenance tasks, condition updates, and equipment replacements, enabling detailed time-series analysis and visualization capabilities.
 
-- Month identifier (e.g., "2023-01")
-- List of tasks scheduled for the month
-  - This list includes all tasks that were scheduled, regardless of whether they end up executed or deferred.  Tasks that were deferred from previous months will also appear in this list, since they will need to be tracked until they are completed.
-- rollover_time_budget
-  - Unused time budget carried over from previous month (if rollover is enabled)
-- rollover_money_budget
-  - Unused money budget carried over from previous month (if rollover is enabled)
-- time_budget
-  - Total time budget allocated for the month
-  - This is added to the rollover_time_budget to determine the total time available for maintenance tasks in the month.
-  - The time budget is refreshed at the start of each month based on user settings.
-- money_budget
-  - Total money budget allocated for the month
-  - This is added to the rollover_money_budget to determine the total money available for maintenance tasks in the month.
-  - The money budget is refreshed at the start of each month based on user settings.
-- graph
-  - The updated building graph with current RUL, risk levels, and condition for all equipment nodes, other metadata, and structural information, enabling detailed time-series analysis and visualization.
-  - This graph reflects all changes made during the month, including executed maintenance tasks, condition updates, and any replacements.
-  - The graph is stored in NetworkX format for compatibility with various analysis and visualization tools.
-- executed_tasks
-  - List of tasks that were successfully executed during the month, including details such as task type, associated equipment, time and money costs, and completion status.
-- deferred_tasks
-  - List of tasks that were deferred during the month, including reasons for deferral and any impacts on future scheduling.
-- maintenance_logs
-  - Records of all maintenance activities performed during the month, including inspections, repairs, and replacements.
-  - These are synthetic logs generated to simulate real-world maintenance records if synthetic log generation is enabled.
-- replacement_tasks_executed
-  - List of equipment replacement tasks completed during the month, with details on replaced components and associated costs.
-- replacement_tasks_not_executed
-  - List of planned replacement tasks that were not executed, including reasons.
+| Output Component | Description |
+|---|---|
+| Month identifier | Month key in format "YYYY-MM" (e.g., "2023-01") |
+| tasks_scheduled | Complete list of all tasks planned for the month, including deferred tasks from previous months |
+| rollover_time_budget | Unused time budget carried forward from the previous month (if rollover enabled) |
+| rollover_money_budget | Unused money budget carried forward from the previous month (if rollover enabled) |
+| time_budget | Monthly time budget allocation added to rollover amount for total available hours |
+| money_budget | Monthly money budget allocation added to rollover amount for total available funds |
+| graph | Updated NetworkX building graph with current RUL, risk levels, conditions, and structural information |
+| executed_tasks | Tasks successfully completed during the month with details on type, equipment, costs, and status |
+| deferred_tasks | Tasks postponed during the month including deferral reasons and scheduling impacts |
+| maintenance_logs | Synthetic maintenance activity records for inspections, repairs, and replacements (if enabled) |
+| replacement_tasks_executed | Completed equipment replacement tasks with component and cost details |
+| replacement_tasks_not_executed | Planned replacement tasks that were not completed with reasons for non-execution |
 
 # Results
 
