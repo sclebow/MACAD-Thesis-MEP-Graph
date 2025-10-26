@@ -4,6 +4,7 @@ author: Scott C. Lebow, PE and Krisztian Hajdu
 date: 15 September 2025
 bibliograph: ./references.json
 ---
+
 # Abstract
 
 # Introduction
@@ -215,13 +216,19 @@ The simulation engine outputs each month's RUL and risk assessment results in a 
 
 # Results
 
+## Simulation Outputs
+
+
+
+## Optimization
+
 Using the simulation engine, we can optimize maintenance scheduling and budget allocation strategies for building electrical systems. As a proof of concept, we built a multi-variable goal seeking optimization model using the RUL simulation engine to adjust monthly time and money budgets to minimize total deferred maintenance tasks over a one-year simulation period.  In many scenarios, we found that increasing the monthly budgets reduced deferred tasks, however in some cases lower budgets resulted in fewer deferred tasks because equipment failures triggered necessary repairs and replacements that improved overall system condition and reduced future maintenance needs.
 
 We ran multiple simulations across various generated building electrical systems, adjusting monthly time and money budgets to observe their impact on deferred maintenance tasks. However, without tuning the simulation parameters and maintenance task templates to reflect real-world practices, the results may not accurately represent actual maintenance outcomes.  Future work will involve calibrating the simulation engine with real-world data to enhance its predictive capabilities.
 
 # Discussion
 
-## Input Reflections
+## User Input
 
 In reality maintenance and replacement tasks would be determined by the specific equipment and manufacturer recommendations.  For the purposes of this simulation, we use generic maintenance, repair/replacement tasks that apply to broad equipment categories.  Users can customize both maintenance and repair/replacement task templates to better reflect their specific asset management practices.
 
@@ -261,6 +268,11 @@ The required node attributes for the RUL simulation are:
 | current_condition    | Current condition of the equipment, on a scale from 0.0 (failed) to 1.0 (new). If not provided, defaults to 1.0. |
 
 # Conclusion
+
+The synthetic data generator and the RUL simulation provide a framework for testing and validating asset management strategies in complex systems. By accurately modeling the relationships and attributes of various equipment types, AssetPulse can help organizations optimize their maintenance schedules, reduce costs, and improve overall system reliability.
+
+Future work will focus on refining the simulation parameters, incorporating real-world data for calibration, and expanding the framework to accommodate additional types of infrastructure systems.  We also plan to enhance data export capabilities to allow integration with BIM and asset management software for practical applications.
+
 # References
 
 ::: {#refs}
