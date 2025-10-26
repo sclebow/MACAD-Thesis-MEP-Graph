@@ -18,7 +18,15 @@ bibliograph: ./references.json
 
 ## Framework
 
+The AssetPulse framework consists of two main components: a synthetic data generator for creating building electrical system graphs and a remaining useful life (RUL) simulation engine for modeling maintenance and asset management strategies. The synthetic data generator produces detailed graphs representing building electrical systems, including nodes for utility transformers, panels, switchboards, transformers, and end loads, along with their attributes and connections. The RUL simulation engine uses these graphs to simulate maintenance activities, calculate RUL for each piece of equipment, and assess risk levels based on user-defined parameters and maintenance task templates.
+
+The following diagram illustrates the overall architecture and workflow of the AssetPulse simulation tool, including key components such as the user interface, graph controller, simulation engine, and data storage.
+
+![Overall Architecture](images/system_architecture.png)
+
 ## User Defined Parameters
+
+The user can specify various parameters to customize the building generation and RUL simulation processes. These parameters include building characteristics, RUL calculation factors, maintenance task templates, repair and replacement task templates, and budget constraints. The following sections detail the required parameters used in the AssetPulse framework.
 
 ### Building Electrical System Generation Parameters
 | Parameter | Description | Units / Range |
@@ -206,6 +214,10 @@ The simulation engine outputs each month's RUL and risk assessment results in a 
 | replacement_tasks_not_executed | Planned replacement tasks that were not completed with reasons for non-execution |
 
 # Results
+
+Using the simulation engine, we can optimize maintenance scheduling and budget allocation strategies for building electrical systems. As a proof of concept, we built a multi-variable goal seeking optimization model using the RUL simulation engine to adjust monthly time and money budgets to minimize total deferred maintenance tasks over a one-year simulation period.  In many scenarios, we found that increasing the monthly budgets reduced deferred tasks, however in some cases lower budgets resulted in fewer deferred tasks because equipment failures triggered necessary repairs and replacements that improved overall system condition and reduced future maintenance needs.
+
+We ran multiple simulations across various generated building electrical systems, adjusting monthly time and money budgets to observe their impact on deferred maintenance tasks. However, without tuning the simulation parameters and maintenance task templates to reflect real-world practices, the results may not accurately represent actual maintenance outcomes.  Future work will involve calibrating the simulation engine with real-world data to enhance its predictive capabilities.
 
 # Discussion
 
