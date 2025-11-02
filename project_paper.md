@@ -9,11 +9,24 @@ AssetPulse is an advanced asset management simulation tool and synthetic data ge
 
 # Introduction
 ## Problem
-Effective management of physical assets is critical for operational efficiency and cost control across industries. However, many organizations face challenges in modeling asset lifecycles, predicting maintenance needs, and allocating resources optimally due to a lack of data-driven decision-assistance tools. The financial impact of operational readiness related refurbishment works and frequency of maintenance activities is difficult to forecast or measure, while on an empirical basis they are potent cost savers on the long run. Meanwhile, the ROI of infrastructure development related CAPEX works is relatively straightforward to forecast and justify, hence they are overly favored during budget allocations.
+Physical asset portfolios - especially building services systems - must sustain performance, safety, and operational continuity over extended lifecycles. However, maintenance planning in the built environment remains largely reactive, shaped by budget cycles, historical practices, or vendor guidance rather than quantitative lifecycle intelligence. Competing financial priorities and the difficulty of quantifying returns on preventative investment often result in deferred maintenance and increased lifetime risk. 
 
-Too often, asset management decisions are made based on historical practices or intuition rather than data-driven insights, leading to suboptimal outcomes. Additionally, the complexity of asset networks and the interdependencies between different components make it challenging to assess risk and prioritize maintenance activities effectively, without comprehensive modeling and simulation capabilities.
+The interconnected nature of building services systems compounds this challenge: failures rarely occur in isolation, and the degradation of one component can accelerate wear or increase risk elsewhere in the network. Yet asset managers typically lack decision-support tools that represent these interdependencies or simulate the long-term implications of maintenance strategies under real-world budget constraints. While digital twins, sensor-based monitoring, and predictive maintenance technologies are advancing, they tendo to focus on either static asset databases, real-time telemetry from building management systems, or enterprise-level CMMS platforms oriented toward task scheduling. 
 
-AssetPulse aims to address these challenges by providing a simulation environment that allows users to model asset behaviors, evaluate different budget strategies, and make informed decisions based on simulated outcomes.
+This research addresses this gap by developing a prototype simulation environment - AssetPulse - enabling exploration of system dependencies, evolving component health, and competing budget strategies for low-voltage building electrical systems. The framework enables structured evaluation of lifecycle trade-offs, risk accumulation, and capital allocation decisions in data-limited operational contexts.
+
+# Related Work
+
+# Literature Review
+Digital asset management solutions span enterprise maintenance platforms, building management systems, and predictive maintenance tools. Enterprise systems such as IBM Maximo, SAP Intelligent Asset Management, and contemporary CMMS platforms (e.g., Fiix, Uptake) provide asset inventories, work-order execution, preventative maintenance scheduling, risk registers, and basic condition-based prioritization. These platforms are highly effective at operational coordination and compliance tracking, yet they primarily function as transactional databases and workflow engines. They neither explicitly encode component-to-component dependencies nor support forward-looking simulation of degradation and maintenance policies over multi-year horizons.
+
+Building management systems (BMS) and IoT-enabled monitoring platforms increasingly incorporate fault detection and predictive diagnostics, but they focus on real-time system performance and equipment-level anomaly detection rather than long-term strategic planning. Meanwhile, infrastructure-oriented asset platforms such as Bentley AssetWise introduce network modeling capabilities, though their emphasis is on civil and utility networks where data density and asset hierarchies differ significantly from building-scale electrical systems.
+
+Across these categories, current tools are optimized for operations, monitoring, and task execution, not lifecycle simulation, system-dependency modeling, or budget-constrained scenario analysis.
+
+Parallel academic research has explored graph-based modeling for electrical networks, including circuit-level visualization and topology analysis http://zotero.org/users/local/mkjTYlJ0/items/467T4EC7, graph neural networks for fault prediction and power-system event modeling http://zotero.org/users/local/mkjTYlJ0/items/72GLGXMP; http://zotero.org/users/local/mkjTYlJ0/items/FI5MZ9ET, and algorithmic generation of one-line diagrams using evolutionary techniques http://zotero.org/users/local/mkjTYlJ0/items/ISYSAWMH. Knowledge-graph approaches have also been applied to power-communication networks http://zotero.org/users/local/mkjTYlJ0/items/KH3PUY3X and to the built environment more broadly http://zotero.org/users/local/mkjTYlJ0/items/F94C3U62, emphasizing semantic representation and asset relationships. These works demonstrate the value of graph structures for understanding electrical systems and organizing building asset information, yet they predominantly focus on high-voltage or micro-circuit domains and prioritize ontology development, visualization, or prediction rather than lifecycle simulation or maintenance decision support.
+
+Across both industry practice and research, a gap exists in methods capable of representing building systems as interdependent networks, simulating degradation and failure propagation, and evaluating maintenance and budget strategies over time—especially in scenarios where real performance and maintenance datasets are limited. This work contributes to addressing this gap by developing a graph-based simulation approach that incorporates synthetic data generation, asset degradation modeling, and budget-constrained maintenance logic to explore lifecycle trade-offs, risk accumulation, and investment prioritization in building electrical systems.
 
 ## Objectives
 1. Develop a graph-based simulation tool that models asset management scenarios, including asset lifecycles, maintenance schedules, and budget allocations.
@@ -32,48 +45,6 @@ The interface is built using the Panel library from Holoviz, which provides a fl
 [See Appendix A for an example test dataset representing a simple building.](#appendix-a-example-test-data-simple-building)  
 [See Appendix B for an example test dataset representing a more complex building.](#appendix-b-example-test-data-complex-building)  
 [See Appendix C for screenshots of the current user interface.](#appendix-c-user-interface-screenshots)  
-
-# Related Work
-
-# Literature Review
-We conducted a literature review to identify existing tools and frameworks related to asset management, focusing on their capabilities, limitations, and relevance to our project. The review highlighted the need for a comprehensive simulation tool that integrates graph-based modeling, synthetic data generation, and interactive visualization to support asset management decision-making.
-
-Some research has explored the use of graph based modeling for electrical systems, such as [@http://zotero.org/users/local/mkjTYlJ0/items/467T4EC7] who developed graph-based visualization techniques for circuit-level electrical power systems using graph theory.  [@http://zotero.org/users/local/mkjTYlJ0/items/72GLGXMP] reviewed the application of graph neural networks (GNNs) in utility-scale power electronics, for example modeling power grid accident behaviors.  [@http://zotero.org/users/local/mkjTYlJ0/items/ISYSAWMH] proposed algorithms for generating one-line diagrams of electrical power systems using genetic algorithms.  [@http://zotero.org/users/local/mkjTYlJ0/items/FI5MZ9ET ]provides a review of graph neural networks (GNNs) and their applications in specifically utility-level power systems, including fault prediction, time-series forecasing, and power flow calculation.  [@http://zotero.org/users/local/mkjTYlJ0/items/KH3PUY3X] applied knowledge graphs to power communcation networks. However, these studies primarily focus on high-voltage power systems or very low-voltage systems and do not address the specific needs of low-voltage building electrical systems or asset management.
-
-Knowledges are particularly of interest, as they provide a structured way to represent and reason about complex systems.  [@http://zotero.org/users/local/mkjTYlJ0/items/F94C3U62] provides a review of knowledge graphs and their applications in the built environment.  Much of this work focuses on ontology development rather than simulation or asset management.  Our simulation relies on a building's knowledge graph to represent the relationships between assets and their attributes, enabling more accurate modeling of asset behaviors and interactions.
-
-## Existing Tools and Frameworks
-Several existing tools and frameworks address various aspects of asset management, including maintenance scheduling, risk assessment, and budget optimization. However, many of these tools lack the comprehensive integration of graph-based modeling, synthetic data generation, and interactive visualization that AssetPulse offers.
-
-1. IBM Maximo
-
-- Enterprise Asset Management (EAM) platform.
-- Supports asset lifecycle, preventive/reactive maintenance, risk management, and budget planning.
-- Includes some predictive analytics and scheduling, but not graph-based simulation.
-
-2. SAP Intelligent Asset Management
-
-- Asset network, predictive maintenance, and risk management.
-- Integrates with business rules and scenario planning.
-- Focuses on enterprise integration, not custom graph/network simulation.
-
-3. Uptake, Fiix, and other CMMS platforms
-
-- Computerized Maintenance Management Systems (CMMS) with asset tracking, maintenance scheduling, and analytics.
-- Some offer risk scoring and scenario analysis, but typically not network/graph-based modeling.
-
-4. Bentley AssetWise
-
-- Infrastructure asset management with network modeling.
-- Supports lifecycle, risk, and maintenance planning for large infrastructure.
-- More focused on civil/utility networks than building systems.
-
-Key differentiators of AssetPulse:
-
-- Explicit graph/network modeling of building systems.
-- Automated business rule enforcement for budget, risk, and maintenance.
-- Scenario simulation, analysis and interactive visualization.
-- Customizable for complex infrastructure, not just standard asset lists.
 
 # Research Questions
 1. How can graph-based methods support the tracking of changes and lifecycle management of building systems?
