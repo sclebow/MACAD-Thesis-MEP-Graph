@@ -139,7 +139,17 @@ class GraphMLViewer:
             value=pd.DataFrame({'Parameter': ['No node selected'], 'Value': ['']}),
             pagination=None,
             sizing_mode='stretch_both',
-            show_index=False
+            show_index=False,
+            configuration={
+                'columnDefaults': {
+                    'resizable': True,
+                    'tooltip': True,
+                },
+                'layout': 'fitColumns',
+                'textAlign': 'left',
+                'cellVertAlign': 'top',
+            },
+            widths={'Parameter': '40%', 'Value': '60%'}
         )
         self.plotly_pane = None
         
@@ -211,7 +221,7 @@ app = pn.Row(
         "## Node Parameters",
         pn.pane.Markdown("Click on a node in the graph to view its parameters here."),
         viewer.selected_node_params,
-        width=400,
+        width=550,
         sizing_mode='stretch_height'
     ),
     sizing_mode='stretch_both'
