@@ -13,47 +13,25 @@
       "Type": "string",
       "Type2": "string",
       "Value": "C:\\Users\\Scott\\Documents\\GitHub\\MACAD-Thesis-MEP-Graph\\bim_to_graph",
-      "Description": "Allows you to select a directory on the system and returns its path"
+      "Description": "Allows you to select a directory on the system and returns its path",
+      "SelectedIndex": 0
+    },
+    {
+      "Id": "98dc3df9b30648d1ac594778569ffce9",
+      "Name": "Output All Node Params",
+      "Type": "boolean",
+      "Type2": "boolean",
+      "Value": "false",
+      "Description": "Enables selection between True and False",
+      "SelectedIndex": 0
     }
   ],
   "Outputs": [],
   "Nodes": [
     {
-      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
-      "Code": "# This is a Revit Dynamo script to convert the Electrical Equipment elements in a BIM model to a graph representation.\r\n\r\nimport os\r\nimport sys\r\nimport clr\r\nimport datetime\r\n\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\n\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nfrom Autodesk.Revit.DB.Electrical import *\r\n\r\nclr.AddReference('RevitServices')\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\n\r\ndef get_equipment_id_from_name(equipment_list, name):\r\n    for eq in equipment_list:\r\n        if eq.LookupParameter(\"Panel Name\") is None:\r\n            continue\r\n        eq_name = eq.LookupParameter(\"Panel Name\").AsString()\r\n        if eq_name == name:\r\n            return eq.Id.Value\r\n    return None\r\n\r\noutput_directory = IN[0]  # Input from Dynamo: directory to save the output file\r\n\r\nprint(\"\\n\" * 10)\r\n\r\n# Get all electrical equipment in the model\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\ncollector = FilteredElementCollector(doc)\r\nelectrical_equipment = collector.OfCategory(BuiltInCategory.OST_ElectricalEquipment).WhereElementIsNotElementType().ToElements()\r\n\r\nprint(\"Number of electrical equipment elements found: {}\".format(len(electrical_equipment)))\r\n\r\n# Get Project Information \r\nproject_info = doc.ProjectInformation\r\nproject_name = project_info.Name\r\nproject_number = project_info.Number\r\nissue_date = project_info.IssueDate\r\n\r\n# Format issue date to YYYY-MM-DD\r\nif issue_date:\r\n    try:\r\n        issue_date_dt = datetime.datetime.strptime(issue_date, \"%m/%d/%Y\")\r\n        issue_date = issue_date_dt.strftime(\"%Y-%m-%d\")\r\n    except Exception:\r\n        # If parsing fails, keep the original string\r\n        pass\r\n\r\nprint(f\"Project Name: {project_name}, Project Number: {project_number}, Issue Date: {issue_date}\")\r\n\r\n# Create a directed graph\r\nnodes = {}\r\nedges = {}\r\n\r\nALLOWABLE_NODE_TYPES = [\"Panelboard\", \"Switchboard\"]\r\nOUTPUT_ALL_NODE_PARAMS = False  # Set to True to output all parameters of nodes\r\n\r\n# Add nodes for each electrical equipment element\r\nfor eq in electrical_equipment:\r\n    symbol = doc.GetElement(eq.GetTypeId())\r\n    part_type = symbol.LookupParameter(\"Part Type\").AsValueString()\r\n    print(f\"Processing equipment ID {eq.Id.Value} of type {part_type}\")\r\n\r\n    if part_type not in ALLOWABLE_NODE_TYPES:\r\n        print(f\"Skipping equipment ID {eq.Id.Value} of type {part_type}\")\r\n        continue\r\n\r\n    # Check for required parameters\r\n    if eq.LookupParameter(\"Panel Name\") is None or eq.LookupParameter(\"Supply From\") is None:\r\n        print(f\"Skipping equipment ID {eq.Id.Value} due to missing required parameters\")\r\n        continue\r\n\r\n    # Check if \"Panel Name\" is empty or \"Supply From\" is empty\r\n    panel_name = eq.LookupParameter(\"Panel Name\").AsString()\r\n\r\n    if not panel_name:\r\n        print(f\"Skipping equipment ID {eq.Id.Value} due to empty required parameters\")\r\n        continue\r\n\r\n    node_dict = {}\r\n\r\n    if part_type == \"Panelboard\":\r\n        node_type = \"Panelboard\"\r\n        name = eq.LookupParameter(\"Panel Name\").AsString()\r\n        supply_from_name = eq.LookupParameter(\"Supply From\").AsString()\r\n        supply_from_id = get_equipment_id_from_name(electrical_equipment, supply_from_name)\r\n        node_dict = {\r\n            \"type\": node_type,\r\n            \"name\": name,\r\n            \"supply_from_name\": supply_from_name,\r\n            \"supply_from_id\": supply_from_id\r\n        }\r\n\r\n    elif part_type == \"Switchboard\":\r\n        node_type = \"Switchboard\"\r\n        name = eq.LookupParameter(\"Panel Name\").AsString()\r\n        supply_from_name = eq.LookupParameter(\"Supply From\").AsString()\r\n        supply_from_id = get_equipment_id_from_name(electrical_equipment, supply_from_name)\r\n        node_dict = {\r\n            \"type\": node_type,\r\n            \"name\": name,\r\n            \"supply_from_name\": supply_from_name,\r\n            \"supply_from_id\": supply_from_id\r\n        }\r\n\r\n    installation_date = issue_date  # Using project issue date as installation date\r\n    node_dict[\"installation_date\"] = installation_date\r\n\r\n    if OUTPUT_ALL_NODE_PARAMS:\r\n        for param in eq.Parameters:\r\n            try:\r\n                param_name = param.Definition.Name\r\n                if param.StorageType == StorageType.String:\r\n                    param_value = param.AsString()\r\n                elif param.StorageType == StorageType.Double:\r\n                    param_value = param.AsDouble()\r\n                elif param.StorageType == StorageType.Integer:\r\n                    param_value = param.AsInteger()\r\n                elif param.StorageType == StorageType.ElementId:\r\n                    param_value = str(param.AsElementId().IntegerValue)\r\n                else:\r\n                    param_value = None\r\n                node_dict[param_name] = param_value\r\n            except Exception as e:\r\n                print(f\"Error retrieving parameter {param.Definition.Name} for equipment ID {eq.Id.Value}: {e}\")\r\n\r\n    nodes[eq.Id.Value] = node_dict\r\n    print(f\"Added node: {node_dict}\")\r\n\r\nprint(f\"Nodes created: {len(nodes)}\")\r\n\r\n# Add edges based on supply relationships\r\nfor node_id, node_data in nodes.items():\r\n    supply_from_id = node_data[\"supply_from_id\"]\r\n    if supply_from_id and supply_from_id in nodes:\r\n        edges.setdefault(supply_from_id, []).append(node_id)\r\n        node_name = node_data[\"name\"]\r\n        supply_from_name = nodes[supply_from_id][\"name\"]\r\n        print(f\"Creating edge from {supply_from_name} (ID: {supply_from_id}) to {node_name} (ID: {node_id})\")\r\n\r\nprint(f\"Edges created: {sum(len(v) for v in edges.values())}\")\r\n\r\n# Output the graph in GraphML format\r\ngraphml_header = \"\"\"<?xml version='1.0' encoding='utf-8'?>\r\n<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\r\n\"\"\"\r\ngraphml_footer = \"</graphml>\"\r\n\r\nnode_key_defs = []\r\nedge_key_defs = []\r\n\r\n# Define keys for node attributes\r\nnode_attributes = set()\r\nfor node_id, node_data in nodes.items():\r\n    for attr in node_data.keys():\r\n        node_attributes.add(attr)\r\n\r\n# Define keys for edge attributes\r\nedge_attributes = set()\r\nfor source, targets in edges.items():\r\n    for target in targets:\r\n        edge_attributes.add(\"source\")\r\n        edge_attributes.add(\"target\")\r\n\r\nfor attr in node_attributes:\r\n    node_key_defs.append(f'<key id=\"d{len(node_key_defs)+1}\" for=\"node\" attr.name=\"{attr}\" attr.type=\"string\"/>')\r\n\r\nfor attr in edge_attributes:\r\n    edge_key_defs.append(f'<key id=\"d{len(edge_key_defs)+1 + len(node_key_defs)}\" for=\"edge\" attr.name=\"{attr}\" attr.type=\"string\"/>')\r\n\r\ngraphml_content = graphml_header + \"\\n\".join(node_key_defs) + \"\\n\".join(edge_key_defs) + '<graph id=\"G\" edgedefault=\"directed\">\\n'\r\n\r\n# Add nodes to graphml\r\nfor node_id, node_data in nodes.items():\r\n    graphml_content += f'  <node id=\"n{node_id}\">\\n'\r\n    for attr, value in node_data.items():\r\n        graphml_content += f'    <data key=\"d{list(node_attributes).index(attr)+1}\">{value}</data>\\n'\r\n    graphml_content += '  </node>\\n'\r\n\r\n# Add edges to graphml\r\nfor source, targets in edges.items():\r\n    for target in targets:\r\n        graphml_content += f'  <edge source=\"n{source}\" target=\"n{target}\">\\n'\r\n        graphml_content += f'    <data key=\"d{len(node_attributes)+1}\">Edge from {source} to {target}</data>\\n'\r\n        graphml_content += '  </edge>\\n'\r\ngraphml_content += '</graph>\\n' + graphml_footer\r\nprint(\"GraphML content generated.\")\r\n\r\n# Save to file (optional)\r\nSAVE_TO_FILE = True\r\n\r\nif SAVE_TO_FILE:\r\n    output_path = os.path.join(output_directory, \"output_graph.graphml\")\r\n    with open(output_path, \"w\", encoding=\"utf-8\") as f:\r\n        f.write(graphml_content)\r\n    print(f\"GraphML file saved to {output_path}\")\r\n\r\nOUT = graphml_content",
-      "Engine": "CPython3",
-      "VariableInputPorts": true,
-      "Id": "5fa3bd6e486049d9a7ede1c424ac1c7d",
-      "NodeType": "PythonScriptNode",
-      "Inputs": [
-        {
-          "Id": "b3b5f496d14f4ea1a1183ba7ed0669fa",
-          "Name": "IN[0]",
-          "Description": "Input #0",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        }
-      ],
-      "Outputs": [
-        {
-          "Id": "2541d17dd4e144ff85b72ed46e83638c",
-          "Name": "OUT",
-          "Description": "Result of the python script",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        }
-      ],
-      "Replication": "Disabled",
-      "Description": "Runs an embedded Python script."
-    },
-    {
       "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
-      "WatchWidth": 420.0,
-      "WatchHeight": 200.0,
+      "WatchWidth": 50.0,
+      "WatchHeight": 38.0,
       "Id": "fa275b73527443ceaee5b2c9960f7cda",
       "NodeType": "ExtensionNode",
       "Inputs": [
@@ -101,25 +79,202 @@
       "Description": "Allows you to select a directory on the system and returns its path",
       "HintPath": "C:\\Users\\Scott\\Documents\\GitHub\\MACAD-Thesis-MEP-Graph\\bim_to_graph",
       "InputValue": "C:\\Users\\Scott\\Documents\\GitHub\\MACAD-Thesis-MEP-Graph\\bim_to_graph"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonStringNode, PythonNodeModels",
+      "Engine": "CPython3",
+      "EngineName": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "a5aa1b32f0a04bbf8cd551e1f7191393",
+      "NodeType": "ExtensionNode",
+      "Inputs": [
+        {
+          "Id": "db14ebc21f7a43baaced6c1ebf44cc30",
+          "Name": "script",
+          "Description": "Python script to run.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "ae2a1ec39c4349b0ad30a5d2bacbfc63",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "d3299b988b0448669e84d6112b518b90",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "8d25ad7da8514534892f2e8e570fd92b",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs a Python script from a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.Filename, CoreNodeModels",
+      "Id": "2c35cba378e54047b790fe5f3ba99182",
+      "NodeType": "ExtensionNode",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "d29fde15475945bcafa692f154df7776",
+          "Name": "",
+          "Description": "File Path",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows you to select a file on the system and returns its file path",
+      "HintPath": "C:\\Users\\Scott\\Documents\\GitHub\\MACAD-Thesis-MEP-Graph\\bim_to_graph\\bim_to_graph.py",
+      "InputValue": ".\\bim_to_graph.py"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "Id": "78accfc6d70d48e693f390521420e5a7",
+      "NodeType": "FunctionNode",
+      "Inputs": [
+        {
+          "Id": "e2e5a5679c6b4d31b057dcd6b0026eba",
+          "Name": "file",
+          "Description": "File object to read text from\n\nvar",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "61f20db9cceb4b26bb07278c1bef2f1d",
+          "Name": "string",
+          "Description": "Contents of the text file.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "FunctionSignature": "DSCore.IO.FileSystem.ReadText@var",
+      "Replication": "Auto",
+      "Description": "Reads a text file and returns the contents as a string.\n\nFileSystem.ReadText (file: var): string"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "Code": "# This is a Revit Dynamo script to convert the Electrical Equipment elements in a BIM model to a graph representation.\r\n\r\nimport os\r\nimport sys\r\nimport clr\r\nimport datetime\r\n\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\n\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nfrom Autodesk.Revit.DB.Electrical import *\r\n\r\nclr.AddReference('RevitServices')\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\n\r\ndef get_equipment_id_from_name(equipment_list, name):\r\n    for eq in equipment_list:\r\n        if eq.LookupParameter(\"Panel Name\") is None:\r\n            continue\r\n        eq_name = eq.LookupParameter(\"Panel Name\").AsString()\r\n        if eq_name == name:\r\n            return eq.Id.Value\r\n    return None\r\n\r\noutput_directory = IN[0]  # Input from Dynamo: directory to save the output file\r\n\r\nprint(\"\\n\" * 10)\r\n\r\ncurrent_revit_year = int(DocumentManager.Instance.CurrentDBDocument.Application.VersionNumber)\r\nprint(f\"Current Revit Year: {current_revit_year}\")\r\n\r\n# Get all electrical equipment in the model\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\ncollector = FilteredElementCollector(doc)\r\nelectrical_equipment = collector.OfCategory(BuiltInCategory.OST_ElectricalEquipment).WhereElementIsNotElementType().ToElements()\r\n\r\nprint(\"Number of electrical equipment elements found: {}\".format(len(electrical_equipment)))\r\n\r\n# Get Project Information \r\nproject_info = doc.ProjectInformation\r\nproject_name = project_info.Name\r\nproject_number = project_info.Number\r\nissue_date = project_info.IssueDate\r\n\r\n# Format issue date to YYYY-MM-DD\r\nif issue_date:\r\n    try:\r\n        issue_date_dt = datetime.datetime.strptime(issue_date, \"%m/%d/%Y\")\r\n        issue_date = issue_date_dt.strftime(\"%Y-%m-%d\")\r\n    except Exception:\r\n        # If parsing fails, keep the original string\r\n        pass\r\n\r\nprint(f\"Project Name: {project_name}, Project Number: {project_number}, Issue Date: {issue_date}\")\r\n\r\n# Create a directed graph\r\nnodes = {}\r\nedges = {}\r\n\r\nALLOWABLE_NODE_TYPES = [\"Panelboard\", \"Switchboard\"]\r\nOUTPUT_ALL_NODE_PARAMS = False  # Set to True to output all parameters of nodes\r\n\r\n# Add nodes for each electrical equipment element\r\nfor eq in electrical_equipment:\r\n    symbol = doc.GetElement(eq.GetTypeId())\r\n\r\n    if current_revit_year >= 2025:\r\n        part_type = symbol.LookupParameter(\"Part Type\").AsValueString()\r\n    else:\r\n        part_type = symbol.Family.LookupParameter(\"Part Type\").AsValueString()\r\n\r\n    print(f\"Processing equipment ID {eq.Id.Value} of type {part_type}\")\r\n\r\n    if part_type not in ALLOWABLE_NODE_TYPES:\r\n        print(f\"Skipping equipment ID {eq.Id.Value} of type {part_type}\")\r\n        continue\r\n\r\n    # Check for required parameters\r\n    if eq.LookupParameter(\"Panel Name\") is None or eq.LookupParameter(\"Supply From\") is None:\r\n        print(f\"Skipping equipment ID {eq.Id.Value} due to missing required parameters\")\r\n        continue\r\n\r\n    # Check if \"Panel Name\" is empty or \"Supply From\" is empty\r\n    panel_name = eq.LookupParameter(\"Panel Name\").AsString()\r\n\r\n    if not panel_name:\r\n        print(f\"Skipping equipment ID {eq.Id.Value} due to empty required parameters\")\r\n        continue\r\n\r\n    node_dict = {}\r\n\r\n    if part_type == \"Panelboard\":\r\n        node_type = \"Panelboard\"\r\n        name = eq.LookupParameter(\"Panel Name\").AsString()\r\n        supply_from_name = eq.LookupParameter(\"Supply From\").AsString()\r\n        supply_from_id = get_equipment_id_from_name(electrical_equipment, supply_from_name)\r\n        node_dict = {\r\n            \"type\": node_type,\r\n            \"name\": name,\r\n            \"supply_from_name\": supply_from_name,\r\n            \"supply_from_id\": supply_from_id\r\n        }\r\n\r\n    elif part_type == \"Switchboard\":\r\n        node_type = \"Switchboard\"\r\n        name = eq.LookupParameter(\"Panel Name\").AsString()\r\n        supply_from_name = eq.LookupParameter(\"Supply From\").AsString()\r\n        supply_from_id = get_equipment_id_from_name(electrical_equipment, supply_from_name)\r\n        node_dict = {\r\n            \"type\": node_type,\r\n            \"name\": name,\r\n            \"supply_from_name\": supply_from_name,\r\n            \"supply_from_id\": supply_from_id\r\n        }\r\n\r\n    installation_date = issue_date  # Using project issue date as installation date\r\n    node_dict[\"installation_date\"] = installation_date\r\n\r\n    if OUTPUT_ALL_NODE_PARAMS:\r\n        for param in eq.Parameters:\r\n            try:\r\n                param_name = param.Definition.Name\r\n                if param.StorageType == StorageType.String:\r\n                    param_value = param.AsString()\r\n                elif param.StorageType == StorageType.Double:\r\n                    param_value = param.AsDouble()\r\n                elif param.StorageType == StorageType.Integer:\r\n                    param_value = param.AsInteger()\r\n                elif param.StorageType == StorageType.ElementId:\r\n                    param_value = str(param.AsElementId().IntegerValue)\r\n                else:\r\n                    param_value = None\r\n                node_dict[param_name] = param_value\r\n            except Exception as e:\r\n                print(f\"Error retrieving parameter {param.Definition.Name} for equipment ID {eq.Id.Value}: {e}\")\r\n\r\n    nodes[eq.Id.Value] = node_dict\r\n    print(f\"Added node: {node_dict}\")\r\n\r\nprint(f\"Nodes created: {len(nodes)}\")\r\n\r\n# Add edges based on supply relationships\r\nfor node_id, node_data in nodes.items():\r\n    supply_from_id = node_data[\"supply_from_id\"]\r\n    if supply_from_id and supply_from_id in nodes:\r\n        edges.setdefault(supply_from_id, []).append(node_id)\r\n        node_name = node_data[\"name\"]\r\n        supply_from_name = nodes[supply_from_id][\"name\"]\r\n        print(f\"Creating edge from {supply_from_name} (ID: {supply_from_id}) to {node_name} (ID: {node_id})\")\r\n\r\nprint(f\"Edges created: {sum(len(v) for v in edges.values())}\")\r\n\r\n# Output the graph in GraphML format\r\ngraphml_header = \"\"\"<?xml version='1.0' encoding='utf-8'?>\r\n<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\r\n\"\"\"\r\ngraphml_footer = \"</graphml>\"\r\n\r\nnode_key_defs = []\r\nedge_key_defs = []\r\n\r\n# Define keys for node attributes\r\nnode_attributes = set()\r\nfor node_id, node_data in nodes.items():\r\n    for attr in node_data.keys():\r\n        node_attributes.add(attr)\r\n\r\n# Define keys for edge attributes\r\nedge_attributes = set()\r\nfor source, targets in edges.items():\r\n    for target in targets:\r\n        edge_attributes.add(\"source\")\r\n        edge_attributes.add(\"target\")\r\n\r\nfor attr in node_attributes:\r\n    node_key_defs.append(f'<key id=\"d{len(node_key_defs)+1}\" for=\"node\" attr.name=\"{attr}\" attr.type=\"string\"/>')\r\n\r\nfor attr in edge_attributes:\r\n    edge_key_defs.append(f'<key id=\"d{len(edge_key_defs)+1 + len(node_key_defs)}\" for=\"edge\" attr.name=\"{attr}\" attr.type=\"string\"/>')\r\n\r\ngraphml_content = graphml_header + \"\\n\".join(node_key_defs) + \"\\n\".join(edge_key_defs) + '<graph id=\"G\" edgedefault=\"directed\">\\n'\r\n\r\n# Add nodes to graphml\r\nfor node_id, node_data in nodes.items():\r\n    graphml_content += f'  <node id=\"n{node_id}\">\\n'\r\n    for attr, value in node_data.items():\r\n        graphml_content += f'    <data key=\"d{list(node_attributes).index(attr)+1}\">{value}</data>\\n'\r\n    graphml_content += '  </node>\\n'\r\n\r\n# Add edges to graphml\r\nfor source, targets in edges.items():\r\n    for target in targets:\r\n        graphml_content += f'  <edge source=\"n{source}\" target=\"n{target}\">\\n'\r\n        graphml_content += f'    <data key=\"d{len(node_attributes)+1}\">Edge from {source} to {target}</data>\\n'\r\n        graphml_content += '  </edge>\\n'\r\ngraphml_content += '</graph>\\n' + graphml_footer\r\nprint(\"GraphML content generated.\")\r\n\r\n# Save to file (optional)\r\nSAVE_TO_FILE = True\r\n\r\nif SAVE_TO_FILE:\r\n    output_path = os.path.join(output_directory, \"output_graph.graphml\")\r\n    with open(output_path, \"w\", encoding=\"utf-8\") as f:\r\n        f.write(graphml_content)\r\n    print(f\"GraphML file saved to {output_path}\")\r\n\r\nOUT = graphml_content",
+      "Engine": "CPython3",
+      "EngineName": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "f8d757759d724bc89572c8413ca09772",
+      "NodeType": "PythonScriptNode",
+      "Inputs": [
+        {
+          "Id": "2b61bd209c87458aab035d9c542dcda4",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "13c8d21adad448c196d296d220cce342",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "Id": "98dc3df9b30648d1ac594778569ffce9",
+      "NodeType": "BooleanInputNode",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "08847b3af11846668a75234b2b668608",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Enables selection between True and False",
+      "InputValue": false
     }
   ],
   "Connectors": [
     {
-      "Start": "2541d17dd4e144ff85b72ed46e83638c",
-      "End": "679f54a45b9c44759df32a6b53acae04",
-      "Id": "c798fd64ab9d49d59e05b00c36161e19",
+      "Start": "c60917aaac2b4436a94f5dfa22434019",
+      "End": "ae2a1ec39c4349b0ad30a5d2bacbfc63",
+      "Id": "4cabed0ad962408a8a9f5edebeede014",
       "IsHidden": "False"
     },
     {
       "Start": "c60917aaac2b4436a94f5dfa22434019",
-      "End": "b3b5f496d14f4ea1a1183ba7ed0669fa",
-      "Id": "b38e2905e51c48f693543e3ee5f0b749",
+      "End": "2b61bd209c87458aab035d9c542dcda4",
+      "Id": "c3ad50586c2c442f92e8c06c17a68beb",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "8d25ad7da8514534892f2e8e570fd92b",
+      "End": "679f54a45b9c44759df32a6b53acae04",
+      "Id": "f1372c102fdb4eb491d2af03e25c1410",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "d29fde15475945bcafa692f154df7776",
+      "End": "e2e5a5679c6b4d31b057dcd6b0026eba",
+      "Id": "0ef5576662024f5bbc376f3c1e6e27a0",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "61f20db9cceb4b26bb07278c1bef2f1d",
+      "End": "db14ebc21f7a43baaced6c1ebf44cc30",
+      "Id": "34bdda099ba540f8a9730bac039a6594",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "08847b3af11846668a75234b2b668608",
+      "End": "d3299b988b0448669e84d6112b518b90",
+      "Id": "ac534105a9af42dca2f1dafcd9ed6a9e",
       "IsHidden": "False"
     }
   ],
   "Dependencies": [],
   "NodeLibraryDependencies": [],
-  "EnableLegacyPolyCurveBehavior": true,
   "Thumbnail": "",
   "GraphDocumentationURL": null,
   "ExtensionWorkspaceData": [
@@ -149,7 +304,7 @@
       "ScaleFactor": 1.0,
       "HasRunWithoutCrash": true,
       "IsVisibleInDynamoLibrary": true,
-      "Version": "3.6.0.9395",
+      "Version": "2.19.3.6394",
       "RunType": "Manual",
       "RunPeriod": "1000"
     },
@@ -168,24 +323,14 @@
     "ConnectorPins": [],
     "NodeViews": [
       {
-        "Id": "5fa3bd6e486049d9a7ede1c424ac1c7d",
-        "Name": "Python Script",
-        "IsSetAsInput": false,
-        "IsSetAsOutput": false,
-        "Excluded": false,
-        "ShowGeometry": true,
-        "X": 75.0,
-        "Y": 681.0115837470456
-      },
-      {
         "Id": "fa275b73527443ceaee5b2c9960f7cda",
         "Name": "Watch",
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
         "ShowGeometry": true,
-        "X": 443.4227792455116,
-        "Y": 823.8242966894508
+        "X": 443.42277924551161,
+        "Y": 823.82429668945076
       },
       {
         "Id": "13c26d2661194880a17bc8d4ef72c3be",
@@ -194,13 +339,63 @@
         "IsSetAsOutput": false,
         "Excluded": false,
         "ShowGeometry": true,
-        "X": -607.8836150621814,
-        "Y": 685.7847920165525
+        "X": -903.25556647209157,
+        "Y": 1027.5449967648688
+      },
+      {
+        "Id": "a5aa1b32f0a04bbf8cd551e1f7191393",
+        "Name": "Python Script From String",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 15.0544675636193,
+        "Y": 919.835580955438
+      },
+      {
+        "Id": "2c35cba378e54047b790fe5f3ba99182",
+        "Name": "File Path",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": -710.61034744781091,
+        "Y": 784.89790874256926
+      },
+      {
+        "Id": "78accfc6d70d48e693f390521420e5a7",
+        "Name": "FileSystem.ReadText",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": -412.747930266811,
+        "Y": 798.8914451202
+      },
+      {
+        "Id": "f8d757759d724bc89572c8413ca09772",
+        "Name": "Python Script",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": true,
+        "ShowGeometry": true,
+        "X": 75.026766324894652,
+        "Y": 1181.7146188796737
+      },
+      {
+        "Id": "98dc3df9b30648d1ac594778569ffce9",
+        "Name": "Output All Node Params",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": -724.05109811677858,
+        "Y": 1240.0827405655878
       }
     ],
     "Annotations": [],
-    "X": 733.0851705715854,
-    "Y": -164.1506281442439,
-    "Zoom": 0.6874295643133401
+    "X": 699.14178475623441,
+    "Y": -425.20101470440022,
+    "Zoom": 0.65898910449449877
   }
 }
