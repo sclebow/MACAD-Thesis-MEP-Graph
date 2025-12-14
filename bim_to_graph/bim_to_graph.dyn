@@ -15,6 +15,15 @@
       "Value": "C:\\Users\\Scott\\Documents\\GitHub\\MACAD-Thesis-MEP-Graph\\bim_to_graph",
       "Description": "Allows you to select a directory on the system and returns its path",
       "SelectedIndex": 0
+    },
+    {
+      "Id": "98dc3df9b30648d1ac594778569ffce9",
+      "Name": "Output All Node Params",
+      "Type": "boolean",
+      "Type2": "boolean",
+      "Value": "false",
+      "Description": "Enables selection between True and False",
+      "SelectedIndex": 0
     }
   ],
   "Outputs": [],
@@ -92,6 +101,15 @@
           "Id": "ae2a1ec39c4349b0ad30a5d2bacbfc63",
           "Name": "IN[0]",
           "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "d3299b988b0448669e84d6112b518b90",
+          "Name": "IN[1]",
+          "Description": "Input #1",
           "UsingDefaultValue": false,
           "Level": 2,
           "UseLevels": false,
@@ -195,6 +213,26 @@
       ],
       "Replication": "Disabled",
       "Description": "Runs an embedded Python script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "Id": "98dc3df9b30648d1ac594778569ffce9",
+      "NodeType": "BooleanInputNode",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "08847b3af11846668a75234b2b668608",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Enables selection between True and False",
+      "InputValue": false
     }
   ],
   "Connectors": [
@@ -227,18 +265,16 @@
       "End": "db14ebc21f7a43baaced6c1ebf44cc30",
       "Id": "34bdda099ba540f8a9730bac039a6594",
       "IsHidden": "False"
+    },
+    {
+      "Start": "08847b3af11846668a75234b2b668608",
+      "End": "d3299b988b0448669e84d6112b518b90",
+      "Id": "ac534105a9af42dca2f1dafcd9ed6a9e",
+      "IsHidden": "False"
     }
   ],
   "Dependencies": [],
-  "NodeLibraryDependencies": [
-    {
-      "Name": "bim_to_graph.py",
-      "ReferenceType": "External",
-      "Nodes": [
-        "2c35cba378e54047b790fe5f3ba99182"
-      ]
-    }
-  ],
+  "NodeLibraryDependencies": [],
   "Thumbnail": "",
   "GraphDocumentationURL": null,
   "ExtensionWorkspaceData": [
@@ -303,8 +339,8 @@
         "IsSetAsOutput": false,
         "Excluded": false,
         "ShowGeometry": true,
-        "X": -693.84390995334263,
-        "Y": 992.64305401174408
+        "X": -903.25556647209157,
+        "Y": 1027.5449967648688
       },
       {
         "Id": "a5aa1b32f0a04bbf8cd551e1f7191393",
@@ -345,11 +381,21 @@
         "ShowGeometry": true,
         "X": 75.026766324894652,
         "Y": 1181.7146188796737
+      },
+      {
+        "Id": "98dc3df9b30648d1ac594778569ffce9",
+        "Name": "Output All Node Params",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": -724.05109811677858,
+        "Y": 1240.0827405655878
       }
     ],
     "Annotations": [],
-    "X": 781.14178475623441,
-    "Y": -496.20101470440022,
+    "X": 699.14178475623441,
+    "Y": -425.20101470440022,
     "Zoom": 0.65898910449449877
   }
 }

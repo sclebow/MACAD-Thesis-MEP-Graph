@@ -61,7 +61,7 @@ nodes = {}
 edges = {}
 
 ALLOWABLE_NODE_TYPES = ["Panelboard", "Switchboard"]
-OUTPUT_ALL_NODE_PARAMS = False  # Set to True to output all parameters of nodes
+OUTPUT_ALL_NODE_PARAMS = IN[1]  # Set to True to output all parameters of nodes
 
 # Add nodes for each electrical equipment element
 for eq in electrical_equipment:
