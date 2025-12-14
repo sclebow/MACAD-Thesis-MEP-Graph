@@ -10,8 +10,76 @@ import pandas as pd
 
 pn.extension('plotly', 'tabulator')
 
+def create_hierarchical_layout(G):
+    """Create a hierarchical tree-like layout for the graph using a Sugiyama-style algorithm"""
+    
+    # Assign nodes to levels based on longest path from root
+    levels = {}
+    
+    # Find root nodes (nodes with no incoming edges)
+    in_degrees = dict(G.in_degree())
+    roots = [node for node, degree in in_degrees.items() if degree == 0]
+    
+    if not roots:
+        roots = [min(G.nodes(), key=lambda x: G.degree(x))]
+    
+    # BFS to assign levels
+    from collections import deque
+    queue = deque([(root, 0) for root in roots])
+    visited = set()
+    
+    while queue:
+        node, level = queue.popleft()
+        
+        if node in visited:
+            continue
+        
+        visited.add(node)
+        levels[node] = max(levels.get(node, -1), level)
+        
+        for neighbor in G.neighbors(node):
+            if neighbor not in visited:
+                queue.append((neighbor, level + 1))
+    
+    # Group nodes by level
+    level_groups = {}
+    for node, level in levels.items():
+        if level not in level_groups:
+            level_groups[level] = []
+        level_groups[level].append(node)
+    
+    # Assign x positions within each level
+    pos = {}
+    max_level = max(level_groups.keys()) if level_groups else 0
+    
+    for level in range(max_level + 1):
+        nodes_at_level = level_groups.get(level, [])
+        num_nodes = len(nodes_at_level)
+        
+        if num_nodes == 1:
+            x_positions = [0]
+        else:
+            # Spread nodes across x-axis with proper spacing
+            spacing = 3.0
+            x_positions = [i * spacing - (num_nodes - 1) * spacing / 2 for i in range(num_nodes)]
+        
+        for node, x in zip(nodes_at_level, x_positions):
+            pos[node] = (x, -level)
+    
+    return pos
+
 def plot_graph(G, name_id_toggle, selected_node_params):
-    pos = nx.spring_layout(G)
+    # Try to create a tree layout, fallback to spring if it fails
+    try:
+        # Convert to tree if possible, or use hierarchical layout
+        if nx.is_tree(G):
+            pos = nx.nx_agraph.graphviz_layout(G, prog='dot')
+        else:
+            # For non-tree graphs, try to create a hierarchical layout
+            pos = create_hierarchical_layout(G)
+    except:
+        # Fallback to spring layout if tree layout fails
+        pos = nx.spring_layout(G)
     edge_x = []
     edge_y = []
     for edge in G.edges():
@@ -57,9 +125,10 @@ def plot_graph(G, name_id_toggle, selected_node_params):
     fig = go.Figure(data=[edge_trace, node_trace],
                     layout=go.Layout(
                         showlegend=False,
-                        margin=dict(b=20,l=5,r=5,t=40),
+                        margin=dict(b=50, l=50, r=50, t=50),
                         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)))
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        hovermode='closest'))
     
     return fig
 
