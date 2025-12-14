@@ -29,6 +29,9 @@ output_directory = IN[0]  # Input from Dynamo: directory to save the output file
 
 print("\n" * 10)
 
+current_revit_year = int(DocumentManager.Instance.CurrentDBDocument.Application.VersionNumber)
+print(f"Current Revit Year: {current_revit_year}")
+
 # Get all electrical equipment in the model
 doc = DocumentManager.Instance.CurrentDBDocument
 collector = FilteredElementCollector(doc)
@@ -63,7 +66,12 @@ OUTPUT_ALL_NODE_PARAMS = False  # Set to True to output all parameters of nodes
 # Add nodes for each electrical equipment element
 for eq in electrical_equipment:
     symbol = doc.GetElement(eq.GetTypeId())
-    part_type = symbol.LookupParameter("Part Type").AsValueString()
+
+    try:
+        part_type = symbol.LookupParameter("Part Type").AsValueString()
+    except:
+        part_type = symbol.Family.LookupParameter("Part Type").AsValueString()
+
     print(f"Processing equipment ID {eq.Id.Value} of type {part_type}")
 
     if part_type not in ALLOWABLE_NODE_TYPES:
