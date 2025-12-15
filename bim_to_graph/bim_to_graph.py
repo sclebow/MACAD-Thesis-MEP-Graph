@@ -76,7 +76,7 @@ ALLOWABLE_NODE_TYPES = ["Panelboard", "Switchboard"]
 OUTPUT_ALL_NODE_PARAMS = IN[1]  # Set to True to output all parameters of nodes
 OUTPUT_ELECTRICAL_CIRCUITS = IN[2]  # Set to True to include electrical fixtures in the graph
 
-# Add nodes for each electrical equipment element
+# Add nodes for each electrical equipment element (without supply_from_id yet)
 for eq in electrical_equipment:
     symbol = doc.GetElement(eq.GetTypeId())
 
@@ -92,15 +92,15 @@ for eq in electrical_equipment:
         continue
 
     # Check for required parameters
-    if eq.LookupParameter("Panel Name") is None or eq.LookupParameter("Supply From") is None:
-        print(f"Skipping equipment ID {eq.Id.Value} due to missing required parameters")
+    if eq.LookupParameter("Panel Name") is None:
+        print(f"Skipping equipment ID {eq.Id.Value} due to missing Panel Name parameter")
         continue
 
-    # Check if "Panel Name" is empty or "Supply From" is empty
+    # Check if "Panel Name" is empty
     panel_name = eq.LookupParameter("Panel Name").AsString()
 
     if not panel_name:
-        print(f"Skipping equipment ID {eq.Id.Value} due to empty required parameters")
+        print(f"Skipping equipment ID {eq.Id.Value} due to empty Panel Name")
         continue
 
     node_dict = {}
@@ -108,25 +108,21 @@ for eq in electrical_equipment:
     if part_type == "Panelboard":
         node_type = "Panelboard"
         name = eq.LookupParameter("Panel Name").AsString()
-        supply_from_name = eq.LookupParameter("Supply From").AsString()
-        supply_from_id = get_equipment_id_from_name(electrical_equipment, supply_from_name)
         node_dict = {
             "type": node_type,
             "name": name,
-            "supply_from_name": supply_from_name,
-            "supply_from_id": supply_from_id
+            "supply_from_id": None,  # Will be set when we process circuits
+            "supply_from_name": None
         }
 
     elif part_type == "Switchboard":
         node_type = "Switchboard"
         name = eq.LookupParameter("Panel Name").AsString()
-        supply_from_name = eq.LookupParameter("Supply From").AsString()
-        supply_from_id = get_equipment_id_from_name(electrical_equipment, supply_from_name)
         node_dict = {
             "type": node_type,
             "name": name,
-            "supply_from_name": supply_from_name,
-            "supply_from_id": supply_from_id
+            "supply_from_id": None,  # Will be set when we process circuits
+            "supply_from_name": None
         }
 
     installation_date = issue_date  # Using project issue date as installation date
@@ -151,15 +147,15 @@ for eq in electrical_equipment:
                 print(f"Error retrieving parameter {param.Definition.Name} for equipment ID {eq.Id.Value}: {e}")
 
     nodes[eq.Id.Value] = node_dict
-    print(f"Added node: {node_dict}")
+    print(f"Added equipment node: {node_dict}")
 
 if OUTPUT_ELECTRICAL_CIRCUITS:
-    # Add nodes for electrical circuits (downstream from equipment) and their connected elements
+    # Add circuit nodes and connect equipment/fixtures to their feeding circuits
     circuit_collector = FilteredElementCollector(doc).OfClass(ElectricalSystem)
     for circuit in circuit_collector:
-        # try:
-            equipment = circuit.BaseEquipment
-            if equipment and equipment.Id.Value in nodes:
+        try:
+            upstream_equipment = circuit.BaseEquipment
+            if upstream_equipment and upstream_equipment.Id.Value in nodes:
                 # Create circuit node
                 circuit_id = circuit.Id.Value
                 circuit_name = circuit.Name if circuit.Name else f"Circuit_{circuit_id}"
@@ -167,8 +163,8 @@ if OUTPUT_ELECTRICAL_CIRCUITS:
                 circuit_node_dict = {
                     "type": "Electrical Circuit",
                     "name": circuit_name,
-                    "supply_from_id": equipment.Id.Value,
-                    "supply_from_name": nodes[equipment.Id.Value]["name"]
+                    "supply_from_id": upstream_equipment.Id.Value,
+                    "supply_from_name": nodes[upstream_equipment.Id.Value]["name"]
                 }
                 
                 if OUTPUT_ALL_NODE_PARAMS:
@@ -192,40 +188,49 @@ if OUTPUT_ELECTRICAL_CIRCUITS:
                 nodes[circuit_id] = circuit_node_dict
                 print(f"Added circuit node: {circuit_node_dict}")
                 
-                # Add nodes for family instances connected to this circuit
+                # Now process elements connected to this circuit
                 for member in circuit.Elements:
-                    # member_id = elements.ElementId
-                    # member = doc.GetElement(member_id)
-                    if isinstance(member, FamilyInstance):
-                        node_id = member.Id.Value
-                        if node_id not in nodes:
-                            node_dict = {
-                                "type": "Electrical Fixture",
-                                "name": member.Name,
-                                "supply_from_id": circuit_id,
-                                "supply_from_name": circuit_name
-                            }
-                            if OUTPUT_ALL_NODE_PARAMS:
-                                for param in member.Parameters:
-                                    try:
-                                        param_name = param.Definition.Name
-                                        if param.StorageType == StorageType.String:
-                                            param_value = param.AsString()
-                                        elif param.StorageType == StorageType.Double:
-                                            param_value = param.AsDouble()
-                                        elif param.StorageType == StorageType.Integer:
-                                            param_value = param.AsInteger()
-                                        elif param.StorageType == StorageType.ElementId:
-                                            param_value = str(param.AsElementId().IntegerValue)
-                                        else:
-                                            param_value = None
-                                        node_dict[param_name] = param_value
-                                    except Exception as e:
-                                        print(f"Error retrieving parameter {param.Definition.Name} for fixture ID {member.Id.Value}: {e}")
-                            nodes[node_id] = node_dict
-                            print(f"Added electrical fixture node: {node_dict}")
-        # except Exception as e:
-        #     print(f"Error processing circuit ID {circuit.Id.Value}: {e}")
+                    node_id = member.Id.Value
+                    
+                    # Check if this is downstream equipment that should point to this circuit
+                    if node_id in nodes and nodes[node_id].get("type") in ALLOWABLE_NODE_TYPES:
+                        # This is equipment fed by this circuit - update its supply_from_id
+                        nodes[node_id]["supply_from_id"] = circuit_id
+                        nodes[node_id]["supply_from_name"] = circuit_name
+                        print(f"Updated equipment {nodes[node_id]['name']} to be fed from circuit {circuit_name}")
+                    
+                    # Otherwise, if it's a family instance (fixture), add it as a new node
+                    elif isinstance(member, FamilyInstance) and node_id not in nodes:
+                        type_name = member.LookupParameter("Type Name").AsString() if member.LookupParameter("Type Name") else "Unknown Type"
+                        node_dict = {
+                            "family_name": member.Symbol.Family.Name,
+                            "type": member.Symbol.Family.FamilyCategory.Name,
+                            "type_name": type_name,
+                            "name": member.Name,
+                            "supply_from_id": circuit_id,
+                            "supply_from_name": circuit_name
+                        }
+                        if OUTPUT_ALL_NODE_PARAMS:
+                            for param in member.Parameters:
+                                try:
+                                    param_name = param.Definition.Name
+                                    if param.StorageType == StorageType.String:
+                                        param_value = param.AsString()
+                                    elif param.StorageType == StorageType.Double:
+                                        param_value = param.AsDouble()
+                                    elif param.StorageType == StorageType.Integer:
+                                        param_value = param.AsInteger()
+                                    elif param.StorageType == StorageType.ElementId:
+                                        param_value = str(param.AsElementId().IntegerValue)
+                                    else:
+                                        param_value = None
+                                    node_dict[param_name] = param_value
+                                except Exception as e:
+                                    print(f"Error retrieving parameter {param.Definition.Name} for fixture ID {node_id}: {e}")
+                        nodes[node_id] = node_dict
+                        print(f"Added fixture node: {node_dict}")
+        except Exception as e:
+            print(f"Error processing circuit ID {circuit.Id.Value}: {e}")
 
 print(f"Nodes created: {len(nodes)}")
 

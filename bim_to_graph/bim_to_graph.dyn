@@ -398,13 +398,13 @@
       },
       {
         "Id": "2c35cba378e54047b790fe5f3ba99182",
-        "Name": "File Path",
+        "Name": "Python Script File Path",
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
         "ShowGeometry": true,
-        "X": -710.61034744781091,
-        "Y": 784.89790874256926
+        "X": -791.03656335718551,
+        "Y": 774.27557833944434
       },
       {
         "Id": "78accfc6d70d48e693f390521420e5a7",
