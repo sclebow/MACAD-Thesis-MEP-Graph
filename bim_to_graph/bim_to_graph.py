@@ -105,25 +105,17 @@ for eq in electrical_equipment:
 
     node_dict = {}
 
-    if part_type == "Panelboard":
-        node_type = "Panelboard"
-        name = eq.LookupParameter("Panel Name").AsString()
-        node_dict = {
-            "category": node_type,
-            "name": name,
-            "supply_from_id": None,  # Will be set when we process circuits
-            "supply_from_name": None
-        }
-
-    elif part_type == "Switchboard":
-        node_type = "Switchboard"
-        name = eq.LookupParameter("Panel Name").AsString()
-        node_dict = {
-            "category": node_type,
-            "name": name,
-            "supply_from_id": None,  # Will be set when we process circuits
-            "supply_from_name": None
-        }
+    # Get the actual Revit category name
+    family_category = eq.Category.Name if eq.Category else "Electrical Equipment"
+    name = eq.LookupParameter("Panel Name").AsString()
+    
+    node_dict = {
+        "category": family_category,
+        "part_type": part_type,
+        "name": name,
+        "supply_from_id": None,  # Will be set when we process circuits
+        "supply_from_name": None
+    }
 
     installation_date = issue_date  # Using project issue date as installation date
     node_dict["installation_date"] = installation_date
@@ -193,7 +185,7 @@ if OUTPUT_ELECTRICAL_CIRCUITS:
                     node_id = member.Id.Value
                     
                     # Check if this is downstream equipment that should point to this circuit
-                    if node_id in nodes and nodes[node_id].get("category") in ALLOWABLE_NODE_TYPES:
+                    if node_id in nodes and nodes[node_id].get("part_type") in ALLOWABLE_NODE_TYPES:
                         # This is equipment fed by this circuit - update its supply_from_id
                         nodes[node_id]["supply_from_id"] = circuit_id
                         nodes[node_id]["supply_from_name"] = circuit_name

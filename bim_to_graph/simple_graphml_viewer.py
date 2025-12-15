@@ -53,7 +53,8 @@ def create_pyvis_graph(G, name_id_toggle=True):
                 "inherit": false
             },
             "smooth": {
-                "enabled": false
+                "enabled": true,
+                "type": "dynamic"
             }
         },
         "interaction": {
@@ -93,8 +94,7 @@ def create_pyvis_graph(G, name_id_toggle=True):
     
     # Define size mapping for specific categories
     category_size_map = {
-        'Switchboard': 35,
-        'Panelboard': 30,
+        'Electrical Equipment': 35,
         'Electrical Circuit': 25,
     }
     default_size = 20
