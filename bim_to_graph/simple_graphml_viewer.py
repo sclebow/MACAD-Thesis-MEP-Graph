@@ -29,7 +29,7 @@ def create_pyvis_graph(G, name_id_toggle=True):
     )
     
     # Configure physics and layout
-    # Use physics-based layout for better node distribution
+    # Use physics-based layout with fast stabilization, then disable physics
     net.set_options("""
     {
         "nodes": {
@@ -53,8 +53,7 @@ def create_pyvis_graph(G, name_id_toggle=True):
                 "inherit": false
             },
             "smooth": {
-                "type": "continuous",
-                "forceDirection": "none"
+                "enabled": false
             }
         },
         "interaction": {
@@ -66,14 +65,25 @@ def create_pyvis_graph(G, name_id_toggle=True):
             "tooltipDelay": 100
         },
         "physics": {
+            "enabled": true,
             "barnesHut": {
-                "gravitationalConstant": -3000,
-                "springLength": 150
+                "gravitationalConstant": -2000,
+                "springLength": 100,
+                "springConstant": 0.04,
+                "damping": 0.5
             },
-            "minVelocity": 0.75
+            "stabilization": {
+                "enabled": true,
+                "iterations": 50,
+                "fit": true
+            }
         }
     }
     """)
+    
+    # Pre-compute node positions using NetworkX spring layout
+    # This is much faster than letting vis.js compute it
+    pos = nx.spring_layout(G, k=2, iterations=100, scale=5000)
     
     # Add nodes with labels and store full attributes as title (tooltip)
     # Build category-to-color mapping using Plotly's Alphabet palette
@@ -95,6 +105,9 @@ def create_pyvis_graph(G, name_id_toggle=True):
         node_color = category_color_map.get(category, '#1f77b4')
         node_size = category_size_map.get(category, default_size)
         
+        # Get pre-computed position
+        x, y = pos[node]
+        
         # Create tooltip as plain text with newlines
         tooltip_lines = [f"Node ID: {node}"]
         tooltip_lines.append("-" * 30)
@@ -105,7 +118,8 @@ def create_pyvis_graph(G, name_id_toggle=True):
         # Store node data as JSON for click events
         node_data = json.dumps({'id': node, **{k: str(v) for k, v in attrs.items()}})
         
-        net.add_node(node, label=label, title=tooltip, node_data=node_data, color=node_color, size=node_size)
+        net.add_node(node, label=label, title=tooltip, node_data=node_data, 
+                     color=node_color, size=node_size, x=x, y=y)
     
     # Add edges
     for u, v, attrs in G.edges(data=True):
