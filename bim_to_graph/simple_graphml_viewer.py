@@ -130,11 +130,25 @@ def create_pyvis_graph(G, name_id_toggle=True):
     
     return html, category_color_map
 
-class GraphMLViewer:
+class GraphMLViewer(pn.viewable.Viewer):
+    """GraphML Viewer with node click support using Panel's reactive framework"""
+    
     def __init__(self):
+        super().__init__()
         self.G = None
+        self.node_data_cache = {}  # Cache node data by node ID
+        
+        # Node selector dropdown
+        self.node_selector = pn.widgets.Select(
+            name='Select Node',
+            options={'-- Select a node --': ''},
+            value='',
+            sizing_mode='stretch_width'
+        )
+        self.node_selector.param.watch(self._on_node_selected, 'value')
+        
         self.selected_node_params = pn.widgets.Tabulator(
-            value=pd.DataFrame({'Parameter': ['No node selected'], 'Value': ['']}),
+            value=pd.DataFrame({'Parameter': ['Select a node to see details'], 'Value': ['']}),
             pagination=None,
             sizing_mode='stretch_both',
             show_index=False,
@@ -150,6 +164,34 @@ class GraphMLViewer:
             widths={'Parameter': '40%', 'Value': '60%'}
         )
         self.pyvis_pane = None
+        
+    def _on_node_selected(self, event):
+        """Handle node selection from dropdown"""
+        node_id = event.new
+        if node_id and node_id in self.node_data_cache:
+            node_data = self.node_data_cache[node_id]
+            df = pd.DataFrame({
+                'Parameter': list(node_data.keys()),
+                'Value': [str(v) for v in node_data.values()]
+            })
+            self.selected_node_params.value = df
+        
+    def update_node_params_from_json(self, node_data_json):
+        """Update the node parameters table from JSON string"""
+        if node_data_json:
+            try:
+                node_data = json.loads(node_data_json)
+                # Also update the dropdown selection
+                node_id = node_data.get('id', '')
+                if node_id in [v for v in self.node_selector.options.values()]:
+                    self.node_selector.value = node_id
+                df = pd.DataFrame({
+                    'Parameter': list(node_data.keys()),
+                    'Value': [str(v) for v in node_data.values()]
+                })
+                self.selected_node_params.value = df
+            except json.JSONDecodeError:
+                pass
         
     def create_legend(self, category_color_map):
         """Create an HTML legend for the category colors"""
@@ -176,8 +218,22 @@ class GraphMLViewer:
         
         try:
             self.G = nx.read_graphml(BytesIO(file_obj))
+            
+            # Build node data cache and populate dropdown options
+            self.node_data_cache = {}
+            node_options = {'-- Select a node --': ''}
+            for node, attrs in self.G.nodes(data=True):
+                name = attrs.get('name', str(node))
+                category = attrs.get('category', 'Unknown')
+                label = f"{node} - {name} ({category})"
+                node_options[label] = node
+                self.node_data_cache[node] = {'id': node, **attrs}
+            
+            self.node_selector.options = node_options
+            self.node_selector.value = ''
+            
             # Reset node parameters table
-            self.selected_node_params.value = pd.DataFrame({'Parameter': ['Hover over nodes to view parameters'], 'Value': ['']})
+            self.selected_node_params.value = pd.DataFrame({'Parameter': ['Select a node from the dropdown'], 'Value': ['']})
             
             # Create the PyVis graph
             html, category_color_map = create_pyvis_graph(self.G, name_id_toggle)
@@ -192,6 +248,7 @@ class GraphMLViewer:
             # Use iframe with data URI to embed the full PyVis HTML document
             iframe_html = f"""
             <iframe 
+                id="pyvis-iframe"
                 src="data:text/html;base64,{b64_html}"
                 style="width:100%; height:600px; border:1px solid #ddd; border-radius:4px;"
                 frameborder="0">
@@ -200,7 +257,11 @@ class GraphMLViewer:
             
             self.pyvis_pane = pn.pane.HTML(iframe_html, sizing_mode='stretch_width', min_height=620)
             
-            return pn.Column(legend_pane, self.pyvis_pane, sizing_mode='stretch_width')
+            return pn.Column(
+                legend_pane, 
+                self.pyvis_pane, 
+                sizing_mode='stretch_width'
+            )
             
         except Exception as e:
             return pn.pane.Markdown(f"**Error loading GraphML:** {e}")
@@ -221,19 +282,19 @@ plot_output = pn.bind(viewer.load_and_plot_graphml, file_input, name_id_toggle)
 app = pn.Row(
     pn.Column(
         "# Simple GraphML Viewer",
-        pn.pane.Markdown("Upload a GraphML file to visualize the graph. Click on nodes to view their parameters."),
+        pn.pane.Markdown("Upload a GraphML file to visualize the graph. Select a node from the dropdown or hover over nodes in the graph."),
         file_input,
         name_id_toggle,
         plot_output,
         sizing_mode='stretch_both'
     ),
-    # pn.Column(
-    #     "## Node Parameters",
-    #     pn.pane.Markdown("Click on a node in the graph to view its parameters here."),
-    #     viewer.selected_node_params,
-    #     width=550,
-    #     sizing_mode='stretch_height'
-    # ),
+    pn.Column(
+        "## Node Parameters",
+        viewer.node_selector,
+        viewer.selected_node_params,
+        width=450,
+        sizing_mode='stretch_height'
+    ),
     sizing_mode='stretch_both'
 )
 
