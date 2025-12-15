@@ -25,6 +25,18 @@ def get_equipment_id_from_name(equipment_list, name):
             return eq.Id.Value
     return None
 
+def escape_xml(value):
+    """Escape special XML characters to prevent malformed XML"""
+    if value is None:
+        return ""
+    value_str = str(value)
+    value_str = value_str.replace("&", "&amp;")
+    value_str = value_str.replace("<", "&lt;")
+    value_str = value_str.replace(">", "&gt;")
+    value_str = value_str.replace('"', "&quot;")
+    value_str = value_str.replace("'", "&apos;")
+    return value_str
+
 output_directory = IN[0]  # Input from Dynamo: directory to save the output file
 
 print("\n" * 10)
@@ -62,6 +74,7 @@ edges = {}
 
 ALLOWABLE_NODE_TYPES = ["Panelboard", "Switchboard"]
 OUTPUT_ALL_NODE_PARAMS = IN[1]  # Set to True to output all parameters of nodes
+OUTPUT_ELECTRICAL_CIRCUITS = IN[2]  # Set to True to include electrical fixtures in the graph
 
 # Add nodes for each electrical equipment element
 for eq in electrical_equipment:
@@ -140,6 +153,80 @@ for eq in electrical_equipment:
     nodes[eq.Id.Value] = node_dict
     print(f"Added node: {node_dict}")
 
+if OUTPUT_ELECTRICAL_CIRCUITS:
+    # Add nodes for electrical circuits (downstream from equipment) and their connected elements
+    circuit_collector = FilteredElementCollector(doc).OfClass(ElectricalSystem)
+    for circuit in circuit_collector:
+        # try:
+            equipment = circuit.BaseEquipment
+            if equipment and equipment.Id.Value in nodes:
+                # Create circuit node
+                circuit_id = circuit.Id.Value
+                circuit_name = circuit.Name if circuit.Name else f"Circuit_{circuit_id}"
+                
+                circuit_node_dict = {
+                    "type": "Electrical Circuit",
+                    "name": circuit_name,
+                    "supply_from_id": equipment.Id.Value,
+                    "supply_from_name": nodes[equipment.Id.Value]["name"]
+                }
+                
+                if OUTPUT_ALL_NODE_PARAMS:
+                    for param in circuit.Parameters:
+                        try:
+                            param_name = param.Definition.Name
+                            if param.StorageType == StorageType.String:
+                                param_value = param.AsString()
+                            elif param.StorageType == StorageType.Double:
+                                param_value = param.AsDouble()
+                            elif param.StorageType == StorageType.Integer:
+                                param_value = param.AsInteger()
+                            elif param.StorageType == StorageType.ElementId:
+                                param_value = str(param.AsElementId().IntegerValue)
+                            else:
+                                param_value = None
+                            circuit_node_dict[param_name] = param_value
+                        except Exception as e:
+                            print(f"Error retrieving parameter {param.Definition.Name} for circuit ID {circuit_id}: {e}")
+                
+                nodes[circuit_id] = circuit_node_dict
+                print(f"Added circuit node: {circuit_node_dict}")
+                
+                # Add nodes for family instances connected to this circuit
+                for member in circuit.Elements:
+                    # member_id = elements.ElementId
+                    # member = doc.GetElement(member_id)
+                    if isinstance(member, FamilyInstance):
+                        node_id = member.Id.Value
+                        if node_id not in nodes:
+                            node_dict = {
+                                "type": "Electrical Fixture",
+                                "name": member.Name,
+                                "supply_from_id": circuit_id,
+                                "supply_from_name": circuit_name
+                            }
+                            if OUTPUT_ALL_NODE_PARAMS:
+                                for param in member.Parameters:
+                                    try:
+                                        param_name = param.Definition.Name
+                                        if param.StorageType == StorageType.String:
+                                            param_value = param.AsString()
+                                        elif param.StorageType == StorageType.Double:
+                                            param_value = param.AsDouble()
+                                        elif param.StorageType == StorageType.Integer:
+                                            param_value = param.AsInteger()
+                                        elif param.StorageType == StorageType.ElementId:
+                                            param_value = str(param.AsElementId().IntegerValue)
+                                        else:
+                                            param_value = None
+                                        node_dict[param_name] = param_value
+                                    except Exception as e:
+                                        print(f"Error retrieving parameter {param.Definition.Name} for fixture ID {member.Id.Value}: {e}")
+                            nodes[node_id] = node_dict
+                            print(f"Added electrical fixture node: {node_dict}")
+        # except Exception as e:
+        #     print(f"Error processing circuit ID {circuit.Id.Value}: {e}")
+
 print(f"Nodes created: {len(nodes)}")
 
 # Add edges based on supply relationships
@@ -176,10 +263,10 @@ for source, targets in edges.items():
         edge_attributes.add("target")
 
 for attr in node_attributes:
-    node_key_defs.append(f'<key id="d{len(node_key_defs)+1}" for="node" attr.name="{attr}" attr.type="string"/>')
+    node_key_defs.append(f'<key id="d{len(node_key_defs)+1}" for="node" attr.name="{escape_xml(attr)}" attr.type="string"/>')
 
 for attr in edge_attributes:
-    edge_key_defs.append(f'<key id="d{len(edge_key_defs)+1 + len(node_key_defs)}" for="edge" attr.name="{attr}" attr.type="string"/>')
+    edge_key_defs.append(f'<key id="d{len(edge_key_defs)+1 + len(node_key_defs)}" for="edge" attr.name="{escape_xml(attr)}" attr.type="string"/>')
 
 graphml_content = graphml_header + "\n".join(node_key_defs) + "\n".join(edge_key_defs) + '<graph id="G" edgedefault="directed">\n'
 
@@ -187,7 +274,7 @@ graphml_content = graphml_header + "\n".join(node_key_defs) + "\n".join(edge_key
 for node_id, node_data in nodes.items():
     graphml_content += f'  <node id="n{node_id}">\n'
     for attr, value in node_data.items():
-        graphml_content += f'    <data key="d{list(node_attributes).index(attr)+1}">{value}</data>\n'
+        graphml_content += f'    <data key="d{list(node_attributes).index(attr)+1}">{escape_xml(value)}</data>\n'
     graphml_content += '  </node>\n'
 
 # Add edges to graphml

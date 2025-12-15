@@ -10,6 +10,8 @@ import pandas as pd
 
 pn.extension('plotly', 'tabulator')
 
+DEFAULT_FILE_PATH = "./bim_to_graph/output_graph.graphml"
+
 def create_hierarchical_layout(G):
     """Create a hierarchical tree-like layout for the graph using a Sugiyama-style algorithm"""
     
@@ -203,6 +205,8 @@ viewer = GraphMLViewer()
 # Create widgets
 file_input = pn.widgets.FileInput(accept='.graphml')
 name_id_toggle = pn.widgets.Checkbox(name='Show Node Names', value=True)
+
+file_input.value = open(DEFAULT_FILE_PATH, 'rb').read()
 
 # Bind the plotting function
 plot_output = pn.bind(viewer.load_and_plot_graphml, file_input, name_id_toggle)
