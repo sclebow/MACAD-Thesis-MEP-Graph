@@ -34,55 +34,41 @@ def create_pyvis_graph(G, name_id_toggle=True):
     {
         "nodes": {
             "borderWidth": 2,
-            "borderWidthSelected": null,
-            "color": {
-            "border": "#1565c0",
-            "background": "#1f77b4",
-            "highlight": {
-                "border": "#1565c0",
-                "background": "#42a5f5"
-            }
-            },
-            "opacity": null,
             "shape": "dot",
-            "size": 20
+            "size": 20,
+            "font": {
+                "size": 14
+            }
         },
         "edges": {
             "arrows": {
-            "to": {
-                "enabled": true,
-                "scaleFactor": 0.5
-            }
+                "to": {
+                    "enabled": true,
+                    "scaleFactor": 0.5
+                }
             },
             "color": {
-            "color": "#888888",
-            "highlight": "#1f77b4",
-            "inherit": false
-            },
-            "selfReferenceSize": null,
-            "selfReference": {
-            "angle": 0.7853981633974483
+                "color": "#888888",
+                "highlight": "#1f77b4",
+                "inherit": false
             },
             "smooth": {
-            "type": "continuous",
-            "forceDirection": "none"
+                "type": "continuous",
+                "forceDirection": "none"
             }
         },
         "interaction": {
             "hover": true,
             "keyboard": {
-            "enabled": true
+                "enabled": true
             },
             "navigationButtons": true,
             "tooltipDelay": 100
         },
-        "manipulation": {
-            "enabled": true
-        },
         "physics": {
             "barnesHut": {
-            "gravitationalConstant": -3000,
-            "springLength": 150
+                "gravitationalConstant": -3000,
+                "springLength": 150
             },
             "minVelocity": 0.75
         }
@@ -110,9 +96,7 @@ def create_pyvis_graph(G, name_id_toggle=True):
         # Store node data as JSON for click events
         node_data = json.dumps({'id': node, **{k: str(v) for k, v in attrs.items()}})
         
-        net.add_node(node, label=label, title=tooltip, node_data=node_data, 
-                     color={'background': node_color, 'border': node_color, 
-                            'highlight': {'background': node_color, 'border': '#000000'}})
+        net.add_node(node, label=label, title=tooltip, node_data=node_data, color=node_color)
     
     # Add edges
     for u, v, attrs in G.edges(data=True):
