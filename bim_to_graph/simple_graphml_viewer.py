@@ -81,10 +81,19 @@ def create_pyvis_graph(G, name_id_toggle=True):
     colors = px.colors.qualitative.Alphabet
     category_color_map = {cat: colors[i % len(colors)] for i, cat in enumerate(sorted(categories))}
     
+    # Define size mapping for specific categories
+    category_size_map = {
+        'Switchboard': 35,
+        'Panelboard': 30,
+        'Electrical Circuit': 25,
+    }
+    default_size = 20
+    
     for node, attrs in G.nodes(data=True):
         label = attrs.get('name', str(node)) if name_id_toggle else str(node)
         category = attrs.get('category', 'Unknown')
         node_color = category_color_map.get(category, '#1f77b4')
+        node_size = category_size_map.get(category, default_size)
         
         # Create tooltip as plain text with newlines
         tooltip_lines = [f"Node ID: {node}"]
@@ -96,7 +105,7 @@ def create_pyvis_graph(G, name_id_toggle=True):
         # Store node data as JSON for click events
         node_data = json.dumps({'id': node, **{k: str(v) for k, v in attrs.items()}})
         
-        net.add_node(node, label=label, title=tooltip, node_data=node_data, color=node_color)
+        net.add_node(node, label=label, title=tooltip, node_data=node_data, color=node_color, size=node_size)
     
     # Add edges
     for u, v, attrs in G.edges(data=True):
@@ -105,7 +114,7 @@ def create_pyvis_graph(G, name_id_toggle=True):
     # Generate HTML string
     html = net.generate_html()
     
-    return html
+    return html, category_color_map
 
 class GraphMLViewer:
     def __init__(self):
@@ -128,6 +137,25 @@ class GraphMLViewer:
         )
         self.pyvis_pane = None
         
+    def create_legend(self, category_color_map):
+        """Create an HTML legend for the category colors"""
+        legend_items = []
+        for category, color in sorted(category_color_map.items()):
+            legend_items.append(
+                f'<div style="display:flex; align-items:center; margin:4px 0;">'
+                f'<span style="display:inline-block; width:16px; height:16px; '
+                f'background-color:{color}; border-radius:50%; margin-right:8px; '
+                f'border:1px solid #333;"></span>'
+                f'<span style="font-size:13px;">{category}</span></div>'
+            )
+        legend_html = f'''
+        <div style="padding:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:4px;">
+            <div style="font-weight:bold; margin-bottom:8px; border-bottom:1px solid #ccc; padding-bottom:4px;">Category Legend</div>
+            {"".join(legend_items)}
+        </div>
+        '''
+        return pn.pane.HTML(legend_html, sizing_mode='stretch_width')
+    
     def load_and_plot_graphml(self, file_obj, name_id_toggle):
         if not file_obj:
             return pn.pane.Markdown('Upload a .graphml file.')
@@ -138,7 +166,10 @@ class GraphMLViewer:
             self.selected_node_params.value = pd.DataFrame({'Parameter': ['Hover over nodes to view parameters'], 'Value': ['']})
             
             # Create the PyVis graph
-            html = create_pyvis_graph(self.G, name_id_toggle)
+            html, category_color_map = create_pyvis_graph(self.G, name_id_toggle)
+            
+            # Create the legend
+            legend_pane = self.create_legend(category_color_map)
             
             # Encode HTML as base64 for iframe src
             html_bytes = html.encode('utf-8')
@@ -155,7 +186,7 @@ class GraphMLViewer:
             
             self.pyvis_pane = pn.pane.HTML(iframe_html, sizing_mode='stretch_width', min_height=620)
             
-            return self.pyvis_pane
+            return pn.Column(legend_pane, self.pyvis_pane, sizing_mode='stretch_width')
             
         except Exception as e:
             return pn.pane.Markdown(f"**Error loading GraphML:** {e}")
