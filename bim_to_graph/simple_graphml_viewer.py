@@ -9,6 +9,7 @@ from io import BytesIO
 import pandas as pd
 import json
 import base64
+import plotly.express as px
 
 pn.extension('tabulator')
 
@@ -89,8 +90,16 @@ def create_pyvis_graph(G, name_id_toggle=True):
     """)
     
     # Add nodes with labels and store full attributes as title (tooltip)
+    # Build category-to-color mapping using Plotly's Alphabet palette
+    categories = list(set(attrs.get('category', 'Unknown') for _, attrs in G.nodes(data=True)))
+    colors = px.colors.qualitative.Alphabet
+    category_color_map = {cat: colors[i % len(colors)] for i, cat in enumerate(sorted(categories))}
+    
     for node, attrs in G.nodes(data=True):
         label = attrs.get('name', str(node)) if name_id_toggle else str(node)
+        category = attrs.get('category', 'Unknown')
+        node_color = category_color_map.get(category, '#1f77b4')
+        
         # Create tooltip as plain text with newlines
         tooltip_lines = [f"Node ID: {node}"]
         tooltip_lines.append("-" * 30)
@@ -101,7 +110,9 @@ def create_pyvis_graph(G, name_id_toggle=True):
         # Store node data as JSON for click events
         node_data = json.dumps({'id': node, **{k: str(v) for k, v in attrs.items()}})
         
-        net.add_node(node, label=label, title=tooltip, node_data=node_data)
+        net.add_node(node, label=label, title=tooltip, node_data=node_data, 
+                     color={'background': node_color, 'border': node_color, 
+                            'highlight': {'background': node_color, 'border': '#000000'}})
     
     # Add edges
     for u, v, attrs in G.edges(data=True):
