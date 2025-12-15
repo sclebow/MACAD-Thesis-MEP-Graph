@@ -109,7 +109,7 @@ for eq in electrical_equipment:
         node_type = "Panelboard"
         name = eq.LookupParameter("Panel Name").AsString()
         node_dict = {
-            "type": node_type,
+            "category": node_type,
             "name": name,
             "supply_from_id": None,  # Will be set when we process circuits
             "supply_from_name": None
@@ -119,7 +119,7 @@ for eq in electrical_equipment:
         node_type = "Switchboard"
         name = eq.LookupParameter("Panel Name").AsString()
         node_dict = {
-            "type": node_type,
+            "category": node_type,
             "name": name,
             "supply_from_id": None,  # Will be set when we process circuits
             "supply_from_name": None
@@ -161,7 +161,7 @@ if OUTPUT_ELECTRICAL_CIRCUITS:
                 circuit_name = circuit.Name if circuit.Name else f"Circuit_{circuit_id}"
                 
                 circuit_node_dict = {
-                    "type": "Electrical Circuit",
+                    "category": "Electrical Circuit",
                     "name": circuit_name,
                     "supply_from_id": upstream_equipment.Id.Value,
                     "supply_from_name": nodes[upstream_equipment.Id.Value]["name"]
@@ -193,7 +193,7 @@ if OUTPUT_ELECTRICAL_CIRCUITS:
                     node_id = member.Id.Value
                     
                     # Check if this is downstream equipment that should point to this circuit
-                    if node_id in nodes and nodes[node_id].get("type") in ALLOWABLE_NODE_TYPES:
+                    if node_id in nodes and nodes[node_id].get("category") in ALLOWABLE_NODE_TYPES:
                         # This is equipment fed by this circuit - update its supply_from_id
                         nodes[node_id]["supply_from_id"] = circuit_id
                         nodes[node_id]["supply_from_name"] = circuit_name
@@ -204,7 +204,7 @@ if OUTPUT_ELECTRICAL_CIRCUITS:
                         type_name = member.LookupParameter("Type Name").AsString() if member.LookupParameter("Type Name") else "Unknown Type"
                         node_dict = {
                             "family_name": member.Symbol.Family.Name,
-                            "type": member.Symbol.Family.FamilyCategory.Name,
+                            "category": member.Symbol.Family.FamilyCategory.Name,
                             "type_name": type_name,
                             "name": member.Name,
                             "supply_from_id": circuit_id,
