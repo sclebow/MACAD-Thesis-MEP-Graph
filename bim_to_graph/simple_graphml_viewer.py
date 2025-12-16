@@ -12,7 +12,13 @@ import base64
 import plotly.express as px
 import math
 
-pn.extension('tabulator')
+try:
+    from neo4j import GraphDatabase
+    NEO4J_AVAILABLE = True
+except ImportError:
+    NEO4J_AVAILABLE = False
+
+pn.extension('tabulator', notifications=True)
 
 DEFAULT_FILE_PATH = "./bim_to_graph/output_graph.graphml"
 
@@ -227,6 +233,47 @@ class GraphMLViewer(pn.viewable.Viewer):
         )
         self.pyvis_pane = None
         
+        # Neo4j connection widgets
+        self.neo4j_uri = pn.widgets.TextInput(
+            name='Neo4j URI',
+            value='bolt://localhost:7687',
+            placeholder='bolt://localhost:7687',
+            sizing_mode='stretch_width'
+        )
+        self.neo4j_username = pn.widgets.TextInput(
+            name='Username',
+            value='neo4j',
+            sizing_mode='stretch_width'
+        )
+        self.neo4j_password = pn.widgets.PasswordInput(
+            name='Password',
+            placeholder='Enter password',
+            sizing_mode='stretch_width'
+        )
+        self.neo4j_database = pn.widgets.TextInput(
+            name='Database',
+            value='neo4j',
+            placeholder='neo4j (default)',
+            sizing_mode='stretch_width'
+        )
+        self.neo4j_clear_existing = pn.widgets.Checkbox(
+            name='Clear existing data before import',
+            value=False
+        )
+        self.neo4j_export_button = pn.widgets.Button(
+            name='Export to Neo4j',
+            button_type='primary',
+            sizing_mode='stretch_width',
+            disabled=not NEO4J_AVAILABLE
+        )
+        self.neo4j_export_button.on_click(self._export_to_neo4j)
+        
+        self.neo4j_status = pn.pane.Alert(
+            'Ready to export' if NEO4J_AVAILABLE else '⚠️ neo4j package not installed. Run: pip install neo4j',
+            alert_type='info' if NEO4J_AVAILABLE else 'warning',
+            sizing_mode='stretch_width'
+        )
+        
     def _on_node_selected(self, event):
         """Handle node selection from dropdown"""
         node_id = event.new
@@ -254,6 +301,104 @@ class GraphMLViewer(pn.viewable.Viewer):
                 self.selected_node_params.value = df
             except json.JSONDecodeError:
                 pass
+    
+    def _export_to_neo4j(self, event):
+        """Export the current graph to Neo4j database"""
+        if not NEO4J_AVAILABLE:
+            self.neo4j_status.object = '❌ neo4j package not installed. Run: pip install neo4j'
+            self.neo4j_status.alert_type = 'danger'
+            return
+        
+        if self.G is None or len(self.G.nodes()) == 0:
+            self.neo4j_status.object = '❌ No graph loaded. Please upload a GraphML file first.'
+            self.neo4j_status.alert_type = 'warning'
+            return
+        
+        uri = self.neo4j_uri.value.strip()
+        username = self.neo4j_username.value.strip()
+        password = self.neo4j_password.value
+        database = self.neo4j_database.value.strip() or 'neo4j'
+        clear_existing = self.neo4j_clear_existing.value
+        
+        if not uri or not username:
+            self.neo4j_status.object = '❌ Please provide URI and username.'
+            self.neo4j_status.alert_type = 'warning'
+            return
+        
+        self.neo4j_status.object = '⏳ Connecting to Neo4j...'
+        self.neo4j_status.alert_type = 'info'
+        self.neo4j_export_button.disabled = True
+        
+        try:
+            driver = GraphDatabase.driver(uri, auth=(username, password))
+            
+            # Test connection
+            driver.verify_connectivity()
+            
+            with driver.session(database=database) as session:
+                # Optionally clear existing data
+                if clear_existing:
+                    self.neo4j_status.object = '⏳ Clearing existing data...'
+                    session.run("MATCH (n) DETACH DELETE n")
+                
+                self.neo4j_status.object = '⏳ Exporting nodes...'
+                
+                # Export nodes
+                for node_id, attrs in self.G.nodes(data=True):
+                    # Get category for label, default to 'Node'
+                    category = attrs.get('category', 'Node')
+                    # Clean category name for Neo4j label (remove spaces, special chars)
+                    label = ''.join(c if c.isalnum() else '_' for c in category)
+                    if not label or label[0].isdigit():
+                        label = 'Node_' + label
+                    
+                    # Prepare properties
+                    props = {'id': str(node_id)}
+                    for key, value in attrs.items():
+                        # Neo4j doesn't accept None values
+                        if value is not None:
+                            props[key] = str(value) if not isinstance(value, (int, float, bool)) else value
+                    
+                    # Create node with dynamic label
+                    query = f"MERGE (n:`{label}` {{id: $id}}) SET n += $props"
+                    session.run(query, id=str(node_id), props=props)
+                
+                self.neo4j_status.object = '⏳ Exporting edges...'
+                
+                # Export edges
+                for u, v, attrs in self.G.edges(data=True):
+                    # Get relationship type from edge attributes or default
+                    rel_type = attrs.get('relationship', attrs.get('type', 'CONNECTED_TO'))
+                    rel_type = ''.join(c if c.isalnum() else '_' for c in str(rel_type)).upper()
+                    if not rel_type:
+                        rel_type = 'CONNECTED_TO'
+                    
+                    # Prepare edge properties
+                    edge_props = {}
+                    for key, value in attrs.items():
+                        if value is not None and key not in ['relationship', 'type']:
+                            edge_props[key] = str(value) if not isinstance(value, (int, float, bool)) else value
+                    
+                    query = f"""
+                    MATCH (a {{id: $source}})
+                    MATCH (b {{id: $target}})
+                    MERGE (a)-[r:`{rel_type}`]->(b)
+                    SET r += $props
+                    """
+                    session.run(query, source=str(u), target=str(v), props=edge_props)
+            
+            driver.close()
+            
+            node_count = len(self.G.nodes())
+            edge_count = len(self.G.edges())
+            self.neo4j_status.object = f'✅ Successfully exported {node_count} nodes and {edge_count} edges to Neo4j!'
+            self.neo4j_status.alert_type = 'success'
+            
+        except Exception as e:
+            self.neo4j_status.object = f'❌ Error: {str(e)}'
+            self.neo4j_status.alert_type = 'danger'
+        finally:
+            self.neo4j_export_button.disabled = False
         
     def create_legend(self, category_color_map):
         """Create an HTML legend for the category colors"""
@@ -354,6 +499,14 @@ app = pn.Row(
         "## Node Parameters",
         viewer.node_selector,
         viewer.selected_node_params,
+        pn.layout.Divider(),
+        "## Export to Neo4j",
+        viewer.neo4j_uri,
+        pn.Row(viewer.neo4j_username, viewer.neo4j_password, sizing_mode='stretch_width'),
+        viewer.neo4j_database,
+        viewer.neo4j_clear_existing,
+        viewer.neo4j_export_button,
+        viewer.neo4j_status,
         width=450,
         sizing_mode='stretch_height'
     ),
