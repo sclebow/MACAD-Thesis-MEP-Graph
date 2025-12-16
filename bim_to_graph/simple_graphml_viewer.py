@@ -10,10 +10,71 @@ import pandas as pd
 import json
 import base64
 import plotly.express as px
+import math
 
 pn.extension('tabulator')
 
 DEFAULT_FILE_PATH = "./bim_to_graph/output_graph.graphml"
+
+def layout_with_disconnected_components(G, k=2, iterations=200, scale=5000):
+    """
+    Layout graph with proper handling of disconnected components.
+    Larger components are centered, smaller ones are positioned around the periphery.
+    """
+    # Get connected components (use weakly_connected for directed graphs)
+    if nx.is_directed(G):
+        components = list(nx.weakly_connected_components(G))
+    else:
+        components = list(nx.connected_components(G))
+    
+    # If only one component or empty, use standard layout
+    if len(components) <= 1:
+        return nx.spring_layout(G, k=k, iterations=iterations, scale=scale)
+    
+    # Sort components by size (largest first)
+    components = sorted(components, key=len, reverse=True)
+    
+    pos = {}
+    
+    # Layout the largest component at the center
+    largest_subgraph = G.subgraph(components[0]).copy()
+    largest_pos = nx.spring_layout(largest_subgraph, k=k, iterations=iterations, scale=scale)
+    pos.update(largest_pos)
+    
+    # Calculate bounding box of the largest component
+    if largest_pos:
+        x_coords = [p[0] for p in largest_pos.values()]
+        y_coords = [p[1] for p in largest_pos.values()]
+        max_extent = max(max(x_coords) - min(x_coords), max(y_coords) - min(y_coords))
+    else:
+        max_extent = scale
+    
+    # Position smaller components around the periphery
+    num_small = len(components) - 1
+    
+    for i, component in enumerate(components[1:], start=1):
+        subgraph = G.subgraph(component).copy()
+        
+        # Scale smaller components based on their relative size
+        component_scale = scale * (len(component) / len(components[0])) ** 0.5
+        component_scale = max(component_scale, scale * 0.2)  # Minimum scale
+        
+        # Layout this component
+        sub_pos = nx.spring_layout(subgraph, k=k, iterations=iterations, scale=component_scale)
+        
+        # Calculate offset angle and distance to place this component
+        angle = (2 * math.pi * (i - 1)) / num_small
+        # Distance from center: beyond the largest component + buffer
+        offset_distance = max_extent * 0.7 + component_scale * 1.5
+        
+        offset_x = offset_distance * math.cos(angle)
+        offset_y = offset_distance * math.sin(angle)
+        
+        # Apply offset to all nodes in this component
+        for node, (x, y) in sub_pos.items():
+            pos[node] = (x + offset_x, y + offset_y)
+    
+    return pos
 
 def create_pyvis_graph(G, name_id_toggle=True):
     """Convert NetworkX graph to PyVis HTML"""
@@ -84,7 +145,8 @@ def create_pyvis_graph(G, name_id_toggle=True):
     
     # Pre-compute node positions using NetworkX spring layout
     # This is much faster than letting vis.js compute it
-    pos = nx.spring_layout(G, k=2, iterations=100, scale=5000)
+    # Handle disconnected subgraphs by laying them out separately
+    pos = layout_with_disconnected_components(G, k=2, iterations=200, scale=5000)
     
     # Add nodes with labels and store full attributes as title (tooltip)
     # Build category-to-color mapping using Plotly's Alphabet palette
