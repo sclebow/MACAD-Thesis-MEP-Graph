@@ -121,6 +121,7 @@ for eq in electrical_equipment:
     node_dict["installation_date"] = installation_date
 
     if OUTPUT_ALL_NODE_PARAMS:
+        # Instance parameters
         for param in eq.Parameters:
             try:
                 param_name = param.Definition.Name
@@ -137,6 +138,24 @@ for eq in electrical_equipment:
                 node_dict[param_name] = param_value
             except Exception as e:
                 print(f"Error retrieving parameter {param.Definition.Name} for equipment ID {eq.Id.Value}: {e}")
+        
+        # Type parameters
+        for param in symbol.Parameters:
+            try:
+                param_name = param.Definition.Name + " (Type Parameter)"
+                if param.StorageType == StorageType.String:
+                    param_value = param.AsString()
+                elif param.StorageType == StorageType.Double:
+                    param_value = param.AsDouble()
+                elif param.StorageType == StorageType.Integer:
+                    param_value = param.AsInteger()
+                elif param.StorageType == StorageType.ElementId:
+                    param_value = str(param.AsElementId().IntegerValue)
+                else:
+                    param_value = None
+                node_dict[param_name] = param_value
+            except Exception as e:
+                print(f"Error retrieving type parameter {param.Definition.Name} for equipment ID {eq.Id.Value}: {e}")
 
     nodes[eq.Id.Value] = node_dict
     print(f"Added equipment node: {node_dict}")
@@ -160,6 +179,7 @@ if OUTPUT_ELECTRICAL_CIRCUITS:
                 }
                 
                 if OUTPUT_ALL_NODE_PARAMS:
+                    # Instance parameters
                     for param in circuit.Parameters:
                         try:
                             param_name = param.Definition.Name
@@ -176,6 +196,26 @@ if OUTPUT_ELECTRICAL_CIRCUITS:
                             circuit_node_dict[param_name] = param_value
                         except Exception as e:
                             print(f"Error retrieving parameter {param.Definition.Name} for circuit ID {circuit_id}: {e}")
+                    
+                    # Type parameters for circuit
+                    circuit_type = doc.GetElement(circuit.GetTypeId())
+                    if circuit_type:
+                        for param in circuit_type.Parameters:
+                            try:
+                                param_name = param.Definition.Name + " (Type Parameter)"
+                                if param.StorageType == StorageType.String:
+                                    param_value = param.AsString()
+                                elif param.StorageType == StorageType.Double:
+                                    param_value = param.AsDouble()
+                                elif param.StorageType == StorageType.Integer:
+                                    param_value = param.AsInteger()
+                                elif param.StorageType == StorageType.ElementId:
+                                    param_value = str(param.AsElementId().IntegerValue)
+                                else:
+                                    param_value = None
+                                circuit_node_dict[param_name] = param_value
+                            except Exception as e:
+                                print(f"Error retrieving type parameter {param.Definition.Name} for circuit ID {circuit_id}: {e}")
                 
                 nodes[circuit_id] = circuit_node_dict
                 print(f"Added circuit node: {circuit_node_dict}")
@@ -203,6 +243,7 @@ if OUTPUT_ELECTRICAL_CIRCUITS:
                             "supply_from_name": circuit_name
                         }
                         if OUTPUT_ALL_NODE_PARAMS:
+                            # Instance parameters
                             for param in member.Parameters:
                                 try:
                                     param_name = param.Definition.Name
@@ -219,6 +260,24 @@ if OUTPUT_ELECTRICAL_CIRCUITS:
                                     node_dict[param_name] = param_value
                                 except Exception as e:
                                     print(f"Error retrieving parameter {param.Definition.Name} for fixture ID {node_id}: {e}")
+                            
+                            # Type parameters for fixture
+                            for param in member.Symbol.Parameters:
+                                try:
+                                    param_name = param.Definition.Name + " (Type Parameter)"
+                                    if param.StorageType == StorageType.String:
+                                        param_value = param.AsString()
+                                    elif param.StorageType == StorageType.Double:
+                                        param_value = param.AsDouble()
+                                    elif param.StorageType == StorageType.Integer:
+                                        param_value = param.AsInteger()
+                                    elif param.StorageType == StorageType.ElementId:
+                                        param_value = str(param.AsElementId().IntegerValue)
+                                    else:
+                                        param_value = None
+                                    node_dict[param_name] = param_value
+                                except Exception as e:
+                                    print(f"Error retrieving type parameter {param.Definition.Name} for fixture ID {node_id}: {e}")
                         nodes[node_id] = node_dict
                         print(f"Added fixture node: {node_dict}")
         except Exception as e:
