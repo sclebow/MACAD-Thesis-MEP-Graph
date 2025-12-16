@@ -21,7 +21,16 @@
       "Name": "Output All Node Params",
       "Type": "boolean",
       "Type2": "boolean",
-      "Value": "false",
+      "Value": "true",
+      "Description": "Enables selection between True and False",
+      "SelectedIndex": 0
+    },
+    {
+      "Id": "a0f8581570af4a68b67cee56827da608",
+      "Name": "Output Electrical Circuits",
+      "Type": "boolean",
+      "Type2": "boolean",
+      "Value": "true",
       "Description": "Enables selection between True and False",
       "SelectedIndex": 0
     }
@@ -110,6 +119,15 @@
           "Id": "d3299b988b0448669e84d6112b518b90",
           "Name": "IN[1]",
           "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "7958d8f69c804b0e852a1ed207d4862d",
+          "Name": "IN[2]",
+          "Description": "Input #2",
           "UsingDefaultValue": false,
           "Level": 2,
           "UseLevels": false,
@@ -232,7 +250,27 @@
       ],
       "Replication": "Disabled",
       "Description": "Enables selection between True and False",
-      "InputValue": false
+      "InputValue": true
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "Id": "a0f8581570af4a68b67cee56827da608",
+      "NodeType": "BooleanInputNode",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "f09f6bbe115e4b04be7fb954dc41890c",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Enables selection between True and False",
+      "InputValue": true
     }
   ],
   "Connectors": [
@@ -270,6 +308,12 @@
       "Start": "08847b3af11846668a75234b2b668608",
       "End": "d3299b988b0448669e84d6112b518b90",
       "Id": "ac534105a9af42dca2f1dafcd9ed6a9e",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "f09f6bbe115e4b04be7fb954dc41890c",
+      "End": "7958d8f69c804b0e852a1ed207d4862d",
+      "Id": "2b4bc2a973be4bf99a2246d94630460b",
       "IsHidden": "False"
     }
   ],
@@ -354,13 +398,13 @@
       },
       {
         "Id": "2c35cba378e54047b790fe5f3ba99182",
-        "Name": "File Path",
+        "Name": "Python Script File Path",
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
         "ShowGeometry": true,
-        "X": -710.61034744781091,
-        "Y": 784.89790874256926
+        "X": -791.03656335718551,
+        "Y": 774.27557833944434
       },
       {
         "Id": "78accfc6d70d48e693f390521420e5a7",
@@ -391,6 +435,16 @@
         "ShowGeometry": true,
         "X": -724.05109811677858,
         "Y": 1240.0827405655878
+      },
+      {
+        "Id": "a0f8581570af4a68b67cee56827da608",
+        "Name": "Output Electrical Circuits",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": -703.95207624802742,
+        "Y": 1413.3477935249621
       }
     ],
     "Annotations": [],
