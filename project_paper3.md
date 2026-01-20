@@ -12,6 +12,14 @@ Building systems face hidden risks and cascading failures due to interdependenci
 ## Problem
 Building services systems, and other physical asset portfolios, must maintain performance, safety, and continuity over long lifecycles. Yet maintenance remains reactive; driven by budgets, tradition, or vendor advice rather than lifecycle intelligence. Competing priorities and uncertain returns on preventative investment lead to deferred maintenance and rising risk. Interdependencies between building systems compound failure risks, but asset managers lack tools to model these dynamics or simulate long-term outcomes under real-world budget constraints. While digital twins, sensor-based monitoring, and predictive maintenance technologies are advancing, they tend to focus on either static asset databases, real-time telemetry from building management systems, or enterprise-level CMMS platforms oriented toward task scheduling. This research addresses the gap with AssetPulse, a simulation framework for evaluating system dependencies, component degradation, and maintenance trade-offs in low-voltage electrical systems under data-limited, budget-constrained conditions.
 
+# Framework
+
+The AssetPulse framework comprises a synthetic data generator and a remaining useful life simulation engine. The generator creates detailed graphs of building electrical systems, including nodes for utility transformers, panels, switchboards, transformers, and end loads, along with their attributes and connections. The simulation engine uses these graphs to model maintenance activities, calculate remaining useful life for each component, and assess risk based on user-defined parameters and maintenance templates.
+
+The diagram shows the architecture and workflow of AssetPulse, including the user interface, graph controller, simulation engine, and data storage.
+
+![Overall Architecture](images/system_architecture.png)
+
 # Background and State of the Art
 Digital asset management solutions span enterprise maintenance platforms, building management systems, and predictive maintenance tools. Enterprise systems such as IBM Maximo, SAP Intelligent Asset Management, and contemporary CMMS platforms (e.g., Fiix, Uptake) provide asset inventories, work-order execution, preventative maintenance scheduling, risk registers, and basic condition-based prioritization. These platforms are highly effective at operational coordination and compliance tracking, yet they primarily function as transactional databases and workflow engines. They neither explicitly encode component-to-component dependencies nor support forward-looking simulation of degradation and maintenance policies over multi-year horizons.
 
@@ -24,14 +32,6 @@ Parallel academic research has explored graph-based modeling for electrical netw
 Across both industry practice and research, a gap exists in methods capable of representing building systems as interdependent networks, simulating degradation and failure propagation, and evaluating maintenance and budget strategies over time—especially in scenarios where real performance and maintenance datasets are limited. This work contributes to addressing this gap by developing a graph-based simulation approach that incorporates synthetic data generation, asset degradation modeling, and budget-constrained maintenance logic to explore lifecycle trade-offs, risk accumulation, and investment prioritization in building electrical systems.
 
 # Methodology
-
-## Framework
-
-The AssetPulse framework comprises a synthetic data generator and a remaining useful life simulation engine. The generator creates detailed graphs of building electrical systems, including nodes for utility transformers, panels, switchboards, transformers, and end loads, along with their attributes and connections. The simulation engine uses these graphs to model maintenance activities, calculate remaining useful life for each component, and assess risk based on user-defined parameters and maintenance templates.
-
-The diagram shows the architecture and workflow of AssetPulse, including the user interface, graph controller, simulation engine, and data storage.
-
-![Overall Architecture](images/system_architecture.png)
 
 ## User Defined Parameters
 
@@ -107,6 +107,20 @@ The simulation engine lets users define monthly time and money budgets, which de
 ## Building Electrical System Generation Logic
 The generator uses user-specified building parameters to compute derived attributes such as total area and total load. It calculates one vertical riser per 500 square meters of floor area, rounding up, and places them along the longer dimension and centered on the shorter, with slight randomness. System voltage is determined by total load, with step-down transformers used where needed, employing standard three-phase levels (e.g., 480Y/277V, 208Y/120V). Total load is distributed across floors with ±10% variation, and end loads (lighting, HVAC, receptacles) are assigned to floors and connected to the nearest riser, each receiving a type, power rating, and voltage. For each riser and floor, the generator summarizes power per load type and voltage to size distribution equipment. Distribution equipment—including main and sub-panels, transformers—is placed as needed, and the graph connects utility transformers to main panels, main panels to risers, risers to distribution equipment, and equipment to end loads. Helper modules assign risk scores and remaining useful life to each node, a summary report is generated (total load, equipment counts, load breakdown, floor and riser details), and the graph is saved in GraphML for analysis.
 
+[See Appendix C for examples of generated Electrical Building Graphs.](#c-building-electrical-system-generation)
+
+We use the following formula to calculate the risk score for each piece of equipment:
+
+```
+propagated_power = graph.nodes[node].get('propagated_power', 0) or 0
+norm_power = propagated_power / total_load if total_load else 0
+descendants_count = filtered_descendants_count(graph, node)
+norm_descendants = descendants_count / max_descendants
+risk = (norm_power + norm_descendants) / 2
+```
+
+The filtered_descendants_count function counts the number of downstream equipment nodes, excluding end loads, to focus on critical distribution components. The risk score is then normalized between 0 and 1, with higher values indicating greater risk.
+
 ## Remaining Useful Life (RUL) Simulation Logic
 
 Before calculating remaining useful life, the simulation engine assesses equipment risk based on load and downstream dependencies. Risk is determined by normalizing the node's propagated power and the number of downstream equipment nodes (excluding end loads), then averaging the two. Higher load and more downstream connections increase risk, reflecting greater system impact if the equipment fails. The risk score is normalized between 0 and 1, with higher values indicating higher risk.
@@ -119,6 +133,10 @@ Failure probability is computed using base failure rates, aging, and condition, 
 Monthly maintenance scheduling prioritizes tasks by frequency, installation date, and risk. Tasks are scheduled within time and money budgets, with over-budget tasks deferred and unused funds rolling over if enabled. Synthetic maintenance logs simulate condition changes using a beta distribution (alpha=5, beta=1), producing realistic condition ratings (0.0–1.0) with a random seed for reproducibility. Replacement tasks, prioritized over routine tasks, improve condition and update maintenance history; deferred tasks increase the deferred count, affecting future RUL.
 
 The simulation generates detailed reports each month, recording scheduled, executed, and deferred tasks, maintenance logs, and replacement actions. The updated graph state, including RUL, condition, and risk, is saved monthly for time-series analysis. System-wide summaries track total tasks, budget utilization, and risk distribution, while component-level metrics and maintenance histories support further analysis and visualization.
+
+The beta distribution function is shown below, with alpha=5 and beta=1, which skews the distribution towards higher condition values, simulating realistic maintenance outcomes:
+
+![Beta Distribution](images/beta_distribution.png)
 
 # Results
 
@@ -140,9 +158,19 @@ The simulation outputs monthly RUL and risk results in a dictionary format, with
 | replacement_tasks_executed | Completed equipment replacement tasks with component and cost details |
 | replacement_tasks_not_executed | Planned replacement tasks that were not completed with reasons for non-execution |
 
+Using this simulation engine we are able to display relavent analytics on Remaining Useful Life of Equipment, overall system risks, and calculate maintenance costs; in both the present state, projected future states and historical trends.
+
+![Analytics Dashboard](images/assetpulse_analytics_overview.png)
+
 ## Optimization
 
-Using the simulation engine, we optimized maintenance scheduling and budget allocation by developing a multi-variable optimization model to minimize deferred maintenance over one year. In most cases, higher budgets reduced deferred tasks, but in some scenarios, lower budgets led to fewer deferrals due to equipment failures triggering necessary repairs that improved system condition and reduced future maintenance needs. We tested multiple building configurations with varying monthly time and money budgets, but results depend on accurate simulation parameters and task templates. Future work will calibrate the model with real-world data to improve predictive accuracy.
+Using the simulation engine, we optimized maintenance scheduling and budget allocation by developing a multi-variable optimization model to minimize deferred maintenance over one year. 
+
+![Budget Goal Seeker](images/assetpulse_budget_goal_seeker.png)
+
+In most cases, higher budgets reduced deferred tasks, but in some scenarios, lower budgets led to fewer deferrals due to equipment failures triggering necessary repairs that improved system condition and reduced future maintenance needs. We tested multiple building configurations with varying monthly time and money budgets, but results depend on accurate simulation parameters and task templates. Future work will calibrate the model with real-world data to improve predictive accuracy.
+
+![Budget Scenario Comparison](images/assetpulse_budget_scenario_comparison.png)
 
 # Discussion
 
@@ -240,3 +268,50 @@ The synthetic data generator and RUL simulation provide a framework for testing 
 | condition_improvement_amount         | The amount by which the equipment's condition improves after completing the task (e.g., 0.05 means a piece of equipment that is at 0.85 will improve to 0.90). |
 | base_expected_lifespan_improvement_percentage | The percentage increase in expected lifespan after completing the task (e.g., 0.10 means a piece of equipment with a baseline expected lifespan of 20 years will increase to 22 years). |
 | notes                                | Additional information or special instructions related to the task. This field is optional and can be left blank. |
+
+
+## C: Building Electrical System Generation
+
+### C.1 Example Test Data: Simple Building
+The following parameters were used to generate a simple building for testing and validation of the AssetPulse simulation tool:
+
+- Construction Year: 2000
+- Total Load: 200 kW
+- Building Length: 20 m
+- Building Width: 20 m
+- Number of Floors: 1
+- Floor Height: 3.5 m
+- Cluster Strength: 0.95
+- Random Seed: 42
+
+### C.2 Example Generated Building Graph
+
+#### Types of Nodes
+
+![Example Building Graph](images/simple_building_graph.png)
+
+#### Risk Levels
+
+![Example Building Risk Levels](images/simple_building_graph_risk.png)
+
+### C.3: Example Test Data: Complex Building
+The following parameters were used to generate a complex building for testing and validation of the AssetPulse simulation tool:
+
+- Construction Year: 2000
+- Total Load: 1000 kW
+- Building Length: 20 m
+- Building Width: 20 m
+- Number of Floors: 4
+- Floor Height: 3.5 m
+- Cluster Strength: 0.95
+- Random Seed: 42
+
+### C.4 Example Generated Building Graph
+#### Types of Nodes
+
+![Example Building Graph](images/complex_building_graph.png)
+
+#### Risk Levels
+
+![Example Building Risk Levels](images/complex_building_graph_risk.png)
+
