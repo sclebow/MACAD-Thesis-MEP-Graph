@@ -2,7 +2,7 @@
 title: AssetPulse - Asset Management Simulation
 author: Scott Lebow, PE and Krisztian Hajdu
 date: 15 September 2025
-bibliograph: ./references.json
+bibliograph: references.json
 ---
 
 # Abstract
@@ -27,7 +27,7 @@ Building management systems (BMS) and IoT-enabled monitoring platforms increasin
 
 Across these categories, current tools are optimized for operations, monitoring, and task execution, not lifecycle simulation, system-dependency modeling, or budget-constrained scenario analysis.
 
-Parallel academic research has explored graph-based modeling for electrical networks, including circuit-level visualization and topology analysis http://zotero.org/users/local/mkjTYlJ0/items/467T4EC7, graph neural networks for fault prediction and power-system event modeling http://zotero.org/users/local/mkjTYlJ0/items/72GLGXMP; http://zotero.org/users/local/mkjTYlJ0/items/FI5MZ9ET, and algorithmic generation of one-line diagrams using evolutionary techniques http://zotero.org/users/local/mkjTYlJ0/items/ISYSAWMH. Knowledge-graph approaches have also been applied to power-communication networks http://zotero.org/users/local/mkjTYlJ0/items/KH3PUY3X and to the built environment more broadly http://zotero.org/users/local/mkjTYlJ0/items/F94C3U62, emphasizing semantic representation and asset relationships. These works demonstrate the value of graph structures for understanding electrical systems and organizing building asset information, yet they predominantly focus on high-voltage or micro-circuit domains and prioritize ontology development, visualization, or prediction rather than lifecycle simulation or maintenance decision support.
+Parallel academic research has explored graph-based modeling for electrical networks, including circuit-level visualization and topology analysis [@http://zotero.org/users/local/mkjTYlJ0/items/467T4EC7], graph neural networks for fault prediction and power-system event modeling [@http://zotero.org/users/local/mkjTYlJ0/items/72GLGXMP]; [@http://zotero.org/users/local/mkjTYlJ0/items/FI5MZ9ET], and algorithmic generation of one-line diagrams using evolutionary techniques [@http://zotero.org/users/local/mkjTYlJ0/items/ISYSAWMH]. Knowledge-graph approaches have also been applied to power-communication networks [@http://zotero.org/users/local/mkjTYlJ0/items/KH3PUY3X] and to the built environment more broadly [@http://zotero.org/users/local/mkjTYlJ0/items/F94C3U62], emphasizing semantic representation and asset relationships. These works demonstrate the value of graph structures for understanding electrical systems and organizing building asset information, yet they predominantly focus on high-voltage or micro-circuit domains and prioritize ontology development, visualization, or prediction rather than lifecycle simulation or maintenance decision support.
 
 Across both industry practice and research, a gap exists in methods capable of representing building systems as interdependent networks, simulating degradation and failure propagation, and evaluating maintenance and budget strategies over time—especially in scenarios where real performance and maintenance datasets are limited. This work contributes to addressing this gap by developing a graph-based simulation approach that incorporates synthetic data generation, asset degradation modeling, and budget-constrained maintenance logic to explore lifecycle trade-offs, risk accumulation, and investment prioritization in building electrical systems.
 
