@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d1" for="node" attr.name="category" attr.type="string" />
+  <key id="d0" for="node" attr.name="label" attr.type="string" />
+  <graph edgedefault="directed">
+    <node id="Graph_Controller">
+      <data key="d0">Graph Controller</data>
+      <data key="d1" />
+    </node>
+    <node id="User_Interface">
+      <data key="d0">User Interface</data>
+      <data key="d1" />
+    </node>
+    <node id="Simulation_Engine">
+      <data key="d0">Simulation Engine</data>
+      <data key="d1" />
+    </node>
+    <node id="Graph_Generation_Module">
+      <data key="d0">Graph Generation Module</data>
+      <data key="d1" />
+    </node>
+    <node id="Visualization_Module">
+      <data key="d0">Visualization Module</data>
+      <data key="d1" />
+    </node>
+    <node id="Data_Storage">
+      <data key="d0">Data Storage</data>
+      <data key="d1" />
+    </node>
+    <edge source="Graph_Controller" target="Graph_Generation_Module" />
+    <edge source="Graph_Controller" target="Simulation_Engine" />
+    <edge source="User_Interface" target="Graph_Controller" />
+    <edge source="User_Interface" target="Graph_Generation_Module" />
+    <edge source="Simulation_Engine" target="Data_Storage" />
+    <edge source="Simulation_Engine" target="Visualization_Module" />
+    <edge source="Graph_Generation_Module" target="Graph_Controller" />
+    <edge source="Visualization_Module" target="User_Interface" />
+    <edge source="Data_Storage" target="User_Interface" />
+  </graph>
+</graphml>
