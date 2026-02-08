@@ -4,13 +4,16 @@
 
 import panel as pn
 import networkx as nx
-from pyvis.network import Network
 from io import BytesIO
 import pandas as pd
 import json
-import base64
 import plotly.express as px
+import plotly.graph_objects as go
 import math
+try:
+    from networkx.drawing.nx_agraph import graphviz_layout
+except ImportError:
+    graphviz_layout = None
 
 try:
     from neo4j import GraphDatabase
@@ -22,181 +25,96 @@ pn.extension('tabulator', notifications=True)
 
 DEFAULT_FILE_PATH = "./bim_to_graph/output_graph.graphml"
 
-def layout_with_disconnected_components(G, k=2, iterations=200, scale=5000):
-    """
-    Layout graph with proper handling of disconnected components.
-    Larger components are centered, smaller ones are positioned around the periphery.
-    """
-    # Get connected components (use weakly_connected for directed graphs)
-    if nx.is_directed(G):
-        components = list(nx.weakly_connected_components(G))
-    else:
-        components = list(nx.connected_components(G))
-    
-    # If only one component or empty, use standard layout
-    if len(components) <= 1:
-        return nx.spring_layout(G, k=k, iterations=iterations, scale=scale)
-    
-    # Sort components by size (largest first)
-    components = sorted(components, key=len, reverse=True)
-    
-    pos = {}
-    
-    # Layout the largest component at the center
-    largest_subgraph = G.subgraph(components[0]).copy()
-    largest_pos = nx.spring_layout(largest_subgraph, k=k, iterations=iterations, scale=scale)
-    pos.update(largest_pos)
-    
-    # Calculate bounding box of the largest component
-    if largest_pos:
-        x_coords = [p[0] for p in largest_pos.values()]
-        y_coords = [p[1] for p in largest_pos.values()]
-        max_extent = max(max(x_coords) - min(x_coords), max(y_coords) - min(y_coords))
-    else:
-        max_extent = scale
-    
-    # Position smaller components around the periphery
-    num_small = len(components) - 1
-    
-    for i, component in enumerate(components[1:], start=1):
-        subgraph = G.subgraph(component).copy()
-        
-        # Scale smaller components based on their relative size
-        component_scale = scale * (len(component) / len(components[0])) ** 0.5
-        component_scale = max(component_scale, scale * 0.2)  # Minimum scale
-        
-        # Layout this component
-        sub_pos = nx.spring_layout(subgraph, k=k, iterations=iterations, scale=component_scale)
-        
-        # Calculate offset angle and distance to place this component
-        angle = (2 * math.pi * (i - 1)) / num_small
-        # Distance from center: beyond the largest component + buffer
-        offset_distance = max_extent * 0.7 + component_scale * 1.5
-        
-        offset_x = offset_distance * math.cos(angle)
-        offset_y = offset_distance * math.sin(angle)
-        
-        # Apply offset to all nodes in this component
-        for node, (x, y) in sub_pos.items():
-            pos[node] = (x + offset_x, y + offset_y)
-    
-    return pos
+def create_plotly_graph(G, name_id_toggle=True):
+    """Convert NetworkX graph to Plotly Figure using graphviz_layout (dot)"""
+    if graphviz_layout is None:
+        raise ImportError("networkx.nx_agraph.graphviz_layout is required. Please install pygraphviz.")
 
-def create_pyvis_graph(G, name_id_toggle=True):
-    """Convert NetworkX graph to PyVis HTML"""
-    
-    # Create PyVis network with desired settings
-    # Use explicit pixel dimensions for proper sizing
-    net = Network(
-        # height="400",
-        # width="100%",
-        directed=nx.is_directed(G),
-        notebook=False,
-        cdn_resources='in_line'  # Embeds all JS/CSS inline
-    )
-    
-    # Configure physics and layout
-    # Use physics-based layout with fast stabilization, then disable physics
-    net.set_options("""
-    {
-        "nodes": {
-            "borderWidth": 2,
-            "shape": "dot",
-            "size": 20,
-            "font": {
-                "size": 14
-            }
-        },
-        "edges": {
-            "arrows": {
-                "to": {
-                    "enabled": true,
-                    "scaleFactor": 0.5
-                }
-            },
-            "color": {
-                "color": "#888888",
-                "highlight": "#1f77b4",
-                "inherit": false
-            },
-            "smooth": {
-                "enabled": true,
-                "type": "dynamic"
-            }
-        },
-        "interaction": {
-            "hover": true,
-            "keyboard": {
-                "enabled": true
-            },
-            "navigationButtons": true,
-            "tooltipDelay": 100
-        },
-        "physics": {
-            "enabled": true,
-            "barnesHut": {
-                "gravitationalConstant": -2000,
-                "springLength": 100,
-                "springConstant": 0.04,
-                "damping": 0.5
-            },
-            "stabilization": {
-                "enabled": true,
-                "iterations": 50,
-                "fit": true
-            }
-        }
-    }
-    """)
-    
-    # Pre-compute node positions using NetworkX spring layout
-    # This is much faster than letting vis.js compute it
-    # Handle disconnected subgraphs by laying them out separately
-    pos = layout_with_disconnected_components(G, k=2, iterations=200, scale=5000)
-    
-    # Add nodes with labels and store full attributes as title (tooltip)
+    # Use graphviz_layout for node positions
+    pos = graphviz_layout(G, prog="dot")
+
     # Build category-to-color mapping using Plotly's Alphabet palette
     categories = list(set(attrs.get('category', 'Unknown') for _, attrs in G.nodes(data=True)))
     colors = px.colors.qualitative.Alphabet
     category_color_map = {cat: colors[i % len(colors)] for i, cat in enumerate(sorted(categories))}
-    
+
     # Define size mapping for specific categories
     category_size_map = {
         'Electrical Equipment': 35,
         'Electrical Circuit': 25,
     }
     default_size = 20
-    
+
+    # Prepare node traces
+    node_x = []
+    node_y = []
+    node_text = []
+    node_color = []
+    node_size = []
+    node_ids = []
     for node, attrs in G.nodes(data=True):
+        x, y = pos[node]
+        node_x.append(x)
+        node_y.append(y)
         label = attrs.get('name', str(node)) if name_id_toggle else str(node)
         category = attrs.get('category', 'Unknown')
-        node_color = category_color_map.get(category, '#1f77b4')
-        node_size = category_size_map.get(category, default_size)
-        
-        # Get pre-computed position
-        x, y = pos[node]
-        
-        # Create tooltip as plain text with newlines
+        color = category_color_map.get(category, '#1f77b4')
+        size = category_size_map.get(category, default_size)
         tooltip_lines = [f"Node ID: {node}"]
         tooltip_lines.append("-" * 30)
         for key, value in attrs.items():
             tooltip_lines.append(f"{key}: {value}")
-        tooltip = "\n".join(tooltip_lines)
-        
-        # Store node data as JSON for click events
-        node_data = json.dumps({'id': node, **{k: str(v) for k, v in attrs.items()}})
-        
-        net.add_node(node, label=label, title=tooltip, node_data=node_data, 
-                     color=node_color, size=node_size, x=x, y=y)
-    
-    # Add edges
-    for u, v, attrs in G.edges(data=True):
-        net.add_edge(u, v)
-    
-    # Generate HTML string
-    html = net.generate_html()
-    
-    return html, category_color_map
+        tooltip = "<br>".join(tooltip_lines)
+        node_text.append(tooltip)
+        node_color.append(color)
+        node_size.append(size)
+        node_ids.append(node)
+
+    node_trace = go.Scatter(
+        x=node_x,
+        y=node_y,
+        mode='markers+text',
+        text=[attrs.get('name', str(n)) if name_id_toggle else str(n) for n, attrs in G.nodes(data=True)],
+        textposition="top center",
+        hoverinfo='text',
+        hovertext=node_text,
+        marker=dict(
+            color=node_color,
+            size=node_size,
+            line=dict(width=2, color='#333')
+        ),
+        customdata=node_ids,
+        name='Nodes'
+    )
+
+    # Prepare edge traces
+    edge_x = []
+    edge_y = []
+    for u, v in G.edges():
+        x0, y0 = pos[u]
+        x1, y1 = pos[v]
+        edge_x += [x0, x1, None]
+        edge_y += [y0, y1, None]
+
+    edge_trace = go.Scatter(
+        x=edge_x,
+        y=edge_y,
+        line=dict(width=1, color='#888'),
+        hoverinfo='none',
+        mode='lines',
+        name='Edges'
+    )
+
+    fig = go.Figure(data=[edge_trace, node_trace])
+    fig.update_layout(
+        showlegend=False,
+        margin=dict(l=20, r=20, t=20, b=20),
+        plot_bgcolor='white',
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        height=600
+    )
+    return fig, category_color_map
 
 class GraphMLViewer(pn.viewable.Viewer):
     """GraphML Viewer with node click support using Panel's reactive framework"""
@@ -422,10 +340,8 @@ class GraphMLViewer(pn.viewable.Viewer):
     def load_and_plot_graphml(self, file_obj, name_id_toggle):
         if not file_obj:
             return pn.pane.Markdown('Upload a .graphml file.')
-        
         try:
             self.G = nx.read_graphml(BytesIO(file_obj))
-            
             # Build node data cache and populate dropdown options
             self.node_data_cache = {}
             node_options = {'-- Select a node --': ''}
@@ -435,41 +351,19 @@ class GraphMLViewer(pn.viewable.Viewer):
                 label = f"{node} - {name} ({category})"
                 node_options[label] = node
                 self.node_data_cache[node] = {'id': node, **attrs}
-            
             self.node_selector.options = node_options
             self.node_selector.value = ''
-            
             # Reset node parameters table
             self.selected_node_params.value = pd.DataFrame({'Parameter': ['Select a node from the dropdown'], 'Value': ['']})
-            
-            # Create the PyVis graph
-            html, category_color_map = create_pyvis_graph(self.G, name_id_toggle)
-            
-            # Create the legend
+            # Create the Plotly graph
+            fig, category_color_map = create_plotly_graph(self.G, name_id_toggle)
             legend_pane = self.create_legend(category_color_map)
-            
-            # Encode HTML as base64 for iframe src
-            html_bytes = html.encode('utf-8')
-            b64_html = base64.b64encode(html_bytes).decode('utf-8')
-            
-            # Use iframe with data URI to embed the full PyVis HTML document
-            iframe_html = f"""
-            <iframe 
-                id="pyvis-iframe"
-                src="data:text/html;base64,{b64_html}"
-                style="width:100%; height:600px; border:1px solid #ddd; border-radius:4px;"
-                frameborder="0">
-            </iframe>
-            """
-            
-            self.pyvis_pane = pn.pane.HTML(iframe_html, sizing_mode='stretch_width', min_height=620)
-            
+            self.plotly_pane = pn.pane.Plotly(fig, config={"displayModeBar": True}, sizing_mode='stretch_width', min_height=620)
             return pn.Column(
-                legend_pane, 
-                self.pyvis_pane, 
+                legend_pane,
+                self.plotly_pane,
                 sizing_mode='stretch_width'
             )
-            
         except Exception as e:
             return pn.pane.Markdown(f"**Error loading GraphML:** {e}")
 
@@ -479,13 +373,8 @@ viewer = GraphMLViewer()
 # Create widgets
 file_input = pn.widgets.FileInput(accept='.graphml')
 name_id_toggle = pn.widgets.Checkbox(name='Show Node Names', value=True)
-
 file_input.value = open(DEFAULT_FILE_PATH, 'rb').read()
-
-# Bind the plotting function
 plot_output = pn.bind(viewer.load_and_plot_graphml, file_input, name_id_toggle)
-
-# Create the main layout
 app = pn.Row(
     pn.Column(
         "# Simple GraphML Viewer",
@@ -512,5 +401,4 @@ app = pn.Row(
     ),
     sizing_mode='stretch_both'
 )
-
 app.servable()
