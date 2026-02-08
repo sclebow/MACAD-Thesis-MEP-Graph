@@ -31,7 +31,8 @@ def create_plotly_graph(G, name_id_toggle=True):
         raise ImportError("networkx.nx_agraph.graphviz_layout is required. Please install pygraphviz.")
 
     # Use graphviz_layout for node positions
-    pos = graphviz_layout(G, prog="dot")
+    # pack=True separates disconnected components; overlap="false" prevents node overlap
+    pos = graphviz_layout(G, prog="dot", args='-Goverlap=false -Gpack=true -Gpackmode=graph -Gpad=0.5')
 
     # Build category-to-color mapping using Plotly's Alphabet palette
     categories = list(set(attrs.get('category', 'Unknown') for _, attrs in G.nodes(data=True)))
